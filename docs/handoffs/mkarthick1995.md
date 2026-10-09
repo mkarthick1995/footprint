@@ -2,15 +2,13 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.6-owner-automerge
 
 ## Now
-- Owner-PR auto-merge (ADR-010) built: workflow `automerge-owner.yml`, `automerge` environment, `no-automerge` label.
-- PR from `r0.6-owner-automerge` awaiting manual merge (workflow only activates once it is on main).
+- Phase 0 governance done: protected main, owner-PR auto-merge live (token in `automerge` env, expires 2026-11-09).
 
 ## Next
-1. Merge this PR manually (admin bypass, squash), then `git switch main && git pull`.
-2. Create fine-grained PAT + add `AUTO_MERGE_TOKEN` to the `automerge` environment (steps in docs/TEAM.md).
-3. Test: next owner PR should auto-merge after checks; then mark the R0.6 auto-merge line [x].
-4. R0.3: GCP project + billing/credits, Gemini + Maps keys, region asia-southeast1.
-5. R0.4: confirm stack (ADR-003) + teammates' handles in TEAM.md.
+1. R0.3: GCP project + billing/credits, Gemini + Maps keys, region asia-southeast1; share keys privately.
+2. R0.4: confirm stack (ADR-003) + teammates' handles in TEAM.md.
+3. R0.5: verify Live API ephemeral tokens + current Live model ID.
+4. Phase 1 starts 10-11: R1.5 deploy skeleton early.
 
 ## Blockers
 - (none)
