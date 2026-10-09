@@ -22,3 +22,5 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.6-owner-automerge
 - `gh` CLI not installed; repo settings/protection changed via REST API with the Git Credential Manager token.
 - Owner PRs auto-merge after checks — open as draft or label `no-automerge` when you want to review first.
 - Merge commits are disabled — squash only.
+- Editing docs/ROADMAP.md is always a deviation: tick "This PR deviates" + Why + ADR; such PRs skip auto-merge (merge manually).
+- pr-guard only counts DEVIATION(...) comments inside apps/ services/ packages/ infra/.
