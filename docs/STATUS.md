@@ -7,12 +7,12 @@ States: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked (reason).
 Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 
 ## Phase 0 — Setup
-- [ ] R0.1 3rd member accepts team invite on Hack2skill (closes 10-11) — @mkarthick1995
-- [~] R0.2 Repo scaffold + guardrails + docs created locally; push to GitHub pending — @mkarthick1995 2026-10-10
+- [x] R0.1 3rd member added to Hack2skill team — @mkarthick1995 2026-10-10
+- [x] R0.2 Repo scaffold + guardrails + docs pushed to github.com/mkarthick1995/footprint (public) — @mkarthick1995 2026-10-10
 - [ ] R0.3 GCP project, billing/credits, Gemini + Maps keys, region asia-southeast1
 - [ ] R0.4 Confirm stack (ADR-003) and owners (TEAM.md)
 - [ ] R0.5 Verify Live API ephemeral tokens, current Live model ID, Meta toolkit country availability
-- [~] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr done locally; enable protection after first push — @mkarthick1995 2026-10-10
+- [x] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr; `main` protection enabled on GitHub — @mkarthick1995 2026-10-10
 
 ## Phase 1 — Core loop
 - [ ] R1.1 PWA camera capture
