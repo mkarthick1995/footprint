@@ -1,0 +1,5 @@
+* text=auto
+# Hook scripts must keep LF line endings to run on macOS/Linux/Git Bash.
+.githooks/* text eol=lf
+*.sh text eol=lf
+*.mjs text eol=lf

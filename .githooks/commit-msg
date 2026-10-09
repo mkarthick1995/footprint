@@ -1,0 +1,3 @@
+#!/bin/sh
+# Every commit must reference a roadmap item (R1.2) or [docs]/[chore]/[off-roadmap].
+exec node tools/guard/cli.mjs commit-msg "$1"

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks pushing directly to main. main changes only through reviewed PRs.
+exec node tools/guard/cli.mjs pre-push

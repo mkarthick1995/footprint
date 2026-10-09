@@ -1,0 +1,75 @@
+# Team & collaboration
+
+Use **GitHub handles only** in this repo (public). Personal details (phones, emails, employer) → `.private/` (gitignored).
+
+| Role | Handle | Workstream (proposed — confirm in R0.4) |
+|---|---|---|
+| A — Lead, **code owner & mandatory PR approver** | @mkarthick1995 | GCP/infra, Cloud Run API, Gemini Live, submission (R0.x, R1.4–R1.5, R2.2, R4.4–R4.6) |
+| B | @member-b *(replace)* | PWA client: camera, on-device detection, alerts, glasses stretch (R1.1–R1.3, R3.1, R3.3) |
+| C | @member-c *(pending invite)* | Maps & directions, Firestore, hazard map, video + deck (R2.1, R2.3–R2.5, R4.2–R4.3) |
+
+## Onboarding (10 minutes)
+1. Clone the repo, then `npm run setup -- --handle <your-github-handle>`
+   (enables git hooks, creates `.env` from `.env.example`, creates your handoff file).
+2. Fill `.env` with keys from the lead (shared privately — **never** over chat that gets committed anywhere).
+3. Open your AI tool in the repo root. Claude Code reads `CLAUDE.md`; Gemini CLI reads `GEMINI.md`; both import `AGENTS.md`.
+4. Run `/resume`.
+
+## Daily rhythm
+- **Async stand-up = your handoff file.** Update it at the end of every session; read teammates' before starting.
+- One short sync call per day (15 min): blockers, scope changes, demo-readiness.
+- Scope changes are decided together and recorded as an ADR.
+
+## Branch & PR workflow (mandatory)
+**`main` is protected. Nobody commits or pushes to it directly. Every change arrives via a PR approved by the
+code owner (@mkarthick1995 — see `.github/CODEOWNERS`).**
+
+```
+main ─────────●─────────────●──────────────●───►   (squash-merged PRs only, always deployable)
+               \           / \            /
+    r1.2-detect ●──●──●──●    r2.3-hazards ●──●
+```
+1. Start from fresh main: `git switch main && git pull` → `git switch -c r1.2-on-device-detection`.
+   Names: `r<roadmap-id>-<slug>` · `docs-<slug>` · `chore-<slug>` · `hotfix-<slug>`. One roadmap item per branch.
+2. Commit often with roadmap IDs: `feat(web): add proximity heuristic [R1.2]`.
+3. Keep up to date: `git fetch origin && git rebase origin/main` (before opening the PR and when main moves).
+4. Run **`/open-pr`** (Claude or Gemini): self-review against the roadmap, fill the PR template, open the PR.
+5. CI must be green: `secrets`, `docs-sync`, `pr-guard` (roadmap ID + deviation disclosure).
+6. The **code owner reviews** (assisted by `/review-pr <n>`), then approves and squash-merges. Branch auto-deletes.
+7. Pushing new commits after approval dismisses it — re-review is required.
+
+Enforcement: local `pre-commit` blocks commits on main; `pre-push` blocks pushing to main; Claude hooks block AI
+pushes to main, merges, approvals, and `ALLOW_*` overrides; GitHub branch protection blocks everything else.
+
+## Deviations — always disclosed
+If a PR does anything outside its roadmap item's scope (extra feature, new dependency, new env var, interface or
+schema change, ROADMAP or Accepted-ADR edit):
+1. **PR body:** tick "This PR deviates", fill **Why**, **Score impact**, **ADR**, **Code locations**.
+2. **ADR:** append to `docs/DECISIONS.md`.
+3. **Code:** comment at each deviating site — `// DEVIATION(ADR-012): reason in one line`.
+CI (`pr-guard`) fails if deviation signals exist (`[off-roadmap]` commits, `DEVIATION(` comments, ROADMAP edits)
+but the PR doesn't declare them, or if a declared deviation has no Why / no ADR. The job summary shows the owner
+the roadmap IDs and every deviation at a glance. `/review-pr` also hunts for *undeclared* scope creep.
+
+## Branch protection (owner, once — after the first push)
+Script (needs GitHub CLI + admin): `node infra/github/protect-main.mjs <owner>/<repo>`.
+Or manually: GitHub → Settings → Branches → Add rule for `main`:
+require a PR · 1 approval · **require review from Code Owners** · dismiss stale approvals · require approval of the
+most recent push · require status checks `secrets`, `docs-sync`, `pr-guard` (branch up to date) · require conversation
+resolution · require linear history · no force pushes / deletions. Settings → General: squash merge only,
+auto-delete head branches.
+Note: GitHub never lets authors approve their own PRs. For the owner's own PRs, get a teammate's review, then merge
+using the admin bypass (`enforce_admins` is off for this reason).
+
+## Bootstrap (owner, once)
+The very first commit has to land on main before protection exists:
+`ALLOW_MAIN_COMMIT=1 git commit -m "chore: project scaffold [R0.2]"` → create the public GitHub repo →
+`git remote add origin <url>` → `ALLOW_MAIN_PUSH=1 git push -u origin main` → enable branch protection.
+`ALLOW_*` overrides are owner-only and never run by an AI.
+
+## Conflict hygiene
+Edit only your own lines in `docs/STATUS.md`; only your own handoff file. Rebase, don't merge main into branches.
+
+## Ownership rules
+- Owner of an item decides implementation details; cross-cutting changes (interfaces, schema, env vars) need a
+  heads-up in the PR description and an ARCHITECTURE.md update.

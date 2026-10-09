@@ -1,0 +1,3 @@
+#!/bin/sh
+# Secret scan + docs-sync check on staged files. Do not bypass with --no-verify.
+exec node tools/guard/cli.mjs pre-commit

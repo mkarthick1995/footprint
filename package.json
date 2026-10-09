@@ -1,0 +1,14 @@
+{
+  "name": "footprint",
+  "private": true,
+  "type": "module",
+  "description": "Voice-first street co-pilot for blind and low-vision pedestrians — Google Cloud AI Builder Cup 2026",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup": "node tools/setup.mjs",
+    "status": "node tools/guard/cli.mjs brief",
+    "check": "node tools/guard/cli.mjs scan --all && node tools/guard/cli.mjs docs --worktree"
+  }
+}

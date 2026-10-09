@@ -1,0 +1,52 @@
+# ── Secrets (never commit) ─────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials*.json
+client_secret*.json
+*service-account*.json
+*service_account*.json
+*-sa-key*.json
+
+# ── Personal / private (never commit) ──────────────────
+.private/
+.ai-local/
+CLAUDE.local.md
+GEMINI.local.md
+.claude/settings.local.json
+.gemini/settings.local.json
+
+# ── Local data: recordings may contain faces + location ─
+data/*
+!data/README.md
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.heic
+
+# ── Build / deps ───────────────────────────────────────
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+*.tsbuildinfo
+.firebase/
+__pycache__/
+.venv/
+
+# ── OS / editor ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
