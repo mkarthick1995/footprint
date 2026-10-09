@@ -1,17 +1,18 @@
-description = "(Code owner) Thorough PR review: roadmap alignment and deviations first, then quality"
+description = "(Code owner) Thorough PR review: roadmap deviations and safety first, then quality"
 prompt = """
 Review PR {{args}} for the code owner. Be thorough and blunt; the owner decides.
 
-Get the change: with gh -> `gh pr view {{args}} --json title,body,headRefName,commits,files` and `gh pr diff {{args}}`; otherwise `git fetch origin`, `git diff origin/main...origin/<branch>`, `git log origin/main..origin/<branch>`. Read only the claimed roadmap items and the ARCHITECTURE/DECISIONS sections touched.
+Get the change: with gh -> `gh pr view {{args}} --json title,body,headRefName,commits,files` and `gh pr diff {{args}}`; otherwise `git fetch origin`, `git diff origin/main...origin/<branch>`, `git log origin/main..origin/<branch>`. Read only the claimed roadmap items, docs/SAFETY.md sections relevant to the change, and the ARCHITECTURE/DECISIONS sections touched.
 
 Report in this order:
-1. ROADMAP DEVIATIONS (top): declared (is Why convincing? ADR exists? DEVIATION(ADR-0xx) comments at each site?) and undeclared (out-of-scope changes with no disclosure, file:line, must-fix). For each: score impact (Tech 40 / Impact 25 / Innovation 25 / UX 10), time cost, recommendation.
+1. ROADMAP DEVIATIONS (top): declared (Why convincing? ADR exists? DEVIATION(ADR-0xx) comments at each site?) and undeclared (out-of-scope changes, file:line, must-fix). For each: score impact, time cost, recommendation.
 2. Hard requirements (AGENTS.md section 2).
-3. Security & privacy.
-4. Correctness & product safety (fail-loud, latency, error handling).
-5. Docs sync (STATUS / ARCHITECTURE / DECISIONS / README / .env.example).
-6. Code quality.
-7. Verdict: APPROVE / REQUEST CHANGES / BLOCK with numbered must-fix list.
+3. Safety case (docs/SAFETY.md): is the PR's "Safety review" honest and complete? Check section 1 principles, section 2 fail-safe defaults (what if this code is wrong, late, silent, offline, or hits an unknown case?), ADR-012 forbidden outputs, and whether risk IDs / section 4 limitations / section 6 tests were updated. Name missed negative scenarios; must-fix for Critical/High.
+4. Security & privacy: secrets, keys in browser, unblurred faces leaving the device, PII, location precision, stored media/audio, logs, CORS, input validation, prompt injection.
+5. Correctness: bugs, edge cases, alert latency, error handling.
+6. Docs sync (STATUS / ARCHITECTURE / DECISIONS / SAFETY / README / .env.example).
+7. Code quality.
+8. Verdict: APPROVE / REQUEST CHANGES / BLOCK with numbered must-fix list.
 
 Do not approve, merge, or post on GitHub unless the owner explicitly asks; if asked, comment only (`gh pr review {{args}} --comment`).
 """

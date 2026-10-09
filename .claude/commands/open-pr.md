@@ -12,8 +12,12 @@ Prepare and open a PR for my current work. Follow `docs/TEAM.md` → "Branch & P
    - the code site must carry `DEVIATION(ADR-0xx): <reason>` in a comment,
    - an ADR must exist in `docs/DECISIONS.md`.
    If any deviation lacks a reason, **stop and ask me to justify it or remove it**. Don't invent justifications.
-4. **Docs.** Confirm `docs/STATUS.md` (my lines) and my handoff are updated.
-5. **PR body.** Fill `.github/pull_request_template.md` completely. Tick "This PR deviates" if step 3 found anything.
-   Title: `type(scope): summary [R1.2]`.
-6. **Open it.** If `gh` is available: `git push -u origin <branch>` then `gh pr create --base main --title … --body-file …`.
+4. **Safety review.** Run `docs/SAFETY.md` §7 on the diff: for each changed behaviour ask what happens when it is wrong,
+   late, silent, offline, gets bad input, or meets an unknown case. Check ADR-012 forbidden outputs and privacy
+   (faces, location, audio, logs). Update risk IDs / §4 limitations / §6 tests in this PR. Tell me about any
+   negative scenario that isn't handled — don't paper over it.
+5. **Docs.** Confirm `docs/STATUS.md` (my lines) and my handoff are updated.
+6. **PR body.** Fill `.github/pull_request_template.md` completely, including "Safety review" (risk IDs or
+   "none: reason"). Tick "This PR deviates" if step 3 found anything. Title: `type(scope): summary [R1.2]`.
+7. **Open it.** If `gh` is available: `git push -u origin <branch>` then `gh pr create --base main --title … --body-file …`.
    Otherwise push and give me the body to paste on GitHub. **Never merge or approve** — the code owner does that.

@@ -16,11 +16,16 @@ ARCHITECTURE / DECISIONS sections it touches.
    - For each: score impact (Tech 40 / Impact 25 / Innovation 25 / UX 10), time cost vs. deadline, recommendation
      (accept / move to another PR / drop).
 2. **Hard requirements** (AGENTS.md §2): Gemini only at runtime, Cloud Run/Firebase, nothing pre-existing.
-3. **Security & privacy:** secrets, keys in browser, PII, images/video stored, CORS, input validation.
-4. **Correctness & product safety:** bugs, edge cases, fail-loud behaviour, alert latency, error handling.
-5. **Docs sync:** STATUS / ARCHITECTURE / DECISIONS / README / `.env.example` match the code.
-6. **Code quality:** readability, duplication, tests where cheap, consistency with the codebase.
-7. **Verdict:** `APPROVE` / `REQUEST CHANGES` / `BLOCK`, with a numbered must-fix list and optional nits.
+3. **Safety case (`docs/SAFETY.md`):** is the PR's "Safety review" honest and complete? Check against §1 principles,
+   §2 fail-safe defaults (what happens when this code is wrong, late, silent, offline, or hits an unknown case?),
+   ADR-012 forbidden outputs, and whether risk IDs / §4 limitations / §6 tests were updated. Name any negative
+   scenario the author missed — these are must-fix for Critical/High.
+4. **Security & privacy:** secrets, keys in browser, faces/frames leaving the device unblurred, PII, location
+   precision, images/video/audio stored, logs, CORS, input validation, prompt injection.
+5. **Correctness:** bugs, edge cases, alert latency, error handling.
+6. **Docs sync:** STATUS / ARCHITECTURE / DECISIONS / SAFETY / README / `.env.example` match the code.
+7. **Code quality:** readability, duplication, tests where cheap, consistency with the codebase.
+8. **Verdict:** `APPROVE` / `REQUEST CHANGES` / `BLOCK`, with a numbered must-fix list and optional nits.
 
 Do **not** approve, merge, or post comments on GitHub unless the owner explicitly asks. If asked to post,
 use `gh pr review $ARGUMENTS --comment --body-file <file>` (comment only — approval is the owner's click).

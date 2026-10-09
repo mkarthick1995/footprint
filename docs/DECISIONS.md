@@ -54,6 +54,32 @@ anything using Google marks. A 2026-10-10 search found no accessibility/navigati
 is a common word used by unrelated companies, so it's fine for the hackathon but needs a trademark check before
 any commercial launch.
 
+## ADR-011 Safety-first development: risk register + multi-angle review
+Accepted · 2026-10-10
+Decision: `docs/SAFETY.md` is the product's safety case. Every idea/feature/PR runs the §7 review; risks get IDs
+before code; a risk is "Mitigated" only with a passing ST test, else Planned (R-id) or Accepted+Disclosed. Unknown
+situations follow the §2 fail-safe defaults and degradation ladder. Safety items R1.6–R1.8, R2.6, R2.7, R4.7 added
+to the roadmap and are never cut. Cost: ~1.5 dev-days of the 7 remaining; paid for by cutting R2.5/R3.x first.
+Score: Impact (credible for real users), Tech (sound engineering), deck differentiation.
+
+## ADR-012 Never an "all clear"; never a crossing instruction
+Accepted · 2026-10-10
+The app reports detections with uncertainty and never says a path/crossing is safe or tells the user to go/cross;
+traffic-signal state is "appears … — verify" or omitted. Enforced by system instruction + output filter + ST-07/08.
+Rationale: missed hazards are unavoidable (SAF-01); false reassurance is what turns a miss into an injury.
+
+## ADR-013 On-device face blur before frames leave the phone
+Accepted · 2026-10-10 (performance to be confirmed in R1.8)
+MediaPipe face detection in the browser → blur → downscale → send to Gemini. Bystanders never consented; this
+keeps identifiable faces off the network entirely. Fallback if fps drops below the R1.2 target: heavy downscaling,
+no storage, and disclosure — decided in an ADR update, never silently.
+
+## ADR-014 Gemini tier must not train on our frames
+**Proposed** · 2026-10-10 — decide in R0.7
+Unpaid tiers of some Google AI services may use submitted content to improve products; paid Gemini API and
+Vertex AI terms state they don't. Verify current terms, then pick the tier (and check ephemeral-token support for it).
+Until decided, no real street footage with bystanders is sent from development builds.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow

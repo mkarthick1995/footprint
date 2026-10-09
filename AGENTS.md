@@ -18,6 +18,14 @@ walking guidance, and every walk contributes to a shared street-accessibility ma
 - **New work only** — nothing pre-existing. Public GitHub repo. All materials in **English**.
 - Submit: live link + public repo + demo video **< 3 min** + deck as **PDF**. → `docs/HACKATHON.md`
 
+## 2a. Safety case (blind users can't verify what we say) → `docs/SAFETY.md`
+- **Before designing or coding any feature or idea, run the SAFETY.md §7 multi-angle review** (safety, failure modes,
+  privacy, abuse, accessibility, claims, limitations, score). Add/update risk IDs **in the same PR**.
+- Never an "all clear", never "cross now / go", never identify or describe people (ADR-012, PRI-03).
+- Unknown situations → SAFETY.md §2 fail-safe defaults: cautious signal wins, fail loud, discard stale/invalid output.
+- Anything you can't mitigate before the deadline goes into SAFETY.md §4 *Limitations* — or the feature is dropped.
+- Proactively tell the user about any new risk, negative scenario, or limitation you notice — even if not asked.
+
 ## 3. Session protocol
 **Start**
 1. Read `docs/STATUS.md` and your own `docs/handoffs/<handle>.md`. Read other docs **only if the task needs them**.
@@ -81,7 +89,7 @@ You are a teammate whose job is **winning**, not agreeing.
 ## 10. Repo map
 ```
 AGENTS.md  CLAUDE.md  GEMINI.md   AI instructions (this file is canonical)
-docs/      VISION · HACKATHON · ROADMAP · STATUS · ARCHITECTURE · DECISIONS · TEAM · AI_PLAYBOOK
+docs/      VISION · SAFETY · HACKATHON · ROADMAP · STATUS · ARCHITECTURE · DECISIONS · TEAM · AI_PLAYBOOK
 docs/handoffs/   one file per member      docs/research/   competition & sources
 apps/web/        PWA client (camera, on-device detection, voice)
 services/api/    Cloud Run backend (ephemeral tokens, hazard map API)

@@ -14,6 +14,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R0.5 Verify Live API ephemeral tokens, current Live model ID, Meta toolkit country availability
 - [x] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr; `main` protection verified via API: code-owner approval, required checks secrets/docs-sync/pr-guard (strict), linear history, conversation resolution, squash-only, auto-delete branches — @mkarthick1995 2026-10-10
 - [x] R0.6 Owner-PR auto-merge workflow + `automerge` environment + AUTO_MERGE_TOKEN (ADR-010); verified by this line's PR auto-merging — @mkarthick1995 2026-10-10
+- [~] R0.7 Safety case docs/SAFETY.md + review protocol done; pending: Gemini data-use tier decision (ADR-014) — @mkarthick1995 2026-10-10
 
 ## Phase 1 — Core loop
 - [ ] R1.1 PWA camera capture
@@ -21,6 +22,9 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R1.3 Voice alerts + haptics + priority
 - [ ] R1.4 Ephemeral-token API + Gemini Live session
 - [ ] R1.5 Deploy skeleton to Cloud Run
+- [ ] R1.6 Fail-loud layer (watchdog, degradation ladder, camera/orientation/battery checks)
+- [ ] R1.7 Gemini safety layer (instruction, schema, output filter, stale drop, injection)
+- [ ] R1.8 On-device face blur before upload
 
 ## Phase 2 — Differentiators
 - [ ] R2.1 Walking directions narrated by Gemini
@@ -28,6 +32,8 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R2.3 Hazard logging to Firestore
 - [ ] R2.4 Public hazard map dashboard
 - [ ] R2.5 Accessibility score + safer route
+- [ ] R2.6 Hazard data privacy & integrity (session IDs, trip trimming, TTL, 2-report rule)
+- [ ] R2.7 Abuse & cost protection (rate limits, session caps, budget alerts)
 
 ## Phase 3 — Stretch
 - [ ] R3.1 Meta glasses integration
@@ -41,6 +47,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R4.4 README for judges
 - [ ] R4.5 Final deploy + link check + cost alerts
 - [ ] R4.6 Submit on Hack2skill
+- [ ] R4.7 Safety & limitations disclosure + full ST matrix run
 
 ## Open questions
 - Repo license for the public repo (MIT suggested) — not yet chosen.
