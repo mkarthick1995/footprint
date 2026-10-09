@@ -18,8 +18,8 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 
 ## Phase 1 — Core loop
 - [ ] R1.1 PWA camera capture
-- [ ] R1.2 On-device obstacle detection
-- [ ] R1.3 Voice alerts + haptics + priority (design: ADR-022 time-to-contact tiers, ADR-023 adaptive verbosity)
+- [ ] R1.2 On-device obstacle detection (design: ADR-024 tracking + time-to-contact)
+- [ ] R1.3 Voice alerts + haptics + priority (design: ADR-022 tiers, ADR-023 adaptive verbosity, ADR-026 user presets + safety floor)
 - [ ] R1.4 Ephemeral-token API + Gemini Live session
 - [ ] R1.5 Deploy skeleton to Cloud Run
 - [ ] R1.6 Fail-loud layer (watchdog, degradation ladder, camera/orientation/battery checks)
@@ -29,7 +29,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 ## Phase 2 — Differentiators
 - [ ] R2.1 Walking directions narrated by Gemini
 - [ ] R2.2 Gemini structured hazard extraction
-- [ ] R2.3 Hazard logging to Firestore
+- [ ] R2.3 Community hazards (design: ADR-020 + ADR-025 evidence model)
 - [ ] R2.4 Public hazard map dashboard
 - [ ] R2.5 Accessibility score + safer route
 - [ ] R2.6 Hazard data privacy & integrity (session IDs, trip trimming, TTL, 2-report rule)
