@@ -199,6 +199,23 @@ street furniture. In-path = centre of frame / along heading; edge-of-frame objec
 7. Distances are spoken in buckets ("very close", "2 steps", "ahead"), not false-precision metres (SAF-23).
 8. A user question to Gemini is P3: answered when no P0/P1 is pending; a P0 interrupts the answer mid-sentence.
 
+## ADR-023 Adaptive verbosity: message style follows how demanding the street is
+Accepted · 2026-10-10 (owner's proposal, refined) · extends ADR-022, mitigates SAF-06/07
+**Always short.** Hard length caps by tier: P0 ≤ 2 words · P1 ≤ ~5 words · P2 ≤ 1 short sentence · P3 ≤ 2 sentences.
+
+**Street demand level** (computed live, with hysteresis so it doesn't flap): number of active hazards/objects in
+the last ~10 s + scene-scan footpath/surface/crossing findings + confirmed community hazards ahead. When signals
+disagree, take the more demanding level (cautious wins).
+
+| Level | Style | Rationale |
+|---|---|---|
+| **Demanding** (broken/no footpath, traffic, many hazards) | Frequent, very terse **signals** — but mostly earcons + haptics for recurring items; words only for P0/P1; P2/P3 muted; max ~1 spoken message per 3 s; one-time heads-up on entering: "Rough stretch — only close warnings" | Owner's point (many short) — refined: in exactly these streets the user must hear traffic, so more signals, fewer words (SAF-06) |
+| **Moderate** | ADR-022 defaults | — |
+| **Calm** (good footpath, few hazards) | Fewer, slightly longer context messages (route info, landmarks, surface changes) — max 2 sentences, sent in chunks so a P0 can cut in cleanly | Owner's point (few, larger) — kept short enough to never delay a P0 |
+
+Also: **stationary users** may get longer descriptions; **user verbosity setting** (terse / normal / detailed) shifts
+the defaults, because blind users vary widely. Level changes are signalled by a soft earcon, not speech.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow

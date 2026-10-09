@@ -6,7 +6,7 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.6-owner-automerge
 - Draft PR #5: safety case (SAFETY.md, ADR-011..014) + ADR-015 PWA-now/native-later, ADR-016 dev/test strategy,
   ADR-017 billing (Proposed), ADR-018 Gemini-from-day-one, research/FACTS.md, "document after every chat" rule.
 
-- ADR-022 alert prioritisation (time-to-contact tiers P0–P3) documented; PR auto-merges after checks.
+- ADR-022 alert prioritisation + ADR-023 adaptive verbosity documented (auto-merge PRs).
 
 ## Next
 1. Review draft PR #5 → "Ready for review" (auto-merges after checks).
