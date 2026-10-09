@@ -83,6 +83,9 @@ When anything happens that the code does not explicitly handle:
 | SAF-24 | **Interruption chaos** — critical alerts cutting speech mid-word confuses users | M | Earcon before P0 words; resume or drop the interrupted message (never replay stale); test with users if possible | Planned R1.3 |
 | SAF-25 | **Street misjudged as calm** → a longer context message plays while a hazard approaches | H | Demand level = most demanding signal; calm messages chunked and preemptible by P0; length caps (ADR-023) | Planned R1.3 |
 | SAF-26 | **Overload in demanding streets** — even short messages pile up and mask traffic | H | Earcons/haptics for recurring items, words only for P0/P1, P2/P3 muted, spoken-rate cap (ADR-023) | Planned R1.3 |
+| SAF-27 | **Motion-estimate noise** — box jitter, phone sway, occlusion, objects entering the frame give wrong speed/TTC | H | Tracking ≥ 5 frames, smoothing filter, gyroscope compensation, ignore edge-cut boxes, cautious tier when uncertain (ADR-024) | Planned R1.2 |
+| SAF-28 | **User turns alerts down too far** and misses danger | C | P0 + SYS floor can never be disabled; rate caps stay; preset announced at walk start (ADR-026) | Planned R1.3 |
+| SAF-29 | **One wrong scan deletes a real hazard** from the community map | H | Asymmetric evidence: removal needs ≥ 2 "not seen" walks or decay (ADR-025) | Planned R2.3 |
 
 ### 3.2 Privacy
 | ID | Risk | Sev | Mitigation | Status |
@@ -95,6 +98,7 @@ When anything happens that the code does not explicitly handle:
 | PRI-06 | **Logs leak media or location** | M | No frames / audio / precise GPS in logs; structured logging with redaction | Planned R1.5 |
 | PRI-07 | **Test recordings & demo video** show faces of the public / teammates | M | Recordings only in `data/` (gitignored), deleted after hackathon; demo video faces blurred; teammates consent | Planned R4.2 |
 | PRI-08 | **Legal frameworks** — Singapore PDPA, India DPDP Act 2023, Australia Privacy Act, Japan APPI, Korea PIPA | H | Data minimisation + no biometrics + no PII by design; deck states posture; *not legal advice — verify before launch* | Accepted+Disclosed |
+| PRI-09 | **Data residency** — some JAPAC laws restrict cross-border transfer of personal data (e.g. India DPDP rules) | M | Data is anonymous and non-personal by design; single Singapore region for the hackathon; per-country regions if needed later — verify before launch | Accepted+Disclosed |
 
 ### 3.3 Security & abuse
 | ID | Risk | Sev | Mitigation | Status |
@@ -142,6 +146,8 @@ When anything happens that the code does not explicitly handle:
 - Scene descriptions **need an internet connection**; offline, only basic obstacle alerts work.
 - **Glass doors, transparent objects, and drop-offs** (kerbs, stairs going down) are hard for a single camera.
 - **GPS can be off by 5–30 m** between tall buildings; directions are approximate.
+- **Distances and speeds of approaching objects are rough estimates** from a single camera; it says "about" or "close"
+  rather than exact numbers.
 - **Community hazard reports may be outdated or wrong.**
 - It **does not identify people** — by design.
 - It is **not an emergency service, medical device, or certified mobility aid**, and does not replace a white cane,
@@ -189,6 +195,9 @@ When anything happens that the code does not explicitly handle:
 | ST-25 | Cyclist approaching fast from 10 m vs pothole 3 m | Cyclist ranked first (lower TTC) | SAF-23 | — |
 | ST-26 | Clip of a demanding street (broken footpath, traffic, many objects) | Mostly earcons/haptics; spoken only P0/P1; ≤ 1 spoken message per 3 s; heads-up on entry | SAF-26 | — |
 | ST-27 | Calm street clip with a P0 hazard injected mid-message | Context message cut by earcon + P0; nothing exceeds length caps | SAF-25 | — |
+| ST-28 | Clip: person walking towards camera from ~10 m | TTC estimate within the right bucket; tier rises as they approach | SAF-27 | — |
+| ST-29 | Set preset "Essential", replay a P0 clip and a camera-cover | P0 and SYS still spoken; P2/P3 silent | SAF-28 | — |
+| ST-30 | Confirmed hazard + one "not seen" walk | Hazard stays confirmed; two "not seen" walks → expires | SAF-29 | — |
 
 ## 7. Multi-angle review protocol — for every new idea, feature, or PR
 Answer each angle in one or two lines (PR body "Safety review" section, or in `/scope-check`):

@@ -216,6 +216,46 @@ disagree, take the more demanding level (cautious wins).
 Also: **stationary users** may get longer descriptions; **user verbosity setting** (terse / normal / detailed) shifts
 the defaults, because blind users vary widely. Level changes are signalled by a soft earcon, not speech.
 
+## ADR-024 Motion & time-to-contact estimation from a single camera
+**Proposed** · 2026-10-10 — implement in R1.2, tune on clips · feeds ADR-022
+1. **Track** each detection across frames (simple IoU/centroid tracker → stable object IDs). Need ≥ ~5 frames
+   (~0.3 s) before trusting motion.
+2. **Time-to-contact from looming** (no distance needed): TTC ≈ h ÷ (dh/dt), where h = bounding-box height in
+   pixels. An object whose box grows 10 %/s is ~10 s away; 50 %/s ≈ 2 s. Works for anything, moving or static.
+3. **Approximate distance** (for wording + context): pinhole model, distance ≈ focal_px × typical real height ÷ box
+   height (person ≈ 1.7 m, car ≈ 1.5 m, bike ≈ 1.1 m); focal length from the camera's field of view, calibrated once.
+4. **Object speed** = change in distance per second − user's own walking speed (step cadence from the accelerometer,
+   GPS speed as a cross-check). Tells "coming towards me" vs "I'm walking up to it".
+5. **Direction / in-path:** horizontal drift of the box centre → crossing vs approaching; predicted path inside the
+   central corridor = in path.
+6. **Noise control:** smooth with an exponential/Kalman filter; compensate phone sway with the gyroscope; ignore
+   boxes cut off by the frame edge; low confidence → cautious tier + "possible".
+Gemini is not used for speed (≈ 1 fps is too slow). Expected error is large (tens of %), hence bucketed wording
+(SAF-23). Stretch: an on-device depth model if fps allows.
+
+## ADR-025 Community map as an evidence model (how user 2 improves user 1's data)
+**Proposed** · 2026-10-10 — refines ADR-020, implement in R2.3
+- **What improves is the shared street map, not an AI model.** Each walk is evidence about each place.
+- **Hazard confidence** = Beta(α, β): every "seen" observation adds weight to α, every "passed by and not seen"
+  adds to β; weight = detection confidence × recency decay (older evidence counts less). p = α ÷ (α + β).
+- **Confirmed** when p ≥ 0.7 *and* ≥ 2 distinct walks; **expired** when p < 0.3 or no evidence for the type's TTL.
+  Asymmetric on purpose: one walker's scan can't delete a confirmed hazard — removal needs ≥ 2 "not seen" walks or decay.
+- **Street attributes** (footpath present, surface, kerb ramps, crossing type, obstructions) are running estimates per
+  segment with counts + freshness, updated the same way; feeds ADR-021 route info.
+- Storage unchanged: Firestore asia-southeast1; raw `observations` TTL 7 days; aggregates persist. Later: BigQuery
+  export for city analytics; per-country regions if data-residency rules require (PRI-09).
+- **We do not retrain detection models from community data**: we store no images (ADR-007/013), so there's nothing
+  to train on. Better models would need a separate, opt-in, consented, blurred data programme — future work, disclosed.
+
+## ADR-026 User-controlled alert levels with a safety floor
+**Proposed** · 2026-10-10 (owner's proposal, refined) · extends ADR-022/023
+- **Floor (cannot be turned off):** P0 imminent hazards and SYS (camera lost, offline, stopped). Safety rate caps also stay.
+- **Presets instead of a 1–10 number:** *Essential* (P0 + P1 + SYS) · *Standard* (+ P2) · *Detailed* (+ P3 context,
+  route info, landmarks). A 1–10 scale is hard to map to behaviour and hard to operate by voice/screen reader.
+- **Category toggles:** community reports, route summary, landmarks, scene descriptions, Gemini answers read aloud.
+- **Channel choice** per tier (speech / earcon / haptic) and speech rate. Voice commands: "fewer alerts", "more alerts".
+- Stored **locally on the device** (no account); fully screen-reader operable; current preset announced at walk start.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow
