@@ -169,6 +169,36 @@ everything — simpler, but unfilterable and harder to test.
 Score: this is the Innovation 25 differentiator (personal help → community infrastructure); keep it simple but
 visible. R2.5 stays the first cut, but only its "safer route suggestion" part — the spoken summary is cheap.
 
+## ADR-022 Alert prioritisation by time-to-contact, severity, path, and confidence
+Accepted · 2026-10-10 (owner's proposal, refined) · implements R1.3, mitigates SAF-02
+**Rank by time-to-contact (TTC), not distance.** TTC = distance ÷ closing speed. Static hazard: closing speed =
+user's walking speed (≈ 1.4 m/s; from step cadence/GPS). Moving object: from the detector's box growth rate.
+Example: pothole 1 m ahead → TTC ≈ 0.7 s; person 10 m ahead walking towards you → ≈ 3.5 s; cyclist 10 m at
+5 m/s → ≈ 1.6 s. So the pothole wins, and the cyclist beats a pothole 3 m ahead.
+
+**Tiers** (urgency = f(TTC) × severity × in-path factor; confidence adjusts wording, not suppression when close):
+| Tier | Rule | Delivery |
+|---|---|---|
+| P0 Imminent | TTC < 1.5 s, or < 2 m and in path | Earcon + 1–2 words ("Stop — hole"); **interrupts** any speech; strong haptic |
+| P1 Near | TTC 1.5–4 s in path | Short phrase with direction ("Pothole, 2 steps, slightly left"); interrupts P2/P3 |
+| P2 Ahead | TTC 4–10 s, or near but off-path | Spoken when nothing higher is pending |
+| P3 Context | Community reports beyond ~10 s, route summary, Gemini answers, scene info | Only when the queue is otherwise empty |
+| SYS | Degradation-ladder changes (camera lost, offline, stopped) | Treated as P0, spoken right after any active P0 hazard |
+
+Severity order (tie-break within a tier): drop-off / open drain > vehicle > pothole > cyclist > obstruction > person >
+street furniture. In-path = centre of frame / along heading; edge-of-frame objects are downgraded one tier.
+
+**Queue rules**
+1. Same tier → order by TTC (first to be encountered first).
+2. **Re-check at dequeue time:** recompute TTC with the latest frame / dead-reckoned distance; drop if passed, out of
+   path, or older than its validity window. Never speak a stale alert (SAF-22).
+3. **Merge** same-type nearby items: "Two potholes ahead, nearest 1 metre" instead of two messages.
+4. Speak at most the top 1–2 items; the rest wait or expire — users can't parse lists while walking.
+5. Per-object cool-down + hysteresis so the same object doesn't re-trigger or flap between tiers.
+6. Low confidence + close → still alert, worded "possible obstacle"; low confidence + far → dropped (cautious wins).
+7. Distances are spoken in buckets ("very close", "2 steps", "ahead"), not false-precision metres (SAF-23).
+8. A user question to Gemini is P3: answered when no P0/P1 is pending; a P0 interrupts the answer mid-sentence.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow

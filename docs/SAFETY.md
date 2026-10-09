@@ -58,7 +58,7 @@ When anything happens that the code does not explicitly handle:
 | ID | Risk | Sev | Mitigation | Status |
 |---|---|---|---|---|
 | SAF-01 | **Missed hazard** (false negative) → collision, fall, injury | C | Supplementary positioning everywhere; never all-clear (ADR-012); on-device + Gemini redundancy; cautious-signal-wins; onboarding acknowledgement | Planned R1.2, R1.7, R4.7 |
-| SAF-02 | **Alert fatigue** from false positives → user ignores real alerts | H | Priority tiers (critical / info), de-duplication, cool-downs, verbosity setting, no repeats of unchanged scenes | Planned R1.3 |
+| SAF-02 | **Alert fatigue** from false positives → user ignores real alerts | H | Time-to-contact priority tiers P0–P3 (ADR-022), merging, top-1–2 only, de-duplication, cool-downs + hysteresis, verbosity setting, no repeats of unchanged scenes | Planned R1.3 |
 | SAF-03 | **Stale / late information** (Gemini ~1 fps + network delay) describes a scene that has changed | C | Dynamic hazards only from on-device (< 300 ms); every Gemini result timestamped, dropped if older than 2 s; Gemini restricted to static context | Planned R1.4, R1.7 |
 | SAF-04 | **Hallucinated or wrong guidance** ("crossing is clear", "light is green", invented footpath) | C | System instruction forbids it; output filter blocks all-clear / go / cross phrasing; structured schema; traffic lights reported as "appears red — verify" or not at all | Planned R1.7 |
 | SAF-05 | **Silent failure** (camera covered, app backgrounded, screen lock, TTS dies, network drops). Browser limitation: the camera **stops when the screen locks or another app opens** (ADR-015) | C | Watchdog + alive tick; camera-quality checks (brightness, blur, frozen frame); Wake Lock keeps the screen on while walking; page-visibility handler announces "Footprint paused — you are not protected" before stopping; degradation ladder; disclosed in §4 | Planned R1.6 |
@@ -78,6 +78,9 @@ When anything happens that the code does not explicitly handle:
 | SAF-19 | **Location mismatch** — reported hazard announced at the wrong spot due to GPS error | M | Distance phrased as "about"; announce only when GPS accuracy ≤ 25 m; cluster radius 15 m | Planned R2.3 |
 | SAF-20 | **Cold start** — no reports read as "this street is fine" | H | "No community information yet" wording; score hidden below minimum walks (ADR-021) | Planned R2.5 |
 | SAF-21 | **Gemini audio bypasses the safety filter** — Live API speaking directly can't be filtered | C | Live response modality = TEXT; only the alert manager speaks via TTS after the filter (ADR-019) | Planned R1.4, R1.7 |
+| SAF-22 | **Stale queued alert** — spoken after the hazard was passed or left the path, because speech takes 1–2 s each | H | Re-check TTC/path/age at dequeue; drop stale; P0 preempts; max 1–2 spoken (ADR-022) | Planned R1.3 |
+| SAF-23 | **Wrong priority from bad distance estimates** — single camera can't measure distance precisely; Gemini distances are rough | H | Bucketed distance wording; prefer detector box-growth TTC for moving objects; cautious tier when uncertain; tune on clips | Planned R1.3, R4.1 |
+| SAF-24 | **Interruption chaos** — critical alerts cutting speech mid-word confuses users | M | Earcon before P0 words; resume or drop the interrupted message (never replay stale); test with users if possible | Planned R1.3 |
 
 ### 3.2 Privacy
 | ID | Risk | Sev | Mitigation | Status |
@@ -177,6 +180,11 @@ When anything happens that the code does not explicitly handle:
 | ST-18 | Seed a hazard with 1 report, walk past | Not announced (unconfirmed); with 2 reports: announced as "reported … N reports, age" | SAF-13, SAF-18 | — |
 | ST-19 | Walk a street with no data | "No community information yet" — never a positive rating | SAF-20 | — |
 | ST-20 | Make Gemini Live answer a crossing question | Answer arrives as text, filtered, spoken by our TTS | SAF-21 | — |
+| ST-21 | Clip: pothole 1 m ahead + person 10 m ahead | Pothole spoken first (P0), person after or dropped | SAF-02, ADR-022 | — |
+| ST-22 | Clip: potholes at 1 m and 2 m | One merged message, nearest first ("two potholes, nearest very close") | SAF-02 | — |
+| ST-23 | P0 hazard while Gemini answer is being spoken | Answer interrupted by earcon + hazard; answer not replayed if stale | SAF-24 | — |
+| ST-24 | Queue 3 alerts, walk past the first before it's spoken | Passed alert dropped, never spoken | SAF-22 | — |
+| ST-25 | Cyclist approaching fast from 10 m vs pothole 3 m | Cyclist ranked first (lower TTC) | SAF-23 | — |
 
 ## 7. Multi-angle review protocol — for every new idea, feature, or PR
 Answer each angle in one or two lines (PR body "Safety review" section, or in `/scope-check`):
