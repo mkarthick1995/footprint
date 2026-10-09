@@ -1,0 +1,60 @@
+name: automerge-owner
+
+# Auto squash-merges PRs authored by the code owner once the `guardrails` workflow passes.
+# Teammates' PRs are never touched here — they still need the owner's approval (branch protection).
+#
+# Security model (ADR-010):
+# - workflow_run always executes the copy of this file on main, so a PR cannot edit it to merge itself.
+# - AUTO_MERGE_TOKEN lives in the `automerge` environment, which only protected branches (main) can use,
+#   so workflows added in a PR branch cannot read it.
+# - The merge uses the owner's token; the owner is a repo admin and branch protection does not enforce
+#   rules on admins, which is what lets the owner's PRs skip the approval step. Required checks have
+#   already passed before this runs.
+
+on:
+  workflow_run:
+    workflows: [guardrails]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: automerge
+    steps:
+      - name: Squash-merge owner PR
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
+          OWNER: mkarthick1995
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then echo "AUTO_MERGE_TOKEN is not set in the 'automerge' environment; skipping."; exit 0; fi
+
+          pr=$(gh api "repos/${REPO}/pulls?state=open&head=${REPO%%/*}:${HEAD_BRANCH}" --jq '.[0] // empty')
+          if [ -z "${pr}" ]; then echo "No open PR for ${HEAD_BRANCH}; nothing to do."; exit 0; fi
+
+          num=$(jq -r .number <<<"${pr}")
+          author=$(jq -r .user.login <<<"${pr}")
+          sha=$(jq -r .head.sha <<<"${pr}")
+          draft=$(jq -r .draft <<<"${pr}")
+          labels=$(jq -r '[.labels[].name] | join(",")' <<<"${pr}")
+          body=$(jq -r '.body // ""' <<<"${pr}")
+
+          if [ "${author}" != "${OWNER}" ]; then echo "PR #${num} is by @${author}: owner approval required, not auto-merging."; exit 0; fi
+          if [ "${draft}" != "false" ]; then echo "PR #${num} is a draft: skipping."; exit 0; fi
+          if [[ ",${labels}," == *",no-automerge,"* ]]; then echo "PR #${num} has the no-automerge label: skipping."; exit 0; fi
+          if grep -qiE -- '-[[:space:]]*\[x\][[:space:]]*This PR deviates' <<<"${body}"; then
+            echo "PR #${num} declares a roadmap deviation: leaving it for a manual owner review."; exit 0
+          fi
+          if [ "${sha}" != "${HEAD_SHA}" ]; then echo "PR #${num} head moved since checks ran: skipping (the new run will decide)."; exit 0; fi
+
+          gh api -X PUT "repos/${REPO}/pulls/${num}/merge" -f merge_method=squash -f sha="${sha}" >/dev/null
+          echo "✔ Squash-merged owner PR #${num} (${sha:0:7})."
