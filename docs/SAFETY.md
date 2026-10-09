@@ -62,8 +62,8 @@ When anything happens that the code does not explicitly handle:
 | SAF-03 | **Stale / late information** (Gemini ~1 fps + network delay) describes a scene that has changed | C | Dynamic hazards only from on-device (< 300 ms); every Gemini result timestamped, dropped if older than 2 s; Gemini restricted to static context | Planned R1.4, R1.7 |
 | SAF-04 | **Hallucinated or wrong guidance** ("crossing is clear", "light is green", invented footpath) | C | System instruction forbids it; output filter blocks all-clear / go / cross phrasing; structured schema; traffic lights reported as "appears red — verify" or not at all | Planned R1.7 |
 | SAF-05 | **Silent failure** (camera covered, app backgrounded, screen lock, TTS dies, network drops). Browser limitation: the camera **stops when the screen locks or another app opens** (ADR-015) | C | Watchdog + alive tick; camera-quality checks (brightness, blur, frozen frame); Wake Lock keeps the screen on while walking; page-visibility handler announces "Footprint paused — you are not protected" before stopping; degradation ladder; disclosed in §4 | Planned R1.6 |
-| SAF-06 | **Audio masking** — speech hides traffic sounds blind users rely on | H | Short messages; earcons for common alerts; recommend open-ear / bone-conduction; never noise-cancelling; quiet mode | Planned R1.3 |
-| SAF-07 | **Cognitive overload / distraction** while crossing or in traffic | H | Conversation paused when critical alerts active; terse mode in motion; user can mute descriptions with one gesture | Planned R1.3 |
+| SAF-06 | **Audio masking** — speech hides traffic sounds blind users rely on | H | Short messages; earcons for common alerts; recommend open-ear / bone-conduction; never noise-cancelling; quiet mode; adaptive verbosity: earcons/haptics instead of words in demanding streets, ≤ 1 spoken message per 3 s | Planned R1.3 (ADR-023) |
+| SAF-07 | **Cognitive overload / distraction** while crossing or in traffic | H | Conversation paused when critical alerts active; terse mode in motion; user can mute descriptions with one gesture | Planned R1.3 (ADR-023) |
 | SAF-08 | **Poor conditions** — night, rain, glare, fog, motion blur | H | Low-light / blur detection → announce reduced capability (L2) | Planned R1.6 |
 | SAF-09 | **Wrong camera angle** (pointing at sky/ground, phone in pocket) | H | Orientation check via accelerometer + horizon heuristic; spoken instruction to adjust | Planned R1.6 |
 | SAF-10 | **Field-of-view gaps** — no side/rear view; low obstacles at feet and overhead branches may be outside frame | C | Accepted + Disclosed (§4); onboarding explains coverage; mount guidance | Accepted+Disclosed |
@@ -81,6 +81,8 @@ When anything happens that the code does not explicitly handle:
 | SAF-22 | **Stale queued alert** — spoken after the hazard was passed or left the path, because speech takes 1–2 s each | H | Re-check TTC/path/age at dequeue; drop stale; P0 preempts; max 1–2 spoken (ADR-022) | Planned R1.3 |
 | SAF-23 | **Wrong priority from bad distance estimates** — single camera can't measure distance precisely; Gemini distances are rough | H | Bucketed distance wording; prefer detector box-growth TTC for moving objects; cautious tier when uncertain; tune on clips | Planned R1.3, R4.1 |
 | SAF-24 | **Interruption chaos** — critical alerts cutting speech mid-word confuses users | M | Earcon before P0 words; resume or drop the interrupted message (never replay stale); test with users if possible | Planned R1.3 |
+| SAF-25 | **Street misjudged as calm** → a longer context message plays while a hazard approaches | H | Demand level = most demanding signal; calm messages chunked and preemptible by P0; length caps (ADR-023) | Planned R1.3 |
+| SAF-26 | **Overload in demanding streets** — even short messages pile up and mask traffic | H | Earcons/haptics for recurring items, words only for P0/P1, P2/P3 muted, spoken-rate cap (ADR-023) | Planned R1.3 |
 
 ### 3.2 Privacy
 | ID | Risk | Sev | Mitigation | Status |
@@ -185,6 +187,8 @@ When anything happens that the code does not explicitly handle:
 | ST-23 | P0 hazard while Gemini answer is being spoken | Answer interrupted by earcon + hazard; answer not replayed if stale | SAF-24 | — |
 | ST-24 | Queue 3 alerts, walk past the first before it's spoken | Passed alert dropped, never spoken | SAF-22 | — |
 | ST-25 | Cyclist approaching fast from 10 m vs pothole 3 m | Cyclist ranked first (lower TTC) | SAF-23 | — |
+| ST-26 | Clip of a demanding street (broken footpath, traffic, many objects) | Mostly earcons/haptics; spoken only P0/P1; ≤ 1 spoken message per 3 s; heads-up on entry | SAF-26 | — |
+| ST-27 | Calm street clip with a P0 hazard injected mid-message | Context message cut by earcon + P0; nothing exceeds length caps | SAF-25 | — |
 
 ## 7. Multi-angle review protocol — for every new idea, feature, or PR
 Answer each angle in one or two lines (PR body "Safety review" section, or in `/scope-check`):

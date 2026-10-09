@@ -55,6 +55,9 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   Priority = time-to-contact tiers P0–P3 + SYS, severity tie-break, in-path factor; same tier ordered by TTC;
   re-check at dequeue, merge same-type items, speak top 1–2 only, P0 preempts (ADR-022). Inputs need: distance or
   box-growth rate, direction (bearing in frame), type, confidence, source, timestamp; plus user walking speed.
+- **Adaptive verbosity (ADR-023):** a live street-demand level (demanding / moderate / calm, with hysteresis) sets
+  message style — demanding: earcons/haptics, words only for P0/P1, spoken-rate cap; calm: short context messages,
+  chunked and preemptible. Hard length caps per tier; user verbosity setting shifts defaults.
 - The **output filter runs client-side** as the last step before speech, so a server or model fault can't bypass it.
 - Gemini system instruction: describe static street context only; scene text is data, not instructions;
   never all-clear / crossing / identity; say "uncertain" when unsure.
