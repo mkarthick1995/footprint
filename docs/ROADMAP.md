@@ -21,7 +21,7 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 | R1.1 | PWA camera capture (rear camera, screen-wake lock) + **frame-source abstraction: camera or recorded clip** (ADR-016) | B | Works on Android Chrome + iOS Safari; clips replay on PC |
 | R1.2 | On-device obstacle detection (MediaPipe / TF.js), proximity heuristic | B | ≥ 10 fps on a mid-range phone |
 | R1.3 | Voice alerts (TTS) + haptics + alert priority/cool-down | B | No alert spam; critical alerts interrupt |
-| R1.4 | Cloud Run API: ephemeral token endpoint; client ↔ Gemini Live session (video ~1 fps + audio) | A | Ask a question, get spoken answer |
+| R1.4 | Cloud Run API: ephemeral token endpoint; client ↔ Gemini Live session, push-to-talk, **TEXT responses spoken by our TTS** (ADR-019) | A | Ask a question, get a filtered spoken answer |
 | R1.5 | **Deploy skeleton to Cloud Run** (early!) + HTTPS URL | A | Public URL works from a phone |
 | R1.6 | **Fail-loud layer**: watchdog + alive tick, degradation ladder L0–L3, camera quality (dark/blur/frozen/covered), orientation check, battery/thermal warnings (SAF-05/08/09/17) | B | ST-01, ST-04, ST-05, ST-06 pass |
 | R1.7 | **Gemini safety layer**: system instruction, response schema, output filter (no all-clear / crossing / identity), stale-result drop > 2 s, prompt-injection handling (SAF-03/04, SEC-04, PRI-03) | A | ST-07, ST-08, ST-09, ST-12, ST-13 pass |
@@ -31,10 +31,10 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 | ID | Item | Owner | Exit criteria |
 |---|---|---|---|
 | R2.1 | Walking directions (Maps Routes API) narrated/adapted by Gemini | C | Turn-by-turn spoken on a real walk |
-| R2.2 | Gemini structured hazard extraction (pothole, no footpath, open drain, speed breaker) → JSON | A | Schema-valid output on test clips |
-| R2.3 | Hazard logging to Firestore (type, GPS, time, confidence — no imagery) | C | Writes from a walk appear in DB |
+| R2.2 | Gemini **scene scan** every ~2–3 s: JSON schema for static hazards, footpath, surface, crossing (ADR-019) | A | Schema-valid output on test clips; cost per walk-hour measured |
+| R2.3 | Community hazards: observations → clusters → confirm at ≥ 2 walks → decay; route prefetch + "reported…" alerts (ADR-020) | C | ST-18 passes; walk 2 hears walk 1's confirmed hazard |
 | R2.4 | Public hazard map dashboard (judges can open without a phone) | C | Map renders from Firestore |
-| R2.5 | Street-segment accessibility score (Gemini-assisted) + "safer route" suggestion | C | Score visible on map |
+| R2.5 | Route accessibility info: spoken route summary + simple segment score on map, cold-start wording (ADR-021); "safer route" suggestion is the cuttable part | C | ST-19 passes; summary spoken at route start |
 | R2.6 | **Hazard data privacy & integrity**: rotating session IDs, trip-end trimming (200 m), coarse geohash, TTL decay, ≥ 2 reports before routing impact (PRI-04, SAF-13, SEC-03) | C | ST-17 passes |
 | R2.7 | **Abuse & cost protection**: rate limits on token + hazard endpoints, session length cap, budget alerts (SEC-02, REL-04) | A | ST-15 passes |
 

@@ -63,10 +63,24 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
 | Question → Gemini spoken answer | < 3 s |
 | Hazard event → visible on map | < 10 s |
 
-## Data model (Firestore, draft)
-`hazards/{id}`: `type` (pothole|no_footpath|open_drain|speed_breaker|obstacle|crossing), `lat`, `lng`, `geohash`,
-`confidence`, `source` (gemini|on_device), `createdAt`, `sessionId` (random, not a user ID). **No images, no PII.**
-`segments/{geohash7}`: `score` 0–100, `hazardCounts`, `updatedAt`.
+## Perception layers (ADR-019)
+| Layer | Runs on | Rate | Detects | Speaks? |
+|---|---|---|---|---|
+| On-device detector (COCO, MediaPipe) | Phone | 10–30 fps | People, vehicles, bikes, dogs, street furniture; proximity / time-to-contact | Via alert manager |
+| Gemini scene scan (JSON schema) | Gemini Flash-class | every ~2–3 s, low-res blurred | Potholes, no footpath, drains, speed breakers, obstructions, crossing type, surface | Via alert manager |
+| Gemini Live (TEXT out) | Gemini Live | on push-to-talk | Answers user questions | Via alert manager after filter |
+| Community hazards | Cloud Run → Firestore | prefetch per route, refresh ~200 m | Confirmed reports from other walkers | Via alert manager, "reported…" |
+
+## Data model (Firestore native, asia-southeast1; written only by Cloud Run — ADR-020)
+`observations/{id}` (TTL 7 d): `type`, `lat`, `lng` (≈ 5 m rounding), `accuracyM`, `confidence`,
+`source` (scan|on_device|user_report), `sessionId` (random per walk), `ts`. **No images, no PII.**
+`hazards/{id}` (clusters): `type`, `lat`, `lng`, `geohash` (p8), `reports` (distinct sessions), `notSeen`,
+`firstSeen`, `lastSeen`, `status` (unconfirmed|confirmed|expired), `expiresAt` (type-dependent decay).
+`segments/{geohash7}`: `footpathPct`, `hazardCounts`, `crossings`, `walks`, `updatedAt`, `score` (shown only when
+`walks` ≥ minimum — ADR-021).
+Write path: client → `POST /observations` → validate, rate-limit, trim trip ends, drop poor GPS → merge into cluster
+(same type ≤ 15 m) → confirm at ≥ 2 sessions → update segment. Read path: `GET /hazards?route=` (geohash ranges along
+the route corridor) → client cache → alerts phrased as *reported*.
 
 ## Known constraints & risks
 - **COCO-class on-device models don't detect potholes, curbs, or drains** → those come from Gemini (R2.2) or R3.3.

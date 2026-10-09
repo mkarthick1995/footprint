@@ -120,6 +120,55 @@ prompts, tool-calling, and structured output, and the judged build must be Gemin
 "Best use of Google Cloud AI tools" prize). Decision: the app calls only Gemini (or Gemma) from the first line of
 runtime code; prompts and schemas are tuned on Gemini. No non-Google LLM in any runtime path — disqualification risk.
 
+## ADR-019 Perception pipeline: on-device detector + two Gemini roles, Gemini never speaks directly
+**Proposed** · 2026-10-10 — verify costs/latency and Live text output in R0.5 · refines ADR-004
+Layers:
+1. **On-device detector (primary safety layer, 10–30 fps):** pre-trained COCO model in the browser (MediaPipe
+   EfficientDet-Lite) — people, cars, motorbikes, bicycles, dogs, benches, hydrants. Proximity = box size + growth
+   rate (time-to-contact) + position (centre vs edge). No training by us. COCO has **no potholes, kerbs, drains,
+   poles** → those come from layer 2 (or R3.3 fine-tune on a public road-damage dataset, licence to verify).
+2. **Gemini "scene scan" (structured, every ~2–3 s):** low-res blurred frame(s) → Gemini Flash-class model with a
+   JSON response schema: static hazards (pothole, no footpath, open drain, speed breaker, obstruction), footpath
+   presence/surface, crossing type, direction, rough distance, confidence. Feeds alerts *and* hazard logging.
+   Not a running commentary: it only produces events.
+3. **Gemini Live (conversation, user-initiated):** push-to-talk questions ("is there a footpath on my left?").
+   **Response modality = TEXT, not audio**, so every answer passes the client-side safety filter before our TTS
+   speaks it (ADR-012, SAF-21). Slightly slower; required for safety.
+4. **Alert manager (fusion):** the only component that speaks; cautious signal wins; priority, dedupe, cool-down.
+Why not "Gemini only at 1 fps": too slow for moving dangers (SAF-03), audio output can't be filtered, constant
+narration masks traffic sounds (SAF-06), and cost scales with talk. Alternative (rejected for now): Live API for
+everything — simpler, but unfilterable and harder to test.
+
+## ADR-020 Community hazard data: Firestore + geohash, cluster → confirm → decay
+**Proposed** · 2026-10-10 — implement in R2.3 / R2.6
+- Store: **Firestore (native) in asia-southeast1**, written only by Cloud Run (clients never write directly).
+- `observations` (raw, anonymous, **TTL 7 days**): type, lat/lng (rounded ~5 m), GPS accuracy, confidence, source
+  (scan | on_device | user_report), sessionId (random per walk), ts. Dropped if GPS accuracy > 25 m, inside the
+  200 m trip-end trim zone, or implausible.
+- `hazards` (clusters): same type within ~15 m merges; fields: geohash (precision 8 ≈ 38 m cells) + lat/lng,
+  `reports` (distinct sessions), `notSeen` votes, `firstSeen`, `lastSeen`, `status` (unconfirmed | confirmed | expired).
+  **Confirmed at ≥ 2 distinct sessions.** Decay: expires after N days without a fresh report (pothole 30, obstruction
+  3, construction 14 — tune); a later walker whose scan sees nothing there adds a `notSeen` vote → faster expiry.
+- `segments/{geohash7}` (≈ 150 m cells, hackathon stand-in for road segments): accessibility aggregates (ADR-021).
+- Read path: at route start the client fetches confirmed hazards along the route corridor (geohash range queries)
+  and caches them; refreshes every ~200 m. Alerts are phrased as **reported**: "Pothole reported about 20 m ahead,
+  3 reports, last 2 days ago" — never "there is".
+- User 1 walks → observations → clusters. User 2 walks the same street → hears confirmed reports and their own scan
+  confirms (+1 report) or refutes (notSeen). No accounts, no user linkage.
+- Later: Roads API snap-to-road for true segments; BigQuery GIS for city analytics.
+
+## ADR-021 Route accessibility information (not a "safety" rating)
+**Proposed** · 2026-10-10 — simple version in R2.5
+- Per segment: footpath coverage %, surface issues, confirmed hazards, crossing types, data freshness, number of
+  walks. Route summary spoken at start: "Footpath on about 70 % of this route, 2 reported potholes, one busy crossing
+  without a signal. Data from 5 walks, newest yesterday."
+- Simple, explainable rule-based score (no ML) shown on the map; **never called "safe"** (ADR-012).
+- **Cold start:** no data → "No community information for this street yet" — absence of reports is never presented
+  as good (SAF-20).
+- Personal weighting (cane user / guide dog / low vision) is a stretch, not now.
+Score: this is the Innovation 25 differentiator (personal help → community infrastructure); keep it simple but
+visible. R2.5 stays the first cut, but only its "safer route suggestion" part — the spoken summary is cheap.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow

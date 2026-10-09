@@ -27,3 +27,6 @@ before it goes in the deck or drives a decision.** Add new facts here whenever y
 | Meta Wearables Device Access Toolkit: phone app receives glasses camera (≤ 720p/30 fps over Bluetooth); apps don't run on glasses; native iOS/Android only; some features country-gated | 10-10 | Official docs + press | [Meta FAQ](https://developers.meta.com/wearables/faq), [overview](https://wearables.developer.meta.com/docs/develop/dat/build-overview/) |
 | Browser camera access stops when the screen locks / page is backgrounded; iOS Safari has no `navigator.vibrate` | 10-10 | Well-known platform behaviour | MDN / WebKit (verify per device in R1.1) |
 | COCO-class on-device detectors (e.g. MediaPipe EfficientDet) detect people/vehicles/bikes, **not potholes, kerbs, drains** | 10-10 | High | MediaPipe model cards |
+| **To verify (R0.5):** Gemini Live supports TEXT response modality (needed so our filter runs before speech — ADR-019) | — | Believed yes, unverified | Live API docs |
+| **To verify (R3.3):** RDD2022 road-damage dataset (images incl. Japan & India) — licence and suitability for a web pothole model | — | Unverified recollection | — |
+| Firestore has no native geo queries; geohash range queries (e.g. `geofire-common`) are the standard workaround | 10-10 | High | Firebase docs ("Geo queries") |
