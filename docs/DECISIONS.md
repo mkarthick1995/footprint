@@ -54,6 +54,16 @@ anything using Google marks. A 2026-10-10 search found no accessibility/navigati
 is a common word used by unrelated companies, so it's fine for the hackathon but needs a trademark check before
 any commercial launch.
 
+## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
+Accepted · 2026-10-10 · amends ADR-008
+Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow
+`automerge-owner` (workflow_run after `guardrails` succeeds) squash-merges PRs authored by @mkarthick1995 using an
+owner PAT stored in the `automerge` environment (protected branches only). Required checks still gate every merge.
+Skipped when: draft, `no-automerge` label, declared deviation, or head moved since checks ran.
+Security: runs from main's copy of the workflow (PR can't modify it); secret unreachable from PR-branch workflows.
+Risk accepted: owner PRs — including AI-written ones opened from the owner's account — get no human review. Mitigation:
+use draft / `no-automerge` for anything non-trivial; deviations never auto-merge.
+
 ## ADR-007 Privacy: no images or video stored
 Accepted · 2026-10-10
 Only hazard type + GPS + time + confidence are persisted. Raw recordings stay local in `data/` (gitignored).

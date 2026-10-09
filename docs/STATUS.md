@@ -13,6 +13,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R0.4 Confirm stack (ADR-003) and owners (TEAM.md)
 - [ ] R0.5 Verify Live API ephemeral tokens, current Live model ID, Meta toolkit country availability
 - [x] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr; `main` protection verified via API: code-owner approval, required checks secrets/docs-sync/pr-guard (strict), linear history, conversation resolution, squash-only, auto-delete branches — @mkarthick1995 2026-10-10
+- [~] R0.6 Owner-PR auto-merge workflow + `automerge` environment (ADR-010); pending: AUTO_MERGE_TOKEN secret + live test — @mkarthick1995 2026-10-10
 
 ## Phase 1 — Core loop
 - [ ] R1.1 PWA camera capture

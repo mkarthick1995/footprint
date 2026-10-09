@@ -94,7 +94,9 @@ tools/guard/     guardrail scripts (hooks, secret scan, docs check)   .githooks/
   If the user is on `main` when asking for code changes, create the branch first.
 - Commit: `type(scope): summary [R1.2]` — must contain a roadmap ID or `[docs]` / `[chore]` / `[off-roadmap]`.
 - Finish with `/open-pr`: self-review against the roadmap, PR template fully filled, deviations declared.
-- **The code owner (`.github/CODEOWNERS`) is the mandatory approver.** AI never merges or approves PRs.
+- **The code owner (`.github/CODEOWNERS`) is the mandatory approver** for teammates' PRs. The owner's own PRs are
+  auto-merged by CI after checks pass (ADR-010) — so when working for the owner, open PRs as **draft** or add the
+  `no-automerge` label if the change needs a human look first. AI never merges or approves PRs itself.
   `/review-pr <n>` gives the owner a deviations-first review. Full workflow: `docs/TEAM.md`.
 
 ## 12. Conventions

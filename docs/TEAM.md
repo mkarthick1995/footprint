@@ -35,7 +35,9 @@ main ─────────●─────────────●─
 3. Keep up to date: `git fetch origin && git rebase origin/main` (before opening the PR and when main moves).
 4. Run **`/open-pr`** (Claude or Gemini): self-review against the roadmap, fill the PR template, open the PR.
 5. CI must be green: `secrets`, `docs-sync`, `pr-guard` (roadmap ID + deviation disclosure).
-6. The **code owner reviews** (assisted by `/review-pr <n>`), then approves and squash-merges. Branch auto-deletes.
+6. **Teammates' PRs:** the code owner reviews (assisted by `/review-pr <n>`), approves, and squash-merges.
+   **Owner's PRs:** auto squash-merged by `automerge-owner` once all checks pass (ADR-010) — unless the PR is a
+   draft, has the `no-automerge` label, or declares a roadmap deviation. Branches auto-delete after merge.
 7. Pushing new commits after approval dismisses it — re-review is required.
 
 Enforcement: local `pre-commit` blocks commits on main; `pre-push` blocks pushing to main; Claude hooks block AI
@@ -58,8 +60,14 @@ require a PR · 1 approval · **require review from Code Owners** · dismiss sta
 most recent push · require status checks `secrets`, `docs-sync`, `pr-guard` (branch up to date) · require conversation
 resolution · require linear history · no force pushes / deletions. Settings → General: squash merge only,
 auto-delete head branches.
-Note: GitHub never lets authors approve their own PRs. For the owner's own PRs, get a teammate's review, then merge
-using the admin bypass (`enforce_admins` is off for this reason).
+Note: GitHub never lets authors approve their own PRs. Owner PRs are merged by the `automerge-owner` workflow using
+the owner's admin rights (`enforce_admins` is off for this reason). Setup (owner, once):
+1. Create a **fine-grained PAT** at github.com/settings/personal-access-tokens: repository access = only
+   `footprint`; permissions **Contents: read & write**, **Pull requests: read & write**; expiry ≈ 30 days.
+2. GitHub → Settings → Environments → **automerge** (already created; protected branches only) →
+   Add environment secret **`AUTO_MERGE_TOKEN`** = the PAT. Never put it in `.env` or a repo-level secret.
+3. If a merge fails with a protection error, the token lacks admin effect: add **Administration: read & write**
+   to the PAT. Without the secret the workflow just skips (owner merges manually via bypass).
 
 ## Bootstrap (owner, once)
 The very first commit has to land on main before protection exists:
