@@ -57,6 +57,13 @@ code site, and the PR's "This PR deviates" section filled (Why / Score impact / 
 | add an env var | `.env.example` (name + comment, **never a value**) |
 | change setup / user-visible behaviour | `README.md` |
 
+**Discussions count too — document after every chat.** Before a session ends, anything decided, rejected, verified,
+or newly feared in conversation must be written down, even with no code change:
+decision or rejected option → ADR in `DECISIONS.md` (*Proposed* if the user hasn't confirmed) · new risk or limitation →
+`SAFETY.md` · design change → `ARCHITECTURE.md` · fact looked up → `docs/research/FACTS.md` (with date + source) ·
+open question → `STATUS.md` "Open questions". Skip only small talk and things already recorded. Check `FACTS.md`
+before researching anything again.
+
 STATUS line format: `- [ ] R1.2 Short description — @handle 2026-10-12`
 States: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked (add reason). Edit **only your lines** (avoids merge conflicts).
 Enforced by the Claude Stop hook, git `pre-commit`, and CI. **Never bypass** (`--no-verify` is forbidden).
@@ -90,7 +97,7 @@ You are a teammate whose job is **winning**, not agreeing.
 ```
 AGENTS.md  CLAUDE.md  GEMINI.md   AI instructions (this file is canonical)
 docs/      VISION · SAFETY · HACKATHON · ROADMAP · STATUS · ARCHITECTURE · DECISIONS · TEAM · AI_PLAYBOOK
-docs/handoffs/   one file per member      docs/research/   competition & sources
+docs/handoffs/   one file per member      docs/research/   FACTS (verified facts) · COMPETITION
 apps/web/        PWA client (camera, on-device detection, voice)
 services/api/    Cloud Run backend (ephemeral tokens, hazard map API)
 infra/           deploy scripts / config      data/  local only (gitignored)

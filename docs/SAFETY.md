@@ -61,7 +61,7 @@ When anything happens that the code does not explicitly handle:
 | SAF-02 | **Alert fatigue** from false positives → user ignores real alerts | H | Priority tiers (critical / info), de-duplication, cool-downs, verbosity setting, no repeats of unchanged scenes | Planned R1.3 |
 | SAF-03 | **Stale / late information** (Gemini ~1 fps + network delay) describes a scene that has changed | C | Dynamic hazards only from on-device (< 300 ms); every Gemini result timestamped, dropped if older than 2 s; Gemini restricted to static context | Planned R1.4, R1.7 |
 | SAF-04 | **Hallucinated or wrong guidance** ("crossing is clear", "light is green", invented footpath) | C | System instruction forbids it; output filter blocks all-clear / go / cross phrasing; structured schema; traffic lights reported as "appears red — verify" or not at all | Planned R1.7 |
-| SAF-05 | **Silent failure** (camera covered, app backgrounded, screen lock, TTS dies, network drops) | C | Watchdog + alive tick; camera-quality checks (brightness, blur, frozen frame); Wake Lock; page-visibility handling; degradation ladder | Planned R1.6 |
+| SAF-05 | **Silent failure** (camera covered, app backgrounded, screen lock, TTS dies, network drops). Browser limitation: the camera **stops when the screen locks or another app opens** (ADR-015) | C | Watchdog + alive tick; camera-quality checks (brightness, blur, frozen frame); Wake Lock keeps the screen on while walking; page-visibility handler announces "Footprint paused — you are not protected" before stopping; degradation ladder; disclosed in §4 | Planned R1.6 |
 | SAF-06 | **Audio masking** — speech hides traffic sounds blind users rely on | H | Short messages; earcons for common alerts; recommend open-ear / bone-conduction; never noise-cancelling; quiet mode | Planned R1.3 |
 | SAF-07 | **Cognitive overload / distraction** while crossing or in traffic | H | Conversation paused when critical alerts active; terse mode in motion; user can mute descriptions with one gesture | Planned R1.3 |
 | SAF-08 | **Poor conditions** — night, rain, glare, fog, motion blur | H | Low-light / blur detection → announce reduced capability (L2) | Planned R1.6 |
@@ -136,6 +136,8 @@ When anything happens that the code does not explicitly handle:
 - It **does not identify people** — by design.
 - It is **not an emergency service, medical device, or certified mobility aid**, and does not replace a white cane,
   guide dog, or orientation & mobility training.
+- As a web app, it **only works while the app is open and the screen is on**; locking the phone or switching apps
+  pauses protection (it announces this). A native app would remove this limit (ADR-015).
 - It is an **English-first hackathon prototype**, tested by the team on a limited set of streets.
 
 ## 5. Approved and forbidden wording

@@ -12,4 +12,5 @@
 | `DECISIONS.md` | Before reversing anything; when choosing between options | Append-only |
 | `TEAM.md` | Onboarding, git workflow, ownership | Lead |
 | `AI_PLAYBOOK.md` | Token/session practices | Team |
-| `research/` | Deck, positioning, competitor questions | Team |
+| `research/FACTS.md` | **Before researching anything** — verified facts with dates and sources | Whoever looks something up |
+| `research/COMPETITION.md` | Deck, positioning, competitor questions | Team |

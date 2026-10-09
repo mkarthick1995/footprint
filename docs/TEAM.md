@@ -11,6 +11,8 @@ Use **GitHub handles only** in this repo (public). Personal details (phones, ema
 ## Onboarding (10 minutes)
 1. Clone the repo, then `npm run setup -- --handle <your-github-handle>`
    (enables git hooks, creates `.env` from `.env.example`, creates your handoff file).
+   Then keep your personal email out of the public history:
+   `git config user.email "<id>+<handle>@users.noreply.github.com"` (exact address: github.com/settings/emails).
 2. Fill `.env` with keys from the lead (shared privately — **never** over chat that gets committed anywhere).
 3. Open your AI tool in the repo root. Claude Code reads `CLAUDE.md`; Gemini CLI reads `GEMINI.md`; both import `AGENTS.md`.
 4. Run `/resume`.

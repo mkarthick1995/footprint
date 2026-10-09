@@ -9,7 +9,7 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 |---|---|---|---|
 | R0.1 | Team formation confirmed on Hack2skill (3rd member accepted) | A | Before **10-11** closes |
 | R0.2 | Repo scaffold, guardrails, docs; pushed to GitHub (public) | A | All 3 cloned + `npm run setup` done |
-| R0.3 | GCP project, billing/credits, Gemini API key, Maps key, region `asia-southeast1` | A | Keys in each `.env`, Secret Manager ready |
+| R0.3 | GCP project on owner's account ($300 trial → paid Gemini tier, ADR-017), budget alerts $25/$50/$100, Gemini + Maps keys, IAM for teammates, region `asia-southeast1` | A | Billing + alerts on; keys in each `.env`; Secret Manager ready |
 | R0.4 | Confirm stack (ADR-003) and owners | All | ADR-003 → Accepted |
 | R0.5 | Verify: Gemini Live ephemeral tokens, current Live model ID, Meta toolkit country availability | A | Findings in DECISIONS / ARCHITECTURE |
 | R0.6 | Protected `main` + CODEOWNERS + required checks enabled on GitHub (ADR-008) | A | A test PR can't merge without owner approval |
@@ -18,7 +18,7 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 ## Phase 1 — Core loop (10-11 → 10-13)
 | ID | Item | Owner | Exit criteria |
 |---|---|---|---|
-| R1.1 | PWA camera capture (rear camera, screen-wake lock) | B | Works on Android Chrome + iOS Safari |
+| R1.1 | PWA camera capture (rear camera, screen-wake lock) + **frame-source abstraction: camera or recorded clip** (ADR-016) | B | Works on Android Chrome + iOS Safari; clips replay on PC |
 | R1.2 | On-device obstacle detection (MediaPipe / TF.js), proximity heuristic | B | ≥ 10 fps on a mid-range phone |
 | R1.3 | Voice alerts (TTS) + haptics + alert priority/cool-down | B | No alert spam; critical alerts interrupt |
 | R1.4 | Cloud Run API: ephemeral token endpoint; client ↔ Gemini Live session (video ~1 fps + audio) | A | Ask a question, get spoken answer |

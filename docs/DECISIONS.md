@@ -80,6 +80,46 @@ Unpaid tiers of some Google AI services may use submitted content to improve pro
 Vertex AI terms state they don't. Verify current terms, then pick the tier (and check ephemeral-token support for it).
 Until decided, no real street footage with bystanders is sent from development builds.
 
+## ADR-015 Browser app (PWA) for the hackathon; native Android is the long-term client
+Accepted · 2026-10-10 · extends ADR-002
+Why PWA now: judges need a tappable deployed link (an APK needs sideloading); the web client itself is hosted on
+Cloud Run, which strengthens "deployed on Google Cloud"; one TypeScript codebase for 3 people in 7 days; no store
+review; same code on PC (dev/demo) and phones; reaches iPhone users too (VoiceOver is popular with blind users).
+Known PWA limits (disclosed, SAFETY.md §4 / SAF-05): camera stops when the screen locks or the app is backgrounded,
+so the screen must stay on; slower on-device ML than native; weak/no haptics (none on iOS Safari); limited audio
+routing; no Meta-glasses access (toolkit is native-only).
+Long term: native Android (Kotlin + native MediaPipe/LiteRT), then iOS — or Capacitor as a bridge reusing web code.
+Backend, Gemini integration, hazard map, and the safety/wording rules stay unchanged; keep the safety pipeline a
+separate, portable module. Pitch line: "web prototype anyone can try today; production path is native + glasses."
+
+## ADR-016 Development & test strategy: PC with recorded clips, real phone from day 2
+Accepted · 2026-10-10
+- One codebase. Daily development on PC in the browser using a **frame-source abstraction**: live camera *or* a
+  recorded street clip played as the camera. Clips make tests repeatable (ST-07/12/13) and avoid sending live
+  bystander footage while on a free tier.
+- **Real Android phone testing from day 2** via the Cloud Run HTTPS URL (R1.5) — camera permissions, on-device fps,
+  Wake Lock, TTS, battery/thermal only show up there. iPhone tested but not blocking.
+- No native app in the hackathon (only for the R3.1 glasses stretch).
+
+## ADR-017 Gemini access & billing
+**Proposed** · 2026-10-10 — confirm in R0.3 · related ADR-014
+Facts found (2026-10-10, third-party sources — verify on Google's pages): Gemini API free tier exists but free-tier
+content may be used to improve Google products and may be read by human reviewers; paid tiers aren't used for
+training; free-tier rate limits are low and were reportedly cut in April 2026; Live API free limits unclear. The
+hackathon offers prizes/travel but **no cloud credits** were found. New Google Cloud customers get a **$300 trial
+credit** (≈ 90 days, reportedly usable for Vertex AI / Gemini).
+Proposal: free tier only for early dev with **people-free clips**; real build on the owner's GCP project with the
+$300 trial → paid Gemini tier (no training on our data), Cloud Run, Firestore. Budget alerts at $25 / $50 / $100,
+Live session length caps (R2.7). Teammates get IAM access — no sharing personal keys. Ask organizers on Discord about
+credits. Risk: free-tier quota hit during judging = broken demo → never judge on the free tier.
+
+## ADR-018 Gemini in the app from day one; Claude/other LLMs only as coding tools
+Accepted · 2026-10-07 (recorded 2026-10-10)
+Context: the team codes with Claude Code / Gemini CLI. Swapping a Claude-tuned runtime to Gemini at the end breaks
+prompts, tool-calling, and structured output, and the judged build must be Gemini-centric (40 % Tech & GenAI,
+"Best use of Google Cloud AI tools" prize). Decision: the app calls only Gemini (or Gemma) from the first line of
+runtime code; prompts and schemas are tuned on Gemini. No non-Google LLM in any runtime path — disqualification risk.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow
