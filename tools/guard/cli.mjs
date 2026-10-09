@@ -128,9 +128,12 @@ switch (cmd) {
     const added = git(['diff', '-U0', `${base}...HEAD`], ROOT).split('\n');
     const devComments = [];
     let file = '';
+    // Only real code counts: docs/prompts that *describe* the DEVIATION(...) convention are not deviations.
     for (const l of added) {
       if (l.startsWith('+++ b/')) file = l.slice(6);
-      else if (l.startsWith('+') && !l.startsWith('+++') && /DEVIATION\(/.test(l)) devComments.push(`${file}: ${l.slice(1).trim()}`);
+      else if (l.startsWith('+') && !l.startsWith('+++') && CODE_PATHS.test(file) && /DEVIATION\(/.test(l)) {
+        devComments.push(`${file}: ${l.slice(1).trim()}`);
+      }
     }
 
     const signals = [];
