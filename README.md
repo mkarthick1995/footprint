@@ -23,6 +23,13 @@ every walk improves a shared street-accessibility map.
 
 Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Vision: [`docs/VISION.md`](docs/VISION.md)
 
+## Safety, privacy & limitations
+Footprint gives extra information about the street; it never tells you a path is safe or when to cross.
+Faces of passers-by are blurred on the phone before any frame is sent; no images, video, or audio are stored;
+hazard reports are anonymous and coarse. It can miss obstacles, can't see behind or beside you, works poorly in the
+dark, and needs internet for scene descriptions. Full safety case, limitations, and test results:
+[`docs/SAFETY.md`](docs/SAFETY.md).
+
 ## Tech
 Gemini Live API · Cloud Run (asia-southeast1) · Firestore · Secret Manager · Google Maps Platform · MediaPipe (web) · PWA
 

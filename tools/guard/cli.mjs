@@ -9,7 +9,7 @@
 //   node tools/guard/cli.mjs brief
 import { appendFileSync, readFileSync } from 'node:fs';
 import {
-  BRANCH_RE, PROTECTED_BRANCH, brief, currentBranch, diffAgainst, docsCheck, forbiddenReason, git,
+  BRANCH_RE, CODE_PATHS, PROTECTED_BRANCH, brief, currentBranch, diffAgainst, docsCheck, forbiddenReason, git,
   readRepo, scanEmails, scanSecrets, stagedContent, stagedFiles, trackedFiles, worktreeChanges, ROOT, STATUS_FILE,
 } from './lib.mjs';
 
@@ -128,9 +128,12 @@ switch (cmd) {
     const added = git(['diff', '-U0', `${base}...HEAD`], ROOT).split('\n');
     const devComments = [];
     let file = '';
+    // Only real code counts: docs/prompts that *describe* the DEVIATION(...) convention are not deviations.
     for (const l of added) {
       if (l.startsWith('+++ b/')) file = l.slice(6);
-      else if (l.startsWith('+') && !l.startsWith('+++') && /DEVIATION\(/.test(l)) devComments.push(`${file}: ${l.slice(1).trim()}`);
+      else if (l.startsWith('+') && !l.startsWith('+++') && CODE_PATHS.test(file) && /DEVIATION\(/.test(l)) {
+        devComments.push(`${file}: ${l.slice(1).trim()}`);
+      }
     }
 
     const signals = [];
@@ -148,11 +151,19 @@ switch (cmd) {
       if (!files.includes('docs/DECISIONS.md')) problems.push('Deviation declared but no ADR was added to docs/DECISIONS.md.');
     }
 
+    // Safety review (docs/SAFETY.md §7) is mandatory for code changes.
+    const codeChanged = files.some(f => CODE_PATHS.test(f));
+    const riskIds = ((body.match(/^\s*\**Risk IDs:?\**:?\s*(.*)$/mi) || [])[1] || '').replace(/<!--.*?-->/g, '').trim();
+    if (codeChanged && !riskIds) {
+      problems.push('Code changed but the "Risk IDs:" line in the Safety review section is empty. List affected risk IDs from docs/SAFETY.md or write "none: <reason>".');
+    }
+
     const summary = [
       '## PR roadmap guard',
       `**Roadmap items:** ${ids.join(', ') || '—'}`,
       `**Deviation:** ${declared ? '⚠️ DECLARED — owner review required' : signals.length ? '⛔ UNDECLARED' : '✅ none detected'}`,
       declared && why ? `**Why:** ${why}` : '',
+      `**Safety review — Risk IDs:** ${riskIds || (codeChanged ? '⛔ missing' : '— (no code changed)')}`,
       signals.length ? `**Signals:** ${signals.join('; ')}` : '',
       devComments.length ? '**DEVIATION comments:**\n' + devComments.slice(0, 15).map(d => `- \`${d}\``).join('\n') : '',
       `**Files changed:** ${files.length}`,

@@ -18,6 +18,14 @@ walking guidance, and every walk contributes to a shared street-accessibility ma
 - **New work only** — nothing pre-existing. Public GitHub repo. All materials in **English**.
 - Submit: live link + public repo + demo video **< 3 min** + deck as **PDF**. → `docs/HACKATHON.md`
 
+## 2a. Safety case (blind users can't verify what we say) → `docs/SAFETY.md`
+- **Before designing or coding any feature or idea, run the SAFETY.md §7 multi-angle review** (safety, failure modes,
+  privacy, abuse, accessibility, claims, limitations, score). Add/update risk IDs **in the same PR**.
+- Never an "all clear", never "cross now / go", never identify or describe people (ADR-012, PRI-03).
+- Unknown situations → SAFETY.md §2 fail-safe defaults: cautious signal wins, fail loud, discard stale/invalid output.
+- Anything you can't mitigate before the deadline goes into SAFETY.md §4 *Limitations* — or the feature is dropped.
+- Proactively tell the user about any new risk, negative scenario, or limitation you notice — even if not asked.
+
 ## 3. Session protocol
 **Start**
 1. Read `docs/STATUS.md` and your own `docs/handoffs/<handle>.md`. Read other docs **only if the task needs them**.
@@ -48,6 +56,13 @@ code site, and the PR's "This PR deviates" section filled (Why / Score impact / 
 | change scope or dates (user-confirmed only) | `docs/ROADMAP.md` |
 | add an env var | `.env.example` (name + comment, **never a value**) |
 | change setup / user-visible behaviour | `README.md` |
+
+**Discussions count too — document after every chat.** Before a session ends, anything decided, rejected, verified,
+or newly feared in conversation must be written down, even with no code change:
+decision or rejected option → ADR in `DECISIONS.md` (*Proposed* if the user hasn't confirmed) · new risk or limitation →
+`SAFETY.md` · design change → `ARCHITECTURE.md` · fact looked up → `docs/research/FACTS.md` (with date + source) ·
+open question → `STATUS.md` "Open questions". Skip only small talk and things already recorded. Check `FACTS.md`
+before researching anything again.
 
 STATUS line format: `- [ ] R1.2 Short description — @handle 2026-10-12`
 States: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked (add reason). Edit **only your lines** (avoids merge conflicts).
@@ -81,8 +96,8 @@ You are a teammate whose job is **winning**, not agreeing.
 ## 10. Repo map
 ```
 AGENTS.md  CLAUDE.md  GEMINI.md   AI instructions (this file is canonical)
-docs/      VISION · HACKATHON · ROADMAP · STATUS · ARCHITECTURE · DECISIONS · TEAM · AI_PLAYBOOK
-docs/handoffs/   one file per member      docs/research/   competition & sources
+docs/      VISION · SAFETY · HACKATHON · ROADMAP · STATUS · ARCHITECTURE · DECISIONS · TEAM · AI_PLAYBOOK
+docs/handoffs/   one file per member      docs/research/   FACTS (verified facts) · COMPETITION
 apps/web/        PWA client (camera, on-device detection, voice)
 services/api/    Cloud Run backend (ephemeral tokens, hazard map API)
 infra/           deploy scripts / config      data/  local only (gitignored)

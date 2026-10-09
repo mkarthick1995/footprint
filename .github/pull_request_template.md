@@ -13,6 +13,11 @@ Score impact: <!-- criterion ± and time cost -->
 ADR: <!-- ADR-0xx added in docs/DECISIONS.md -->
 Code locations: <!-- each deviating spot carries a `DEVIATION(ADR-0xx): reason` comment -->
 
+## Safety review (required for code changes — CI checks this; see docs/SAFETY.md §7)
+Risk IDs: <!-- e.g. SAF-03, PRI-01 — or "none: <one-line reason>" -->
+Negative scenarios considered: <!-- wrong / late / silent / offline / bad input / unknown case → what happens? -->
+New limitations disclosed in SAFETY.md §4: <!-- yes / none -->
+
 ## Checklist
 - [ ] Branch is `r<id>-name` (or docs-/chore-/hotfix-), based on latest `main`
 - [ ] `docs/STATUS.md` updated (my lines only); handoff updated

@@ -40,10 +40,13 @@ Be My Eyes on Meta glasses, Oorion / Scribe Me, Envision, Seeing AI, Aira.
 - Native mobile app (except the Meta-glasses stretch goal) · training custom models from scratch
 - User accounts / social features · storing video or images of people · replacing cane / guide dog / O&M training
 
-## Safety & privacy principles (non-negotiable)
-- **Assistive, not a mobility aid replacement** — stated in app, deck, and video.
-- **Fail loud:** announce when camera, network, or model is unavailable; never go silent.
-- Frames processed transiently; only hazard type + GPS + timestamp are stored. No faces, no raw video.
+## Safety & privacy (non-negotiable) → full safety case in `docs/SAFETY.md`
+- **Assistive, never authoritative** — never an "all clear", never "cross now" (ADR-012).
+- **Fail loud** with a visible degradation ladder; stale or invalid model output is never spoken.
+- **Bystander privacy by design:** faces blurred on-device before upload (ADR-013); nothing visual stored; no identification.
+- Explicit limitations list (SAFETY.md §4) shown in onboarding, README, deck, and video.
+- **Judging angle:** a "Safety & privacy by design" deck slide + the ST test results is a differentiator — most teams
+  won't show it, and Google Cloud judges care about responsible AI.
 
 ## Demo narrative (draft, < 3 min)
 1. 0:00 Problem in one real street shot (JAPAC footpath with pothole / two-wheeler).

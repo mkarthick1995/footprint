@@ -5,7 +5,8 @@ Prepare and open a PR for my current work. Follow docs/TEAM.md -> "Branch & PR w
 1. Branch check: `git branch --show-current`. If on main, stop and create r<id>-short-name first. Name must match r<id>-name / docs-* / chore-* / hotfix-*. Rebase on latest origin/main.
 2. Run `npm run check`. Fix failures; never bypass hooks.
 3. Self-review vs roadmap: diff origin/main...HEAD; read the roadmap item(s) in docs/ROADMAP.md. List every change outside the item's scope (new features, dependencies, env vars, interface/schema changes, ROADMAP/ADR edits). For each deviation: the code site must carry a `DEVIATION(ADR-0xx): <reason>` comment and an ADR must exist in docs/DECISIONS.md. If any deviation lacks a reason, stop and ask me to justify or remove it. Do not invent justifications.
-4. Confirm docs/STATUS.md (my lines) and my handoff are updated.
-5. Fill .github/pull_request_template.md completely; tick "This PR deviates" if step 3 found anything. Title: type(scope): summary [R1.2].
-6. If `gh` is available: push and `gh pr create --base main`. Otherwise push and give me the body to paste. Never merge or approve.
+4. Safety review: run docs/SAFETY.md section 7 on the diff. For each changed behaviour: what happens when it is wrong, late, silent, offline, gets bad input, or meets an unknown case? Check ADR-012 forbidden outputs and privacy (faces, location, audio, logs). Update risk IDs / section 4 limitations / section 6 tests in this PR. Tell me about any unhandled negative scenario.
+5. Confirm docs/STATUS.md (my lines) and my handoff are updated.
+6. Fill .github/pull_request_template.md completely, including "Safety review" (risk IDs or "none: reason"); tick "This PR deviates" if step 3 found anything. Title: type(scope): summary [R1.2].
+7. If `gh` is available: push and `gh pr create --base main`. Otherwise push and give me the body to paste. Never merge or approve.
 """
