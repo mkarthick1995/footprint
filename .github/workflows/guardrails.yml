@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# A newer push or PR edit cancels older runs for the same PR, so stale failures don't linger.
+concurrency:
+  group: guardrails-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   secrets:
     runs-on: ubuntu-latest
