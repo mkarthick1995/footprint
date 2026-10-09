@@ -74,6 +74,10 @@ When anything happens that the code does not explicitly handle:
 | SAF-15 | **Emergencies** (fall, lost, medical) | H | Out of scope — not an emergency service. Disclosed. (SOS share = future work) | Accepted+Disclosed |
 | SAF-16 | **Phone theft** while chest-mounted in public | M | Mount guidance; app auto-locks sensitive settings; no personal data in app | Accepted+Disclosed |
 | SAF-17 | **Battery / thermal** — continuous camera + ML + streaming drains / overheats | H | Measure in R4.1; low-power mode (lower fps); announce at 20 % and on thermal throttle → L3 | Planned R1.6 |
+| SAF-18 | **Community report misread as live detection** ("there is a pothole" when it may be fixed) | H | Always phrase as *reported* + count + age (ADR-020); separate earcon for community vs live detections | Planned R2.3 |
+| SAF-19 | **Location mismatch** — reported hazard announced at the wrong spot due to GPS error | M | Distance phrased as "about"; announce only when GPS accuracy ≤ 25 m; cluster radius 15 m | Planned R2.3 |
+| SAF-20 | **Cold start** — no reports read as "this street is fine" | H | "No community information yet" wording; score hidden below minimum walks (ADR-021) | Planned R2.5 |
+| SAF-21 | **Gemini audio bypasses the safety filter** — Live API speaking directly can't be filtered | C | Live response modality = TEXT; only the alert manager speaks via TTS after the filter (ADR-019) | Planned R1.4, R1.7 |
 
 ### 3.2 Privacy
 | ID | Risk | Sev | Mitigation | Status |
@@ -105,6 +109,7 @@ When anything happens that the code does not explicitly handle:
 | REL-03 | Cloud Run cold start during judging | M | Min instances = 1 during evaluation window | Planned R4.5 |
 | REL-04 | Budget overrun | M | Budget alerts, session caps, per-session token limits | Planned R4.5 |
 | REL-05 | Browser/device gaps (iOS: no vibrate; Wake Lock support varies; camera permissions) | M | Feature detection + spoken fallback; supported-device list in README | Planned R1.1 |
+| REL-06 | **Scene-scan cost** — a Gemini call every 2–3 s per walker adds up | M | Low-res blurred frames; skip scan when scene unchanged / user stationary; per-session caps; measure cost per walk-hour in R4.1 | Planned R2.2, R2.7 |
 
 ### 3.5 Accessibility of the app itself
 | ID | Risk | Sev | Mitigation | Status |
@@ -169,6 +174,9 @@ When anything happens that the code does not explicitly handle:
 | ST-15 | Spam hazard endpoint / token endpoint | Rate-limited | SEC-02, SEC-03 | — |
 | ST-16 | Full flow with TalkBack and VoiceOver on | All controls reachable and labelled | ACC-01 | — |
 | ST-17 | Inspect Firestore after a walk | No ID, no imagery, trip ends trimmed, coarse location | PRI-04 | — |
+| ST-18 | Seed a hazard with 1 report, walk past | Not announced (unconfirmed); with 2 reports: announced as "reported … N reports, age" | SAF-13, SAF-18 | — |
+| ST-19 | Walk a street with no data | "No community information yet" — never a positive rating | SAF-20 | — |
+| ST-20 | Make Gemini Live answer a crossing question | Answer arrives as text, filtered, spoken by our TTS | SAF-21 | — |
 
 ## 7. Multi-angle review protocol — for every new idea, feature, or PR
 Answer each angle in one or two lines (PR body "Safety review" section, or in `/scope-check`):
