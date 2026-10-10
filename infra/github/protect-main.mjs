@@ -20,7 +20,7 @@ gh(['api', '-X', 'PATCH', `repos/${repo}`,
   '-F', 'delete_branch_on_merge=true']);
 
 const protection = {
-  required_status_checks: { strict: true, contexts: ['secrets', 'docs-sync', 'pr-guard'] },
+  required_status_checks: { strict: true, contexts: ['secrets', 'docs-sync', 'pr-guard', 'build-test'] },
   enforce_admins: false, // the owner can still bypass in an emergency (and for their own PRs)
   required_pull_request_reviews: {
     required_approving_review_count: 1,
@@ -37,4 +37,4 @@ const protection = {
 const file = join(mkdtempSync(join(tmpdir(), 'protect-')), 'protection.json');
 writeFileSync(file, JSON.stringify(protection));
 gh(['api', '-X', 'PUT', `repos/${repo}/branches/main/protection`, '--input', file]);
-console.log(`✔ main protected on ${repo}: PR-only, code-owner approval, checks secrets/docs-sync/pr-guard.`);
+console.log(`✔ main protected on ${repo}: PR-only, code-owner approval, checks secrets/docs-sync/pr-guard/build-test.`);
