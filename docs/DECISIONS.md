@@ -327,6 +327,22 @@ Accepted · 2026-10-10 (owner's process) · refines ADR-028 (order) and ADR-008 
 - AIs use `/next` to pick and claim, `/open-pr` to finish, and update STATUS in the same PR as the code.
 Roadmap "Owner" columns are historical; ownership comes from claims.
 
+## ADR-032 Calm but unambiguous status wording; no Pause button
+Accepted · 2026-10-10 (owner feedback from the Q1 phone test)
+"You are not protected" made the owner anxious and would alarm users. Status messages stay explicit about alert
+state but calm: "Footprint paused. Alerts are off." · "Footprint stopped. Alerts are off." · "Camera stopped. Alerts are
+off until it's back." Added to SAFETY.md §5 approved wording. No Pause button: app-switch pause/resume announcements
+plus Start/Stop are enough (owner tested).
+
+## ADR-033 Voice: on-device speech now, natural Google voice before submission
+Accepted · 2026-10-10 (owner: save credits now, enhance near the end)
+Now: browser Web Speech (free, instant, offline), using the best installed voice (prefers Google / natural English
+voices) at a natural rate. Later (R3.4, before submission): hybrid natural voice — pre-rendered Google voice
+(Chirp 3 HD ≈ $30 per 1M characters, or Gemini 2.5 Flash TTS ≈ $10 per 1M audio tokens = 25 tokens/s ≈ $0.90 per hour
+of speech) for the fixed alert phrases (instant, offline, ~$0.10 one-time) and Gemini-TTS on demand for dynamic P3 text,
+device voice as fallback. Urgent alerts never wait on the network. Never play Gemini Live's own audio (SAF-21) —
+Gemini-TTS speaks only our filtered text, so it is safe.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow

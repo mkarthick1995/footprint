@@ -1,6 +1,7 @@
 // Entry point. Detector (Q2) and alert manager (Q3) plug in here; until Q3, announce() is the only speaking path.
 import { grabFrame, openCamera, openClip, type FrameSource } from './frameSource';
 import { cameraErrorMessage, MESSAGES } from './messages';
+import { currentVoiceName, speak } from './speech';
 import { ScreenWakeLock } from './wakeLock';
 
 const startBtn = document.querySelector<HTMLButtonElement>('#start')!;
@@ -15,10 +16,7 @@ let frameTimer: number | undefined;
 /** Mirror of every spoken message (SAFETY.md: fail loud). Moves into the alert manager in Q3. */
 function announce(text: string): void {
   statusEl.textContent = text;
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-  }
+  speak(text);
 }
 
 const wakeLock = new ScreenWakeLock(announce);
@@ -69,7 +67,7 @@ async function start(): Promise<void> {
   const canvas = document.createElement('canvas');
   frameTimer = window.setInterval(() => {
     const frame = source ? grabFrame(source.video, 640, canvas) : null;
-    if (frameInfo) frameInfo.textContent = frame ? `Frames: ${frame.width}×${frame.height} (${source?.kind})` : 'Waiting for frames…';
+    if (frameInfo) frameInfo.textContent = frame ? `Frames: ${frame.width}×${frame.height} (${source?.kind}) · voice: ${currentVoiceName()}` : 'Waiting for frames…';
   }, 1000);
 }
 

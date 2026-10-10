@@ -2,14 +2,13 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 
 ## Now
-- Q1 (R1.1 frame source) claimed — draft PR #19, stacked on #18. Code done: camera/clip, wake lock, error + pause/resume
-  announcements, grabFrame, favicon; unit tests 8/8; desktop browser checks passed (error path + synthetic clip 640×360).
-- Preview deployed: https://q01---footprint-bubu3vkhwa-as.a.run.app (0 % live traffic).
+- Q1 done (PR #19): phone-tested by owner (rear camera, screen on, pause/resume heard). Calm wording "Alerts are off"
+  (ADR-032), best installed device voice (ADR-033). Natural Google voice deferred to R3.4 (near submission).
 
 ## Next
-1. #18 merged. Owner: phone test of Q1 on the preview link (Android Chrome checklist in PR #19).
-2. If the phone test passes: set Q1 [x], mark #19 ready → /verify → merge → `npm run deploy`.
-3. Teammates: run `/next` when free (Q2 is the next unclaimed step). Send GitHub handles → TEAM.md (R0.4).
+1. After #19 merges: `npm run deploy` (production) and smoke-test the live URL.
+2. Q2 (detector + tracker) is the next unclaimed step — `/next`.
+3. Teammates: setup + send GitHub handles → TEAM.md (R0.4).
 4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline, credits).
 
 ## Blockers

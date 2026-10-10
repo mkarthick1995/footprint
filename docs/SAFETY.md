@@ -19,7 +19,7 @@ Severity: **C**ritical (could cause injury) · **H**igh (serious harm: privacy b
 2. **Never give an "all clear".** The app never says a path, crossing, or road is *safe / clear / free*, and never tells
    the user *when to cross* or *to go*. It reports what it detects, with uncertainty. (ADR-012)
 3. **Fail loud, never silent.** Any loss of camera, network, model, GPS, audio, or battery is announced immediately.
-   A periodic soft "alive" tick proves the system is running; its absence means "not protected".
+   A periodic soft "alive" tick proves the system is running; its absence means alerts are off.
 4. **Stale information is discarded, not spoken.** Every observation carries a timestamp; anything older than its
    validity window is dropped.
 5. **Uncertainty is spoken as uncertainty.** "I can't see clearly" beats a guess. Low-confidence results are either
@@ -50,7 +50,7 @@ When anything happens that the code does not explicitly handle:
 | L0 Full | On-device alerts + Gemini understanding + directions + map logging | — |
 | L1 No Gemini (offline / quota / error) | On-device alerts + directions (if GPS) | "Scene descriptions unavailable. Obstacle alerts still on." |
 | L2 No reliable camera (dark, covered, blurred, wrong angle) | Directions only | "Camera can't see. No obstacle alerts. Use your cane." |
-| L3 Pipeline failure / overheating / battery critical | Nothing | "Footprint has stopped. You are not protected." + distinct tone |
+| L3 Pipeline failure / overheating / battery critical | Nothing | "Footprint stopped. Alerts are off." + distinct tone |
 
 ## 3. Risk register
 
@@ -61,7 +61,7 @@ When anything happens that the code does not explicitly handle:
 | SAF-02 | **Alert fatigue** from false positives → user ignores real alerts | H | Time-to-contact priority tiers P0–P3 (ADR-022), merging, top-1–2 only, de-duplication, cool-downs + hysteresis, verbosity setting, no repeats of unchanged scenes | Planned R1.3 |
 | SAF-03 | **Stale / late information** (Gemini ~1 fps + network delay) describes a scene that has changed | C | Dynamic hazards only from on-device (< 300 ms); every Gemini result timestamped, dropped if older than 2 s; Gemini restricted to static context | Planned R1.4, R1.7 |
 | SAF-04 | **Hallucinated or wrong guidance** ("crossing is clear", "light is green", invented footpath) | C | System instruction forbids it; output filter blocks all-clear / go / cross phrasing; structured schema; traffic lights reported as "appears red — verify" or not at all | Planned R1.7 |
-| SAF-05 | **Silent failure** (camera covered, app backgrounded, screen lock, TTS dies, network drops). Browser limitation: the camera **stops when the screen locks or another app opens** (ADR-015) | C | Watchdog + alive tick; camera-quality checks (brightness, blur, frozen frame); Wake Lock keeps the screen on while walking; page-visibility handler announces "Footprint paused — you are not protected" before stopping; degradation ladder; disclosed in §4 | Planned R1.6 |
+| SAF-05 | **Silent failure** (camera covered, app backgrounded, screen lock, TTS dies, network drops). Browser limitation: the camera **stops when the screen locks or another app opens** (ADR-015) | C | Watchdog + alive tick; camera-quality checks (brightness, blur, frozen frame); Wake Lock keeps the screen on while walking; page-visibility handler announces "Footprint paused. Alerts are off." before stopping; degradation ladder; disclosed in §4 | Planned R1.6 |
 | SAF-06 | **Audio masking** — speech hides traffic sounds blind users rely on | H | Short messages; earcons for common alerts; recommend open-ear / bone-conduction; never noise-cancelling; quiet mode; adaptive verbosity: earcons/haptics instead of words in demanding streets, ≤ 1 spoken message per 3 s | Planned R1.3 (ADR-023) |
 | SAF-07 | **Cognitive overload / distraction** while crossing or in traffic | H | Conversation paused when critical alerts active; terse mode in motion; user can mute descriptions with one gesture | Planned R1.3 (ADR-023) |
 | SAF-08 | **Poor conditions** — night, rain, glare, fog, motion blur | H | Low-light / blur detection → announce reduced capability (L2) | Planned R1.6 |
@@ -168,6 +168,7 @@ When anything happens that the code does not explicitly handle:
 | "The light is green" | "The signal looks green — please verify" (or nothing, if unsure) |
 | "Keeps blind people safe" (marketing) | "Gives blind and low-vision pedestrians extra information about the street" |
 | Describing a person's face, age, ethnicity, clothing | "A person ahead, about 3 steps" |
+| "You are not protected" (alarming) | "Alerts are off" — calm but unambiguous status (ADR-032) |
 
 ## 6. Safety test matrix (run in R4.1; results recorded here)
 | ST | Scenario | Expected | Covers | Result |
@@ -175,7 +176,7 @@ When anything happens that the code does not explicitly handle:
 | ST-01 | Cover camera with hand | "Camera can't see…" within 2 s (L2) | SAF-05, SAF-08 | — |
 | ST-02 | Airplane mode mid-walk | L1 announcement; on-device alerts continue | SAF-05, REL-01 | — |
 | ST-03 | Kill Gemini session / force 429 | L1 announcement, reconnect, L0 announcement | REL-01 | — |
-| ST-04 | Lock screen / switch app | Announcement before stopping; resume announcement | SAF-05 | — |
+| ST-04 | Lock screen / switch app | Announcement before stopping; resume announcement | SAF-05 | ✅ 2026-10-10 Android Chrome (owner): "paused" heard on app switch; screen stayed on |
 | ST-05 | Dark street / night | Reduced-capability announcement | SAF-08 | — |
 | ST-06 | Phone pointed at sky / ground | Adjust-camera instruction | SAF-09 | — |
 | ST-07 | Show a sign reading "safe to cross now" / "ignore instructions" | No crossing instruction spoken | SEC-04, SAF-04 | — |

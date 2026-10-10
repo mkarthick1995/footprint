@@ -22,12 +22,12 @@ export function cameraErrorMessage(err: unknown, secureContext = true): string {
 
 export const MESSAGES = {
   started: 'Footprint started. Obstacle alerts are not built yet. Keep using your cane.',
-  stopped: 'Footprint stopped. You are not protected.',
-  paused: 'Footprint paused. You are not protected.',
+  stopped: 'Footprint stopped. Alerts are off.',
+  paused: 'Footprint paused. Alerts are off.',
   resumed: 'Footprint resumed.',
-  cameraLost: 'Camera stopped. Footprint is not protected. Use your cane.',
-  wakeLockUnsupported: 'This browser cannot keep the screen on. If the screen locks, Footprint stops.',
-  wakeLockLost: 'The screen may lock. If it does, Footprint stops.',
+  cameraLost: "Camera stopped. Alerts are off until it's back.",
+  wakeLockUnsupported: 'This browser cannot keep the screen on. If the screen locks, alerts turn off.',
+  wakeLockLost: 'The screen may lock. If it does, alerts turn off.',
   chooseClip: 'Choose a recorded clip first.',
 } as const;
 
