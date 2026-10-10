@@ -1,0 +1,11 @@
+# Files gcloud must never upload when deploying from source (secrets, private data, local media).
+.git
+node_modules/
+**/node_modules/
+**/dist/
+.env
+.env.*
+!.env.example
+.private/
+.ai-local/
+data/

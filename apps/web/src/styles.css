@@ -1,0 +1,56 @@
+:root {
+  color-scheme: dark light;
+  font-family: system-ui, sans-serif;
+  font-size: 18px;
+  background: #111;
+  color: #f5f5f5;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.warning {
+  border-left: 4px solid #f5c400;
+  padding-left: 0.75rem;
+}
+
+fieldset {
+  border: 1px solid #555;
+  margin: 1rem 0;
+}
+
+label {
+  display: block;
+  padding: 0.5rem 0;
+}
+
+button {
+  width: 100%;
+  min-height: 4rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  border: none;
+  background: #f5c400;
+  color: #111;
+}
+
+button:focus-visible {
+  outline: 4px solid #fff;
+  outline-offset: 3px;
+}
+
+#status {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  min-height: 2em;
+}
+
+video {
+  width: 100%;
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+}
