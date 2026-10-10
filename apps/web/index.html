@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#111111" />
     <title>Footprint</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
@@ -27,6 +28,7 @@
       <!-- Every spoken message is mirrored here so screen readers and sighted helpers can follow along. -->
       <div id="status" role="status" aria-live="polite">Not started.</div>
 
+      <p id="frame-info" class="dev" aria-hidden="true"></p>
       <video id="preview" playsinline muted aria-hidden="true"></video>
     </main>
     <script type="module" src="/src/main.ts"></script>

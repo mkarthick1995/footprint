@@ -30,7 +30,9 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
   output transcription; the proxy forwards transcript text only and drops model audio). Plus hazard ingest + segment
   scores (Firestore), the web app, the public map, rate limits and session caps.
 - **Frame source abstraction (ADR-016):** `camera | recorded clip`. Everything downstream is identical, so PC
-  development and tests run on clips, phones run on the camera.
+  development and tests run on clips, phones run on the camera. `grabFrame(video, maxWidth)` gives later steps a
+  downscaled canvas (detector, face blur, scan upload). Screen Wake Lock is held while running and re-acquired on
+  return; camera track `ended`/`mute`, page hide and return are all announced (Q1, SAF-05).
 - **Long-term client:** native Android / iOS (or Capacitor). Keep the safety pipeline a separate module so it ports
   unchanged; the backend doesn't change.
 

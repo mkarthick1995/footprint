@@ -2,13 +2,13 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 
 ## Now
-- Live: https://footprint-804307041024.asia-southeast1.run.app (skeleton). `npm run deploy` redeploys. Maps key locked to that URL + localhost:5173.
-- Phase 0 done except R0.4 handles. Teammates are collaborators with GCP Editor; doing gcloud setup.
+- Q1 done (PR #19): phone-tested by owner (rear camera, screen on, pause/resume heard). Calm wording "Alerts are off"
+  (ADR-032), best installed device voice (ADR-033). Natural Google voice deferred to R3.4 (near submission).
 
 ## Next
-1. Merge the build-queue PR (ADR-031; declared deviation → manual merge). Tell teammates: run `/next` when free.
-2. Q1 (R1.1 frame source) claimed next by me via draft PR.
-3. Teammates: clone, setup, gcloud + ADC; send GitHub handles → TEAM.md (R0.4).
+1. After #19 merges: `npm run deploy` (production) and smoke-test the live URL.
+2. Q2 (detector + tracker) is the next unclaimed step — `/next`.
+3. Teammates: setup + send GitHub handles → TEAM.md (R0.4).
 4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline, credits).
 
 ## Blockers

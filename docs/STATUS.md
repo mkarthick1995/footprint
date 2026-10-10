@@ -29,7 +29,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [x] R1.5 Scaffold + Cloud Run deploy (`npm run deploy`), Maps key referrer-locked — @mkarthick1995 2026-10-10
 
 ## Build queue — take the first unclaimed step, finish its whole DoD
-- [ ] Q1 · R1.1 Frame source complete · DoD: rear camera + clip work on desktop Chrome and Android Chrome (live URL); Wake Lock held while running, released on stop; permission-denied / no-camera / wake-lock-unsupported announced; `grabFrame(maxWidth)` helper used by later steps; ST-04 passes
+- [x] Q1 · R1.1 Frame source complete — @mkarthick1995 2026-10-10 · verified: clip path 640×360 (desktop browser), rear camera + wake lock + app-switch pause/resume on Android Chrome (owner phone test, ST-04 ✅); calm wording (ADR-032); best device voice (ADR-033) · DoD: rear camera + clip work on desktop Chrome and Android Chrome (live URL); Wake Lock held while running, released on stop; permission-denied / no-camera / wake-lock-unsupported announced; `grabFrame(maxWidth)` helper used by later steps; ST-04 passes
 - [ ] Q2 · R1.2 Detector + tracker + time-to-contact · DoD: MediaPipe EfficientDet-Lite in the browser on Q1 frames; IoU tracker with stable IDs (≥ 5 frames before trusting motion); looming TTC, pinhole distance, in-path, smoothing, edge-cut ignore as pure unit-tested functions (ADR-024); emits `AlertCandidate`s; ≥ 10 fps on a mid-range Android, measured and noted here
 - [ ] Q3 · R1.3 Alert manager v1 · DoD: the only speaking path (TTS + earcon + vibrate where supported, aria-live mirror); ADR-022 queue: tiers, TTC order, re-check at dequeue, merge same-type, top 1–2, P0 preempts, cool-down + hysteresis; unit tests for ST-21/22/24/25 logic; wired to Q2 on clips
 - [ ] Q4 · R1.8 Face blur + downscale · DoD: on-device face detection blurs faces before any frame leaves the phone; downscale ≤ 640 px; fps impact measured; debug view proves blurred upload frame (ST-10); ADR-013 fallback if too slow (ADR update, never silent)
@@ -48,6 +48,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [ ] R3.1 Meta glasses integration
 - [ ] R3.2 Multilingual voice
 - [ ] R3.3 Custom pothole detector
+- [ ] R3.4 Natural Google voice before submission: pre-rendered alert phrases (Chirp 3 HD / Gemini-TTS) + Gemini-TTS for dynamic P3 text, device voice fallback (ADR-033) — do near the end to save credits
 
 ## Phase 4 — Submission (10-16 → 10-17)
 - [ ] R4.1 Field test + metrics
