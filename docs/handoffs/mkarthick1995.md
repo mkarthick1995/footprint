@@ -7,7 +7,7 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 - Preview deployed: https://q01---footprint-bubu3vkhwa-as.a.run.app (0 % live traffic).
 
 ## Next
-1. Owner: merge #18 (build queue). Then phone test of Q1 on the preview link (Android Chrome checklist in PR #19).
+1. #18 merged. Owner: phone test of Q1 on the preview link (Android Chrome checklist in PR #19).
 2. If the phone test passes: set Q1 [x], mark #19 ready → /verify → merge → `npm run deploy`.
 3. Teammates: run `/next` when free (Q2 is the next unclaimed step). Send GitHub handles → TEAM.md (R0.4).
 4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline, credits).
