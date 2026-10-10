@@ -69,6 +69,13 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   Priority = time-to-contact tiers P0–P3 + SYS, severity tie-break, in-path factor; same tier ordered by TTC;
   re-check at dequeue, merge same-type items, speak top 1–2 only, P0 preempts (ADR-022). Inputs need: distance or
   box-growth rate, direction (bearing in frame), type, confidence, source, timestamp; plus user walking speed.
+- **On-device detector (Q2):** MediaPipe Tasks Vision 1.1.0 `ObjectDetector`, EfficientDet-Lite0 float16 (COCO), VIDEO
+  mode, GPU delegate with CPU fallback, score ≥ 0.35, ≤ 10 results. WASM runtime self-hosted at `/mediapipe/wasm`
+  (copied at build, ~38 MB, one variant loaded); model (7.3 MB) from `storage.googleapis.com`, cached by the browser.
+  `perception.ts` loop: rAF → detect → `Tracker` → `candidateFor` → candidates (overlay now; alert manager in Q3).
+  **Clip evaluator (dev only):** `npm run dev` → `/clip-eval.html` (`src/dev/clipEval.ts`) seeks a local clip at a fixed
+  sample fps, runs the same pipeline deterministically and reports per-track tier escalations + label counts. Not in
+  the production build (Vite builds `index.html` only); clips never leave the browser. Vite aliases `@footprint/shared` to its `src/`, so threshold edits apply without a rebuild.
 - **Motion (ADR-024):** tracker → looming-based TTC (box growth) + approximate distance (pinhole, typical heights)
   + user walking speed (accelerometer cadence, GPS) + gyroscope sway compensation → speed, direction, in-path.
 - **User preferences (ADR-026):** presets Essential / Standard / Detailed + category and channel toggles, stored
