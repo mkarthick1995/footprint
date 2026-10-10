@@ -29,7 +29,10 @@
       <div id="status" role="status" aria-live="polite">Not started.</div>
 
       <p id="frame-info" class="dev" aria-hidden="true"></p>
-      <video id="preview" playsinline muted aria-hidden="true"></video>
+      <div class="stage" aria-hidden="true">
+        <video id="preview" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

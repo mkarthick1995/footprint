@@ -2,17 +2,18 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 
 ## Now
-- Q1 done (PR #19): phone-tested by owner (rear camera, screen on, pause/resume heard). Calm wording "Alerts are off"
-  (ADR-032), best installed device voice (ADR-033). Natural Google voice deferred to R3.4 (near submission).
+- Q1 done + live. Q2 claimed (draft PR #21): MediaPipe detector, IoU tracker, exact 1/h looming TTC, distance, in-path,
+  edge-cut, overlay; 24 shared tests; desktop 62 fps; real street photo approach escalated person P2→P1→P0.
+- Preview: https://q02---footprint-bubu3vkhwa-as.a.run.app (0 % live traffic).
 
 ## Next
-1. After #19 merges: `npm run deploy` (production) and smoke-test the live URL.
-2. Q2 (detector + tracker) is the next unclaimed step — `/next`.
-3. Teammates: setup + send GitHub handles → TEAM.md (R0.4).
-4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline, credits).
+1. Owner: phone fps check on q02 (Start → read "fps" in the grey line; need ≥ 10) + record street clips into data/clips/.
+2. Tune thresholds on real clips; then Q2 [x] → ready → verify → merge → deploy.
+3. Q3 (alert manager) is next unclaimed — speaks Q2's candidates.
+4. Teammates: setup + GitHub handles (R0.4). Blind-user outreach (ETH-02). Discord (deadline, credits).
 
 ## Blockers
-- (none)
+- Q2 completion needs the owner's phone fps reading and real walking clips.
 
 ## Gotchas / learned
 - First source deploy needed `roles/run.builder` on the default compute SA. POST without a body → 411 from Cloud Run front end.
