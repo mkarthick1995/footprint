@@ -50,10 +50,40 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   window.speechSynthesis.addEventListener('voiceschanged', choose);
 }
 
-/** Speak now, interrupting anything already speaking. The alert manager (Q3) adds queueing and priorities. */
-export function speak(text: string): void {
+export interface SpeakOptions {
+  /** Cut off whatever is being spoken (default true). */
+  interrupt?: boolean;
+  /** Called once when the utterance ends, errors, or is cancelled. */
+  onDone?: () => void;
+  /** Called when audio actually starts (lets the caller detect a silent speech engine). */
+  onStart?: () => void;
+}
+
+/**
+ * Call synchronously inside the Start tap. Mobile Chrome only lets a page speak after it has spoken within a user
+ * gesture; our first real message comes after the camera permission prompt, which was silent on first use (Q3 test).
+ */
+export function primeSpeech(text: string): void {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+  const u = new SpeechSynthesisUtterance(text);
+  if (chosen) {
+    u.voice = chosen;
+    u.lang = chosen.lang;
+  }
+  window.speechSynthesis.speak(u);
+}
+
+/** Speak through the on-device voice. Only the alert output (alertOutput.ts) should call this. */
+export function speak(text: string, opts: SpeakOptions = {}): void {
+  const { interrupt = true, onDone, onStart } = opts;
+  if (!('speechSynthesis' in window)) {
+    onDone?.();
+    return;
+  }
+  if (interrupt) window.speechSynthesis.cancel();
+  window.speechSynthesis.resume(); // Chrome can leave the queue paused after backgrounding
   const u = new SpeechSynthesisUtterance(text);
   if (chosen) {
     u.voice = chosen;
@@ -61,7 +91,21 @@ export function speak(text: string): void {
   }
   u.rate = 1.0; // natural pace; user-adjustable rate comes with presets (Q14, ACC-03)
   u.pitch = 1.0;
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    onDone?.();
+  };
+  u.onstart = () => onStart?.();
+  u.onend = finish;
+  u.onerror = finish;
   window.speechSynthesis.speak(u);
+}
+
+/** Stop any speech now. */
+export function cancelSpeech(): void {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 }
 
 /** For the dev readout: which voice is in use. */

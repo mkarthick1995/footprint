@@ -199,6 +199,22 @@ street furniture. In-path = centre of frame / along heading; edge-of-frame objec
 7. Distances are spoken in buckets ("very close", "2 steps", "ahead"), not false-precision metres (SAF-23).
 8. A user question to Gemini is P3: answered when no P0/P1 is pending; a P0 interrupts the answer mid-sentence.
 
+*Implementation (Q3, 2026-10-11):* pure `AlertManager` (`packages/shared/src/alerts.ts`), clock-injected and unit-tested;
+the browser `AlertOutput` only renders. Concrete values (tune on clips): stale after 1 s; same object not repeated for
+8 s unless it escalates; **group cool-down 4 s per type + side + tier** (P0: 2 s) because the tracker re-IDs people in
+crowds; minimum gap before a new message P1 1.5 s · P2 3 s · P3 6 s (P0/SYS none); merge key = tier + type + side,
+≥ 4 items → plural noun only ("People close, left"); wording "Stop! <noun>" (P0) · "<noun> close, <side>" (P1) ·
+"<noun>, <side>" (P2); low confidence → "Possible obstacle". Rejected: a priority queue of individual messages —
+the newest frame is the re-check (rule 2), so the manager picks from the latest candidate set instead of queueing
+stale items. TTS "ended" events can go missing on Android → a watchdog frees the output so alerts can't stall silently.
+Crowd tuning on clips (2026-10-11): a situation already put into words within 15 s repeats as an **earcon only** (P1)
+or not at all (P2/P3) — ADR-023's "earcons for recurring items" pulled forward into Q3; **people merge across sides**
+("Two people close around", named by the nearest person's side otherwise); uncertain items join their type's group
+("possible" only if all are uncertain). Spoken/min: Singapore night lane 24 → 13, Shanghai crowd 19 → 9.
+Owner phone test (10-11): heard mostly "Stop! Obstacle" / "Possible obstacle" — phone detections often score < 0.5, and
+rule 6's "possible obstacle" discarded the type. Changed to **"Possible <type>"** ("Possible person close, right");
+generic "obstacle" only for unknown/furniture types, and for low-confidence P0 (a wrong type at "Stop!" could mislead).
+
 ## ADR-023 Adaptive verbosity: message style follows how demanding the street is
 Accepted · 2026-10-10 (owner's proposal, refined) · extends ADR-022, mitigates SAF-06/07
 **Always short.** Hard length caps by tier: P0 ≤ 2 words · P1 ≤ ~5 words · P2 ≤ 1 short sentence · P3 ≤ 2 sentences.
