@@ -1,11 +1,11 @@
-// Entry point. Detector (Q2) runs here; the alert manager (Q3) will turn candidates into speech.
-// Until Q3, announce() is the only speaking path and candidates are shown on the debug overlay only.
+// Entry point. Detector (Q2) → candidates → alert output (Q3), the only speaking path.
+import { AlertOutput } from './alertOutput';
 import { createDetector, type OnDeviceDetector } from './detector';
 import { grabFrame, openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
 import { PerceptionLoop } from './perception';
 import { cameraErrorMessage, MESSAGES } from './messages';
-import { currentVoiceName, speak } from './speech';
+import { currentVoiceName } from './speech';
 import { ScreenWakeLock } from './wakeLock';
 
 const startBtn = document.querySelector<HTMLButtonElement>('#start')!;
@@ -21,10 +21,11 @@ let detector: OnDeviceDetector | null = null;
 let loop: PerceptionLoop | null = null;
 let perfText = '';
 
-/** Mirror of every spoken message (SAFETY.md: fail loud). Moves into the alert manager in Q3. */
+const output = new AlertOutput(statusEl);
+
+/** System messages (fail loud): queued as SYS in the alert manager, mirrored to the aria-live status. */
 function announce(text: string): void {
-  statusEl.textContent = text;
-  speak(text);
+  output.say(text);
 }
 
 const wakeLock = new ScreenWakeLock(announce);
@@ -39,6 +40,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   window.clearInterval(frameTimer);
   loop?.stop();
   loop = null;
+  output.reset();
   overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height);
   source?.stop();
   source = null;
@@ -49,6 +51,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
 }
 
 async function start(): Promise<void> {
+  output.unlock(); // user gesture: lets earcons play
   const kind = document.querySelector<HTMLInputElement>('input[name="source"]:checked')?.value;
   try {
     if (kind === 'clip') {
@@ -99,6 +102,7 @@ async function startPerception(): Promise<void> {
   loop = new PerceptionLoop(detector, source.video, {
     onCandidates: (candidates, tracks, frame, stats) => {
       drawOverlay(overlay, frame, tracks, candidates);
+      output.update(candidates, frame.ts);
       const top = [...candidates].sort((a, b) => a.ttcSeconds - b.ttcSeconds)[0];
       perfText = `${stats.fps.toFixed(1)} fps · ${stats.inferenceMs.toFixed(0)} ms · ${detector?.delegate} · ${stats.tracks} tracked` +
         (top ? ` · top: ${top.type} ${top.tier}` : '');

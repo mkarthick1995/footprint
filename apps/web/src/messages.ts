@@ -21,7 +21,7 @@ export function cameraErrorMessage(err: unknown, secureContext = true): string {
 }
 
 export const MESSAGES = {
-  started: 'Footprint started. Obstacle alerts are not built yet. Keep using your cane.',
+  started: 'Footprint started. It warns about people, bikes and vehicles, and can miss things. Keep using your cane.',
   stopped: 'Footprint stopped. Alerts are off.',
   paused: 'Footprint paused. Alerts are off.',
   resumed: 'Footprint resumed.',

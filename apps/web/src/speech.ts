@@ -50,10 +50,21 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   window.speechSynthesis.addEventListener('voiceschanged', choose);
 }
 
-/** Speak now, interrupting anything already speaking. The alert manager (Q3) adds queueing and priorities. */
-export function speak(text: string): void {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
+export interface SpeakOptions {
+  /** Cut off whatever is being spoken (default true). */
+  interrupt?: boolean;
+  /** Called once when the utterance ends, errors, or is cancelled. */
+  onDone?: () => void;
+}
+
+/** Speak through the on-device voice. Only the alert output (alertOutput.ts) should call this. */
+export function speak(text: string, opts: SpeakOptions = {}): void {
+  const { interrupt = true, onDone } = opts;
+  if (!('speechSynthesis' in window)) {
+    onDone?.();
+    return;
+  }
+  if (interrupt) window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   if (chosen) {
     u.voice = chosen;
@@ -61,7 +72,20 @@ export function speak(text: string): void {
   }
   u.rate = 1.0; // natural pace; user-adjustable rate comes with presets (Q14, ACC-03)
   u.pitch = 1.0;
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    onDone?.();
+  };
+  u.onend = finish;
+  u.onerror = finish;
   window.speechSynthesis.speak(u);
+}
+
+/** Stop any speech now. */
+export function cancelSpeech(): void {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 }
 
 /** For the dev readout: which voice is in use. */

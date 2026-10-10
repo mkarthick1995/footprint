@@ -2,7 +2,7 @@
 // detector → tracker → candidate pipeline as the app, and reports every alert it would raise.
 // Deterministic (seek-per-frame, not real-time playback), so runs are comparable across threshold changes.
 // Served by `npm run dev` at /clip-eval.html; not part of the production build. Results stay in the browser.
-import { candidateFor, Tracker, type AlertCandidate, type CandidateOptions, type Tier } from '@footprint/shared';
+import { AlertManager, candidateFor, Tracker, type AlertCandidate, type CandidateOptions, type Tier } from '@footprint/shared';
 import { createDetector } from '../detector';
 import { drawOverlay } from '../overlay';
 
@@ -39,6 +39,16 @@ export interface ClipEvalResult {
   framesByTier: Record<string, number>;
   /** Detected labels (including ignored classes) → frames seen. */
   labels: Record<string, number>;
+  /** Q3: what the alert manager would actually say (speech time simulated at ~350 ms/word + earcon). */
+  spoken: { t: number; tier: Tier; text: string }[];
+  spokenPerMinute: number;
+  /** Earcon-only repeats per minute. */
+  cuesPerMinute: number;
+}
+
+/** Rough on-device TTS duration for simulation. */
+function speechMs(text: string): number {
+  return text ? 300 + text.split(/\s+/).length * 350 : 300;
 }
 
 function seek(video: HTMLVideoElement, t: number): Promise<void> {
@@ -69,7 +79,12 @@ export async function evaluateClip(video: HTMLVideoElement, opts: ClipEvalOption
     escalations: [],
     framesByTier: {},
     labels: {},
+    spoken: [],
+    spokenPerMinute: 0,
+    cuesPerMinute: 0,
   };
+  const manager = new AlertManager();
+  let busyUntil = 0;
   let inferTotal = 0;
   try {
     for (let t = 0; t < video.duration; t += step) {
@@ -103,6 +118,14 @@ export async function evaluateClip(video: HTMLVideoElement, opts: ClipEvalOption
           });
         }
       }
+      manager.update(candidates);
+      const speaking = ts < busyUntil;
+      if (!speaking) manager.finished();
+      const u = manager.next(ts, speaking);
+      if (u) {
+        busyUntil = ts + speechMs(u.text);
+        result.spoken.push({ t: Math.round(t * 10) / 10, tier: u.tier, text: u.text });
+      }
       for (const tier of tiersThisFrame) result.framesByTier[tier] = (result.framesByTier[tier] ?? 0) + 1;
       if (overlay) drawOverlay(overlay, frame, tracks, candidates);
       result.frames++;
@@ -111,6 +134,10 @@ export async function evaluateClip(video: HTMLVideoElement, opts: ClipEvalOption
   } finally {
     detector.close();
   }
+  const minutes = Math.max(1, result.duration / 60);
+  const cues = result.spoken.filter((x) => !x.text).length;
+  result.spokenPerMinute = Math.round(((result.spoken.length - cues) / minutes) * 10) / 10;
+  result.cuesPerMinute = Math.round((cues / minutes) * 10) / 10;
   result.meanInferenceMs = Math.round((inferTotal / Math.max(1, result.frames)) * 10) / 10;
   return result;
 }
