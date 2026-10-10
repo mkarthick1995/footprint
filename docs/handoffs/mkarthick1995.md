@@ -6,15 +6,15 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.6-owner-automerge
 - Draft PR #5: safety case (SAFETY.md, ADR-011..014) + ADR-015 PWA-now/native-later, ADR-016 dev/test strategy,
   ADR-017 billing (Proposed), ADR-018 Gemini-from-day-one, research/FACTS.md, "document after every chat" rule.
 
-- Design ADRs 022–026 documented: alert tiers, adaptive verbosity, motion/TTC, community evidence model, user presets.
+- All ADRs 001–026 accepted by owner (2026-10-10); ADR-027/028 proposed.
 
 ## Next
-1. Review draft PR #5 → "Ready for review" (auto-merges after checks).
-2. Confirm ADR-017 + ADR-014: GCP $300 trial → paid Gemini tier vs Vertex AI; check ephemeral-token support.
-3. R0.3: GCP project + billing + budget alerts, Gemini + Maps keys, IAM for teammates; ask Discord about credits.
-2. R0.4: confirm stack (ADR-003) + teammates' handles in TEAM.md.
-3. R0.5: verify Live API ephemeral tokens + current Live model ID.
-4. Phase 1 starts 10-11: R1.5 deploy skeleton early.
+1. Confirm ADR-027 (no turn-by-turn) + ADR-028 (thin slice first).
+2. R0.3 (owner, today): GCP project + $300 trial + billing alerts, Gemini + Maps keys, IAM for teammates.
+3. R0.5: verify Live TEXT output, ephemeral tokens per tier, Live model ID, session limits → pick tier.
+4. R0.4: teammates clone + `npm run setup -- --handle <x>`; fill handles/owners in TEAM.md.
+5. Record 3–5 street clips (local data/ only) for PC development; start blind-user outreach (ETH-02).
+6. 10-11: scaffold monorepo (apps/web, services/api, packages/shared) + thin slice.
 
 ## Blockers
 - (none)
