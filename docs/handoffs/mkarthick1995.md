@@ -2,13 +2,14 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 
 ## Now
-- Live: https://footprint-804307041024.asia-southeast1.run.app (skeleton). `npm run deploy` redeploys. Maps key locked to that URL + localhost:5173.
-- Phase 0 done except R0.4 handles. Teammates are collaborators with GCP Editor; doing gcloud setup.
+- Q1 (R1.1 frame source) claimed — draft PR #19, stacked on #18. Code done: camera/clip, wake lock, error + pause/resume
+  announcements, grabFrame, favicon; unit tests 8/8; desktop browser checks passed (error path + synthetic clip 640×360).
+- Preview deployed: https://q01---footprint-bubu3vkhwa-as.a.run.app (0 % live traffic).
 
 ## Next
-1. Merge the build-queue PR (ADR-031; declared deviation → manual merge). Tell teammates: run `/next` when free.
-2. Q1 (R1.1 frame source) claimed next by me via draft PR.
-3. Teammates: clone, setup, gcloud + ADC; send GitHub handles → TEAM.md (R0.4).
+1. Owner: merge #18 (build queue). Then phone test of Q1 on the preview link (Android Chrome checklist in PR #19).
+2. If the phone test passes: set Q1 [x], mark #19 ready → /verify → merge → `npm run deploy`.
+3. Teammates: run `/next` when free (Q2 is the next unclaimed step). Send GitHub handles → TEAM.md (R0.4).
 4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline, credits).
 
 ## Blockers

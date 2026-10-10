@@ -35,6 +35,8 @@ files — only into your local `.env` (gitignored).
 `npm run deploy` → `infra/deploy.mjs` (gcloud on PATH; Windows: open a new terminal after installing gcloud).
 Builds the root `Dockerfile` with Cloud Build, deploys service `footprint` with the runtime SA and non-secret env vars.
 No secrets are passed — Gemini/Firestore auth comes from the service account (ADR-030).
+**Preview an unmerged branch** (phone DoD checks, ADR-031): `PREVIEW_TAG=q01 npm run deploy` → `https://q01---footprint-bubu3vkhwa-as.a.run.app`,
+0 % of live traffic. Tags need ≥ 3 characters. Production deploys happen only after the owner verifies and merges.
 
 ## Before judging (R4.5)
 - Min instances = 1 during 10-19 → 11-06 (REL-03); re-check model IDs (REL-02, REL-07); review max instances.

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Deploy Footprint (web + API, one container) to Cloud Run from source (R1.5, ADR-030).
-//   npm run deploy            # uses gcloud on PATH and the defaults below
+//   npm run deploy                      # production: the live URL gets 100 % of traffic (after owner verification)
+//   PREVIEW_TAG=q01 npm run deploy      # preview: separate URL https://q01---<service-url>, no live traffic
+//                                       # (use to test an unmerged branch on a real phone — ADR-031 DoD checks)
 // Requires: `gcloud auth login`, project access, and permission to act as the runtime service account.
 // No secrets are passed here: Gemini/Firestore auth comes from the attached service account.
 import { spawnSync } from 'node:child_process';
@@ -36,6 +38,15 @@ const args = [
   `--set-env-vars=${Object.entries(ENV).map(([k, v]) => `${k}=${v}`).join(',')}`,
   '--quiet',
 ];
+
+const preview = process.env.PREVIEW_TAG;
+if (preview) {
+  if (!/^[a-z][a-z0-9-]{2,20}$/.test(preview)) {
+    console.error('PREVIEW_TAG must be 3–21 lowercase letters, digits, dashes (e.g. q01)');
+    process.exit(1);
+  }
+  args.push('--no-traffic', `--tag=${preview}`);
+}
 
 // On Windows gcloud is a .cmd shim, which needs a shell; none of the args contain spaces.
 const res = spawnSync('gcloud', args, { stdio: 'inherit', shell: process.platform === 'win32' });

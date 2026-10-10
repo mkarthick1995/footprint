@@ -54,3 +54,8 @@ video {
   margin-top: 1rem;
   border-radius: 0.5rem;
 }
+
+.dev {
+  font-size: 0.8rem;
+  color: #aaa;
+}
