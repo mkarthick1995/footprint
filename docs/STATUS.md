@@ -10,7 +10,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [x] R0.1 3rd member added to Hack2skill team — @mkarthick1995 2026-10-10
 - [x] R0.2 Repo scaffold + guardrails + docs pushed to github.com/mkarthick1995/footprint (public) — @mkarthick1995 2026-10-10
 - [ ] R0.3 GCP project, billing/credits, Gemini + Maps keys, region asia-southeast1
-- [ ] R0.4 Confirm stack (ADR-003) and owners (TEAM.md)
+- [~] R0.4 Stack confirmed (ADR-003 accepted, all ADRs to 026 accepted); pending: teammates' handles + owner split in TEAM.md — @mkarthick1995 2026-10-10
 - [ ] R0.5 Verify Live API ephemeral tokens, current Live model ID, Meta toolkit country availability
 - [x] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr; `main` protection verified via API: code-owner approval, required checks secrets/docs-sync/pr-guard (strict), linear history, conversation resolution, squash-only, auto-delete branches — @mkarthick1995 2026-10-10
 - [x] R0.6 Owner-PR auto-merge workflow + `automerge` environment + AUTO_MERGE_TOKEN (ADR-010); verified by this line's PR auto-merging — @mkarthick1995 2026-10-10
@@ -53,7 +53,9 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - Repo license for the public repo (MIT suggested) — not yet chosen.
 - Submission time-of-day / timezone on 10-18 — ask on Discord.
 - Do participants get Google Cloud / Gemini credits? — ask on Discord (none found online; ADR-017).
-- Confirm ADR-017 (billing: $300 trial + paid tier) and ADR-014 (no-training tier: paid Gemini API vs Vertex AI).
+- Confirm ADR-027 (no turn-by-turn; route corridor only) and ADR-028 (thin end-to-end slice first).
+- Pick concrete Gemini tier (paid Gemini API vs Vertex AI) once R0.5 confirms ephemeral-token + Live TEXT support.
+- Start blind-user / org outreach now (ETH-02) — lead time is days.
 - Can we get feedback from a visually impaired user or org (e.g. NAB India, SAVH Singapore) before 10-16?
 
 ## Blockers

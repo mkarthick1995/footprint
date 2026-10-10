@@ -16,7 +16,7 @@ Context: Meta Wearables toolkit needs a native app and is country-gated; 8 days 
 (chest-mount for demo); glasses = R3.1 only if Phase 2 is done. Score: protects the deployed-link requirement.
 
 ## ADR-003 Stack: TypeScript end to end
-**Proposed** · 2026-10-10 — confirm in R0.4
+Accepted · 2026-10-10 (confirmed by owner)
 Proposal: `apps/web` = Vite + TypeScript PWA; `services/api` = Node 22 + TypeScript (Fastify or Express) on Cloud Run;
 `@google/genai` SDK; Firestore; Google Maps JS + Routes API; MediaPipe Tasks Vision (web).
 Why: one language for 3 people, shared types, guard scripts already Node. Alternative: Python FastAPI backend
@@ -75,7 +75,7 @@ keeps identifiable faces off the network entirely. Fallback if fps drops below t
 no storage, and disclosure — decided in an ADR update, never silently.
 
 ## ADR-014 Gemini tier must not train on our frames
-**Proposed** · 2026-10-10 — decide in R0.7
+Accepted · 2026-10-10 (confirmed by owner; concrete tier — paid Gemini API vs Vertex AI — picked after R0.5 checks ephemeral-token support)
 Unpaid tiers of some Google AI services may use submitted content to improve products; paid Gemini API and
 Vertex AI terms state they don't. Verify current terms, then pick the tier (and check ephemeral-token support for it).
 Until decided, no real street footage with bystanders is sent from development builds.
@@ -102,7 +102,7 @@ Accepted · 2026-10-10
 - No native app in the hackathon (only for the R3.1 glasses stretch).
 
 ## ADR-017 Gemini access & billing
-**Proposed** · 2026-10-10 — confirm in R0.3 · related ADR-014
+Accepted · 2026-10-10 (confirmed by owner) · related ADR-014
 Facts found (2026-10-10, third-party sources — verify on Google's pages): Gemini API free tier exists but free-tier
 content may be used to improve Google products and may be read by human reviewers; paid tiers aren't used for
 training; free-tier rate limits are low and were reportedly cut in April 2026; Live API free limits unclear. The
@@ -121,7 +121,7 @@ prompts, tool-calling, and structured output, and the judged build must be Gemin
 runtime code; prompts and schemas are tuned on Gemini. No non-Google LLM in any runtime path — disqualification risk.
 
 ## ADR-019 Perception pipeline: on-device detector + two Gemini roles, Gemini never speaks directly
-**Proposed** · 2026-10-10 — verify costs/latency and Live text output in R0.5 · refines ADR-004
+Accepted · 2026-10-10 (confirmed by owner; Live TEXT output + costs still verified in R0.5) · refines ADR-004
 Layers:
 1. **On-device detector (primary safety layer, 10–30 fps):** pre-trained COCO model in the browser (MediaPipe
    EfficientDet-Lite) — people, cars, motorbikes, bicycles, dogs, benches, hydrants. Proximity = box size + growth
@@ -140,7 +140,7 @@ narration masks traffic sounds (SAF-06), and cost scales with talk. Alternative 
 everything — simpler, but unfilterable and harder to test.
 
 ## ADR-020 Community hazard data: Firestore + geohash, cluster → confirm → decay
-**Proposed** · 2026-10-10 — implement in R2.3 / R2.6
+Accepted · 2026-10-10 (confirmed by owner) — implement in R2.3 / R2.6
 - Store: **Firestore (native) in asia-southeast1**, written only by Cloud Run (clients never write directly).
 - `observations` (raw, anonymous, **TTL 7 days**): type, lat/lng (rounded ~5 m), GPS accuracy, confidence, source
   (scan | on_device | user_report), sessionId (random per walk), ts. Dropped if GPS accuracy > 25 m, inside the
@@ -158,7 +158,7 @@ everything — simpler, but unfilterable and harder to test.
 - Later: Roads API snap-to-road for true segments; BigQuery GIS for city analytics.
 
 ## ADR-021 Route accessibility information (not a "safety" rating)
-**Proposed** · 2026-10-10 — simple version in R2.5
+Accepted · 2026-10-10 (confirmed by owner) — simple version in R2.5
 - Per segment: footpath coverage %, surface issues, confirmed hazards, crossing types, data freshness, number of
   walks. Route summary spoken at start: "Footpath on about 70 % of this route, 2 reported potholes, one busy crossing
   without a signal. Data from 5 walks, newest yesterday."
@@ -217,7 +217,7 @@ Also: **stationary users** may get longer descriptions; **user verbosity setting
 the defaults, because blind users vary widely. Level changes are signalled by a soft earcon, not speech.
 
 ## ADR-024 Motion & time-to-contact estimation from a single camera
-**Proposed** · 2026-10-10 — implement in R1.2, tune on clips · feeds ADR-022
+Accepted · 2026-10-10 (confirmed by owner) — implement in R1.2, tune on clips · feeds ADR-022
 1. **Track** each detection across frames (simple IoU/centroid tracker → stable object IDs). Need ≥ ~5 frames
    (~0.3 s) before trusting motion.
 2. **Time-to-contact from looming** (no distance needed): TTC ≈ h ÷ (dh/dt), where h = bounding-box height in
@@ -234,7 +234,7 @@ Gemini is not used for speed (≈ 1 fps is too slow). Expected error is large (t
 (SAF-23). Stretch: an on-device depth model if fps allows.
 
 ## ADR-025 Community map as an evidence model (how user 2 improves user 1's data)
-**Proposed** · 2026-10-10 — refines ADR-020, implement in R2.3
+Accepted · 2026-10-10 (confirmed by owner) — refines ADR-020, implement in R2.3
 - **What improves is the shared street map, not an AI model.** Each walk is evidence about each place.
 - **Hazard confidence** = Beta(α, β): every "seen" observation adds weight to α, every "passed by and not seen"
   adds to β; weight = detection confidence × recency decay (older evidence counts less). p = α ÷ (α + β).
@@ -248,13 +248,32 @@ Gemini is not used for speed (≈ 1 fps is too slow). Expected error is large (t
   to train on. Better models would need a separate, opt-in, consented, blurred data programme — future work, disclosed.
 
 ## ADR-026 User-controlled alert levels with a safety floor
-**Proposed** · 2026-10-10 (owner's proposal, refined) · extends ADR-022/023
+Accepted · 2026-10-10 (owner's proposal, refined; confirmed) · extends ADR-022/023
 - **Floor (cannot be turned off):** P0 imminent hazards and SYS (camera lost, offline, stopped). Safety rate caps also stay.
 - **Presets instead of a 1–10 number:** *Essential* (P0 + P1 + SYS) · *Standard* (+ P2) · *Detailed* (+ P3 context,
   route info, landmarks). A 1–10 scale is hard to map to behaviour and hard to operate by voice/screen reader.
 - **Category toggles:** community reports, route summary, landmarks, scene descriptions, Gemini answers read aloud.
 - **Channel choice** per tier (speech / earcon / haptic) and speech rate. Voice commands: "fewer alerts", "more alerts".
 - Stored **locally on the device** (no account); fully screen-reader operable; current preset announced at walk start.
+
+## ADR-027 Don't rebuild turn-by-turn navigation; use the route only for hazards and the summary
+**Proposed** · 2026-10-10 — owner to confirm (changes R2.1 → roadmap deviation)
+Context: Google Maps already offers accessible walking navigation with TalkBack/VoiceOver. Rebuilding spoken
+turn-by-turn in 7 days duplicates it, adds risk SAF-11 (GPS error at turns), and competes with our alerts for the
+user's ears. Proposal: R2.1 becomes "route corridor": user names a destination → Routes API gives the walking
+polyline → used to prefetch community hazards along it and speak the ADR-021 route summary. Users keep Google Maps
+(or any nav app) for turns; Footprint adds the street-level layer Maps doesn't have. Saves ≈ 1 dev-day for R1.6–R1.8.
+Score: no loss on Innovation/Impact (our differentiator is hazards + community map); fewer failure modes.
+
+## ADR-028 Build order: thin end-to-end slice first, then deepen
+**Proposed** · 2026-10-10 — owner to confirm
+Day 1–2 (10-11 → 10-12): one ugly but complete path, deployed — clip/camera → detector → alert manager (P0/P1 only)
+→ TTS; scene scan → `/observations` → Firestore → map page; Cloud Run URL tested on a phone. Then deepen in order of
+safety and score: R1.7 safety filter → R1.6 fail-loud → R1.8 face blur → ADR-022/023 tiers → R2.3 evidence model →
+R1.4 Gemini Live Q&A → R2.5 summary → R2.6/R2.7. Feature freeze 10-16; 10-16 field tests + ST matrix; 10-17 video,
+deck, submit. Rationale: integration problems surface on day 2, not day 6, and a demoable build exists at all times.
+Shared TypeScript types (`packages/shared`: Observation, Hazard, Alert, Tier) are created first so 3 people can work
+in parallel. Safety-critical pure logic (alert manager, output filter, evidence model) gets unit tests (Vitest).
 
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
