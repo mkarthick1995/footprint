@@ -8,11 +8,10 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 - Scaffold merged (PR #12); `build-test` is a required check.
 
 ## Next
-1. Run `gcloud auth application-default login` (local API → Vertex/Firestore without key files).
-2. Send teammates' Google emails → IAM Editor grants; teammates follow docs/SETUP_GCP.md + `npm install`.
-3. Merge this PR manually (R1.4 wording change = declared deviation).
-4. R1.5 deploy: first Cloud Run deployment with the `footprint-api` service account; restrict Maps key to that URL.
-5. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline time, credits).
+1. Send teammates' Google emails → IAM Editor grants; teammates follow docs/SETUP_GCP.md + `npm install`.
+2. Merge this PR manually (R1.4 wording change = declared deviation).
+3. R1.5 deploy: first Cloud Run deployment with the `footprint-api` service account; restrict Maps key to that URL.
+4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline time, credits).
 
 ## Blockers
 - (none)

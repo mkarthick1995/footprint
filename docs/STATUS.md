@@ -9,7 +9,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 ## Phase 0 — Setup
 - [x] R0.1 3rd member added to Hack2skill team — @mkarthick1995 2026-10-10
 - [x] R0.2 Repo scaffold + guardrails + docs pushed to github.com/mkarthick1995/footprint (public) — @mkarthick1995 2026-10-10
-- [~] R0.3 Project `project-d8d384af-4155-46fa-a3c` ("footprint-aicup"): billing + trial, budget alerts, APIs, Firestore Native asia-southeast1, Maps key restricted, Vertex AI verified (ADR-030), SA `footprint-api`, `.env` filled; pending: teammate IAM + owner `gcloud auth application-default login` — @mkarthick1995 2026-10-10
+- [~] R0.3 Project `project-d8d384af-4155-46fa-a3c` ("footprint-aicup"): billing + trial, budget alerts, APIs, Firestore Native asia-southeast1, Maps key restricted, Vertex AI verified (ADR-030), SA `footprint-api`, `.env` filled; owner ADC login verified (Vertex 200, Firestore 200); pending: teammate IAM — @mkarthick1995 2026-10-10
 - [~] R0.4 Stack confirmed (ADR-003 accepted, all ADRs to 026 accepted); pending: teammates' handles + owner split in TEAM.md — @mkarthick1995 2026-10-10
 - [x] R0.5 Verified (ADR-029): ephemeral tokens = Gemini Developer API only; Live 2-min video cap → compression + resumption + on-demand frames; text via output transcription; model IDs in config. Meta toolkit country check deferred to R3.1 — @mkarthick1995 2026-10-10
 - [x] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr; `main` protection verified via API: code-owner approval, required checks secrets/docs-sync/pr-guard (strict), linear history, conversation resolution, squash-only, auto-delete branches — @mkarthick1995 2026-10-10

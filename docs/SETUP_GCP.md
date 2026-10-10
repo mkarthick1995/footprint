@@ -14,6 +14,7 @@ files — only into your local `.env` (gitignored).
 | Runtime identity | service account `footprint-api@project-d8d384af-4155-46fa-a3c.iam.gserviceaccount.com` — roles `aiplatform.user`, `datastore.user`; **no key file** |
 | Maps key | `footprint-maps-browser`, restricted to Maps JavaScript + Routes APIs (add HTTP-referrer restriction once the Cloud Run URL exists) |
 | AI Studio key | none — Gemini Developer API needs prepaid AI Studio credit, not used (ADR-030) |
+| Owner ADC | `gcloud auth application-default login` done; verified against Vertex AI and Firestore (2026-10-10) |
 | Teammates | pending: IAM Editor grants |
 
 ## Everyone: local setup
