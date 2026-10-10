@@ -50,9 +50,11 @@ async function start(): Promise<void> {
       }
       source = await openClip(video, file);
     } else {
+      // While the page is hidden the browser mutes the camera itself; the visibility handler already speaks
+      // "paused" / "resumed", so only announce track changes that happen while the user is in the app.
       source = await openCamera(video, {
-        onLost: () => announce(MESSAGES.cameraLost),
-        onRestored: () => announce(MESSAGES.resumed),
+        onLost: () => { if (!document.hidden) announce(MESSAGES.cameraLost); },
+        onRestored: () => { if (!document.hidden) announce(MESSAGES.resumed); },
       });
     }
   } catch (err) {
