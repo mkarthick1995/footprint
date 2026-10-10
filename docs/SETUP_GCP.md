@@ -15,7 +15,7 @@ files — only into your local `.env` (gitignored).
 | Maps key | `footprint-maps-browser`, restricted to Maps JavaScript + Routes APIs (add HTTP-referrer restriction once the Cloud Run URL exists) |
 | AI Studio key | none — Gemini Developer API needs prepaid AI Studio credit, not used (ADR-030) |
 | Owner ADC | `gcloud auth application-default login` done; verified against Vertex AI and Firestore (2026-10-10) |
-| Teammates | pending: IAM Editor grants |
+| Teammates | both granted Editor (2026-10-10); each runs the local setup below |
 
 ## Everyone: local setup
 1. **gcloud CLI** — `winget install Google.CloudSDK` (Windows) / `brew install --cask google-cloud-sdk` (macOS).
