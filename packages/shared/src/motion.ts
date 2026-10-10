@@ -69,6 +69,19 @@ export const DEFAULT_HFOV_DEG = 65;
 /** Typical walking speed (m/s) used when an object's motion isn't measured yet. */
 export const WALKING_SPEED_MPS = 1.4;
 
+/**
+ * Fastest plausible closing speed (m/s) per type: the user walking briskly plus the object's own top speed
+ * (jogger, bike, slow street traffic). Looming TTC can't be lower than distance ÷ this — small far boxes jitter, and
+ * the jitter otherwise reads as an impossibly fast approach (real clips 2026-10-10: people 10–15 m away flagged P0).
+ */
+export const MAX_CLOSING_MPS: Readonly<Partial<Record<HazardType, number>>> = {
+  person: 5,
+  cyclist: 8,
+  vehicle: 14,
+  obstruction: 2.5,
+  street_furniture: 2.5,
+};
+
 export function iou(a: Box, b: Box): number {
   const x1 = Math.max(a.x, b.x);
   const y1 = Math.max(a.y, b.y);
@@ -103,6 +116,17 @@ export function isInPath(box: Box, frame: FrameInfo, corridor = 0.4): boolean {
   const left = (frame.width * (1 - corridor)) / 2;
   const right = frame.width - left;
   return box.x < right && box.x + box.w > left;
+}
+
+/** Box centre lies inside the central corridor — straight ahead, not just overlapping it. */
+export function isCentred(box: Box, frame: FrameInfo, corridor = 0.4): boolean {
+  const cx = box.x + box.w / 2;
+  return Math.abs(cx - frame.width / 2) <= (frame.width * corridor) / 2;
+}
+
+/** Box touches the top or bottom edge → its *height* is truncated (side-only cuts leave height intact). */
+export function isHeightCut(box: Box, frame: FrameInfo, margin = 2): boolean {
+  return box.y <= margin || box.y + box.h >= frame.height - margin;
 }
 
 /** Box touches the frame edge → its size is truncated, so looming and distance are unreliable (SAF-27). */
@@ -245,15 +269,25 @@ export function candidateFor(track: Track, frame: FrameInfo, opts: CandidateOpti
   const { minHits = 3, minMotionHits = 5, hfovDeg = DEFAULT_HFOV_DEG } = opts;
   if (track.hits < minHits) return null;
   const inPath = isInPath(track.box, frame);
+  const heightCut = isHeightCut(track.box, frame);
   const fillsFrame = track.box.h / frame.height > 0.6;
-  // Edge-cut boxes have truncated sizes: no looming, no distance → cautious NaN tier, unless it fills the path (very close).
-  const distance = track.edgeCut ? undefined : estimateDistanceM(track.type, track.box.h, frame.width, hfovDeg);
-  let ttc = track.edgeCut || track.hits < minMotionHits ? Number.NaN : loomingTtcSeconds(track.heights);
+  // A height-cut box shows only part of the object, so the estimate is an *upper bound* on distance (the object is at
+  // least this close). Side-only cuts leave height, distance and looming intact.
+  const distance = estimateDistanceM(track.type, track.box.h, frame.width, hfovDeg);
+  let ttc = heightCut || track.hits < minMotionHits ? Number.NaN : loomingTtcSeconds(track.heights);
   // Motion not known yet → assume the user walks towards it (distance ÷ walking speed), so far objects stay low-tier
   // (SAF-02); only when distance is also unknown does the cautious NaN tier apply (SAFETY.md §2).
   if (Number.isNaN(ttc) && distance !== undefined) ttc = distance / WALKING_SPEED_MPS;
+  // Physical bound: nothing closes faster than its plausible top speed (rejects jitter on small, far boxes).
+  const maxClosing = MAX_CLOSING_MPS[track.type];
+  if (!heightCut && distance !== undefined && maxClosing && Number.isFinite(ttc)) ttc = Math.max(ttc, distance / maxClosing);
   let tier = tierFor(ttc, inPath, distance);
-  if (track.edgeCut && fillsFrame && inPath) tier = 'P0';
+  // Something filling the frame in the path is close even when it's cut off. Known types already get a tier from their
+  // distance bound (in portrait, a person filling 60 % of the height is ≤ ~1.3 m → P0 by distance); keep at least P1.
+  // Unknown types have no distance: imminent when straight ahead, else near.
+  if (heightCut && fillsFrame && inPath && tier !== 'P0') {
+    tier = distance === undefined && isCentred(track.box, frame) ? 'P0' : 'P1';
+  }
   const confidence = track.scores.reduce((a, b) => a + b, 0) / track.scores.length;
   return {
     id: track.id,

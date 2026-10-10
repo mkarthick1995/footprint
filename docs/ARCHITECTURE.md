@@ -75,7 +75,7 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   `perception.ts` loop: rAF → detect → `Tracker` → `candidateFor` → candidates (overlay now; alert manager in Q3).
   **Clip evaluator (dev only):** `npm run dev` → `/clip-eval.html` (`src/dev/clipEval.ts`) seeks a local clip at a fixed
   sample fps, runs the same pipeline deterministically and reports per-track tier escalations + label counts. Not in
-  the production build (Vite builds `index.html` only); clips never leave the browser.
+  the production build (Vite builds `index.html` only); clips never leave the browser. Vite aliases `@footprint/shared` to its `src/`, so threshold edits apply without a rebuild.
 - **Motion (ADR-024):** tracker → looming-based TTC (box growth) + approximate distance (pinhole, typical heights)
   + user walking speed (accelerometer cadence, GPS) + gyroscope sway compensation → speed, direction, in-path.
 - **User preferences (ADR-026):** presets Essential / Standard / Detailed + category and channel toggles, stored

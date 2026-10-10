@@ -164,11 +164,51 @@ describe('candidateFor', () => {
     expect(candidateFor(track, last)!.tier).toBe('P2');
   });
 
-  it('an edge-cut object filling the path is imminent (P0)', () => {
+  it('an unknown edge-cut object filling the path straight ahead is imminent (P0)', () => {
     const tr = new Tracker();
     const big = { x: 220, y: 40, w: 200, h: H - 40 }; // touches the bottom edge, 89 % of frame height
     let tracks = [] as ReturnType<Tracker['update']>;
-    for (let i = 0; i < 3; i++) tracks = tr.update([{ box: big, label: 'person', score: 0.9 }], frame(i * 100));
+    for (let i = 0; i < 3; i++) tracks = tr.update([{ box: big, label: 'refrigerator', score: 0.9 }], frame(i * 100));
     expect(candidateFor(tracks[0]!, frame(200))!.tier).toBe('P0');
+  });
+
+  it('a cut-off person filling a landscape frame is at least near (P1); P0 once the distance bound is ≤ 2 m', () => {
+    const tr = new Tracker();
+    const big = { x: 220, y: 40, w: 200, h: H - 40 }; // 320 px → at most 2.7 m away
+    let tracks = [] as ReturnType<Tracker['update']>;
+    for (let i = 0; i < 3; i++) tracks = tr.update([{ box: big, label: 'person', score: 0.9 }], frame(i * 100));
+    expect(candidateFor(tracks[0]!, frame(200))!.tier).toBe('P1');
+    // Portrait frame (360 × 640): the same person filling 89 % of the height is ≤ 1.4 m away → P0.
+    const pf = (ts: number): FrameInfo => ({ width: 360, height: 640, ts });
+    const tall = { x: 80, y: 70, w: 200, h: 570 };
+    const tr2 = new Tracker();
+    for (let i = 0; i < 3; i++) tracks = tr2.update([{ box: tall, label: 'person', score: 0.9 }], pf(i * 100));
+    expect(candidateFor(tracks[0]!, pf(200))!.tier).toBe('P0');
+  });
+
+  it('a frame-filling person passing beside (in the corridor but not centred) is near (P1), not imminent', () => {
+    const tr = new Tracker();
+    const side = { x: 400, y: 40, w: 200, h: H - 40 }; // overlaps the corridor (192–448), centre at 500 px
+    let tracks = [] as ReturnType<Tracker['update']>;
+    for (let i = 0; i < 3; i++) tracks = tr.update([{ box: side, label: 'person', score: 0.9 }], frame(i * 100));
+    expect(candidateFor(tracks[0]!, frame(200))!.tier).toBe('P1');
+  });
+
+  it('caps implausibly fast looming on a far person by the closing-speed bound (jitter on small boxes)', () => {
+    // Apparent 10 m/s approach from 15 m: looming alone says ~1 s; a person can't close faster than 5 m/s.
+    const { track, last } = feed([15, 14, 13, 12, 11, 10]);
+    const c = candidateFor(track, last)!;
+    expect(c.tier).not.toBe('P0');
+    expect(c.ttcSeconds).toBeGreaterThanOrEqual(10 / 5 - 1e-9);
+  });
+
+  it('a box cut only at the side keeps its distance estimate (height is intact)', () => {
+    const tr = new Tracker();
+    const b = personBox(6);
+    const cut = { ...b, x: 0 }; // touches the left edge only
+    let tracks = [] as ReturnType<Tracker['update']>;
+    for (let i = 0; i < 3; i++) tracks = tr.update([{ box: cut, label: 'person', score: 0.9 }], frame(i * 100));
+    const c = candidateFor(tracks[0]!, frame(200))!;
+    expect(c.ttcSeconds).toBeCloseTo(6 / 1.4, 1);
   });
 });

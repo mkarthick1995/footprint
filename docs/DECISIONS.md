@@ -226,6 +226,12 @@ Accepted · 2026-10-10 (confirmed by owner) — implement in R1.2, tune on clips
    exactly linear, so TTC = (1/h) ÷ (−d(1/h)/dt) is exact; fitting h lagged the accelerating growth and overestimated TTC by
    ~24 % in tests (warnings too late). Tracks need ≥ 3 hits to be announced, ≥ 5 for looming; until motion is known,
    TTC = distance ÷ 1.4 m/s so far objects stay low-tier. Gyro sway compensation and object-speed are deferred (SAF-27 note).
+   *Refinement 2 (Q2, 2026-10-11, from real crowd clips):* (a) **closing-speed bound** — TTC ≥ distance ÷ max closing
+   speed per type (person 5, cyclist 8, vehicle 14, static 2.5 m/s), because jitter on small far boxes read as "1 s away"
+   for people 10–15 m off; (b) a box cut at the **top/bottom** gives an *upper bound* on distance (side-only cuts keep
+   height, distance and looming); (c) "fills the frame in the path" forces P0 only for **unknown** types straight ahead
+   (centre in the corridor) — known types get P0 from their distance bound (≤ 2 m) and at least P1 otherwise. Rejected:
+   keeping "any frame-filling box = P0" — on landscape clips it fired for everyone within ~4 m (17 % of frames).
 3. **Approximate distance** (for wording + context): pinhole model, distance ≈ focal_px × typical real height ÷ box
    height (person ≈ 1.7 m, car ≈ 1.5 m, bike ≈ 1.1 m); focal length from the camera's field of view, calibrated once.
 4. **Object speed** = change in distance per second − user's own walking speed (step cadence from the accelerometer,
