@@ -37,7 +37,7 @@ main ─────────●─────────────●─
 2. Commit often with roadmap IDs: `feat(web): add proximity heuristic [R1.2]`.
 3. Keep up to date: `git fetch origin && git rebase origin/main` (before opening the PR and when main moves).
 4. Run **`/open-pr`** (Claude or Gemini): self-review against the roadmap, fill the PR template, open the PR.
-5. CI must be green: `secrets`, `docs-sync`, `pr-guard` (roadmap ID + deviation disclosure).
+5. CI must be green: `secrets`, `docs-sync`, `pr-guard` (roadmap ID + deviation disclosure), `build-test` (typecheck, tests, build).
 6. **Teammates' PRs:** the code owner reviews (assisted by `/review-pr <n>`), approves, and squash-merges.
    **Owner's PRs:** auto squash-merged by `automerge-owner` once all checks pass (ADR-010) — unless the PR is a
    draft, has the `no-automerge` label, or declares a roadmap deviation. Branches auto-delete after merge.
@@ -60,7 +60,7 @@ the roadmap IDs and every deviation at a glance. `/review-pr` also hunts for *un
 Script (needs GitHub CLI + admin): `node infra/github/protect-main.mjs <owner>/<repo>`.
 Or manually: GitHub → Settings → Branches → Add rule for `main`:
 require a PR · 1 approval · **require review from Code Owners** · dismiss stale approvals · require approval of the
-most recent push · require status checks `secrets`, `docs-sync`, `pr-guard` (branch up to date) · require conversation
+most recent push · require status checks `secrets`, `docs-sync`, `pr-guard`, `build-test` (branch up to date) · require conversation
 resolution · require linear history · no force pushes / deletions. Settings → General: squash merge only,
 auto-delete head branches.
 Note: GitHub never lets authors approve their own PRs. Owner PRs are merged by the `automerge-owner` workflow using
