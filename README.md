@@ -10,7 +10,7 @@ every walk improves a shared street-accessibility map.
 
 | | |
 |---|---|
-| **Live app** | _coming soon (Cloud Run)_ |
+| **Live app** | https://footprint-804307041024.asia-southeast1.run.app (skeleton — features land daily) |
 | **Hazard map** | _coming soon_ |
 | **Demo video** | _coming soon_ |
 | **Status** | [`docs/STATUS.md`](docs/STATUS.md) |

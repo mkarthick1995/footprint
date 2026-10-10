@@ -12,10 +12,12 @@ files — only into your local `.env` (gitignored).
 | Firestore | `(default)`, Native mode, **asia-southeast1** |
 | Gemini | **Vertex AI** (trial-billed). Scan `gemini-3.8-flash` @ global; Live `gemini-live-2.5-flash-native-audio` @ us-central1 |
 | Runtime identity | service account `footprint-api@project-d8d384af-4155-46fa-a3c.iam.gserviceaccount.com` — roles `aiplatform.user`, `datastore.user`; **no key file** |
-| Maps key | `footprint-maps-browser`, restricted to Maps JavaScript + Routes APIs (add HTTP-referrer restriction once the Cloud Run URL exists) |
+| Maps key | `footprint-maps-browser`, restricted to Maps JavaScript + Routes APIs + HTTP referrers `https://footprint-804307041024.asia-southeast1.run.app/*` and `http://localhost:5173/*` |
 | AI Studio key | none — Gemini Developer API needs prepaid AI Studio credit, not used (ADR-030) |
 | Owner ADC | `gcloud auth application-default login` done; verified against Vertex AI and Firestore (2026-10-10) |
-| Teammates | both granted Editor (2026-10-10); each runs the local setup below |
+| Teammates | both granted Editor and added as GitHub collaborators (2026-10-10); each runs the local setup below |
+| Cloud Run | service `footprint` → https://footprint-804307041024.asia-southeast1.run.app (asia-southeast1, SA `footprint-api`, max 2 instances, timeout 3600 s) |
+| Build account | `804307041024-compute@developer` has `roles/run.builder` (needed for source deploys in new projects) |
 
 ## Everyone: local setup
 1. **gcloud CLI** — `winget install Google.CloudSDK` (Windows) / `brew install --cask google-cloud-sdk` (macOS).
@@ -29,9 +31,10 @@ files — only into your local `.env` (gitignored).
 `gcloud projects add-iam-policy-binding project-d8d384af-4155-46fa-a3c --member=user:<email> --role=roles/editor`
 (emails stay out of the repo).
 
-## Later (R1.5 / R4.5)
-- Deploy: `gcloud run deploy footprint --source . --region asia-southeast1 --allow-unauthenticated
-  --service-account footprint-api@project-d8d384af-4155-46fa-a3c.iam.gserviceaccount.com
-  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=...,GEMINI_SCAN_MODEL=...` (script lands in `infra/`).
-- Cloud Run request timeout up to 60 min for the Live WebSocket proxy; session caps per R2.7.
-- During judging (10-19 → 11-06): min instances = 1 (REL-03); re-check model IDs (REL-02, REL-07).
+## Deploy (R1.5)
+`npm run deploy` → `infra/deploy.mjs` (gcloud on PATH; Windows: open a new terminal after installing gcloud).
+Builds the root `Dockerfile` with Cloud Build, deploys service `footprint` with the runtime SA and non-secret env vars.
+No secrets are passed — Gemini/Firestore auth comes from the service account (ADR-030).
+
+## Before judging (R4.5)
+- Min instances = 1 during 10-19 → 11-06 (REL-03); re-check model IDs (REL-02, REL-07); review max instances.
