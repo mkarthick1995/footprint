@@ -26,7 +26,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [x] R0.5 Verified (ADR-029/030): Gemini on Vertex AI, Live text via transcription, 2-min video cap handling, model IDs in config — @mkarthick1995 2026-10-10
 - [x] R0.6 Protected main, CODEOWNERS, required checks (secrets, docs-sync, pr-guard, build-test), owner-PR auto-merge — @mkarthick1995 2026-10-10
 - [x] R0.7 Safety case (SAFETY.md) + ADR-011..031 accepted — @mkarthick1995 2026-10-10
-- [x] R1.5 Scaffold + Cloud Run deploy (`npm run deploy`), Maps key referrer-locked — @mkarthick1995 2026-10-10
+- [x] R1.5 Scaffold + Cloud Run deploy (`npm run deploy`; production deploys always route traffic to latest), Maps key referrer-locked — @mkarthick1995 2026-10-10
 
 ## Build queue — take the first unclaimed step, finish its whole DoD
 - [x] Q1 · R1.1 Frame source complete — @mkarthick1995 2026-10-10 · verified: clip path 640×360 (desktop browser), rear camera + wake lock + app-switch pause/resume on Android Chrome (owner phone test, ST-04 ✅); calm wording (ADR-032); best device voice (ADR-033) · DoD: rear camera + clip work on desktop Chrome and Android Chrome (live URL); Wake Lock held while running, released on stop; permission-denied / no-camera / wake-lock-unsupported announced; `grabFrame(maxWidth)` helper used by later steps; ST-04 passes

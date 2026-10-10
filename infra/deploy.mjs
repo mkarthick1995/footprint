@@ -49,5 +49,12 @@ if (preview) {
 }
 
 // On Windows gcloud is a .cmd shim, which needs a shell; none of the args contain spaces.
-const res = spawnSync('gcloud', args, { stdio: 'inherit', shell: process.platform === 'win32' });
-process.exit(res.status ?? 1);
+const run = (a) => spawnSync('gcloud', a, { stdio: 'inherit', shell: process.platform === 'win32' }).status ?? 1;
+
+let status = run(args);
+// A --no-traffic preview pins live traffic to an older revision, and later normal deploys keep that pin.
+// Production deploys therefore always move 100 % of traffic to the newest revision explicitly.
+if (status === 0 && !preview) {
+  status = run(['run', 'services', 'update-traffic', SERVICE, '--to-latest', `--project=${PROJECT}`, `--region=${REGION}`, '--quiet']);
+}
+process.exit(status);
