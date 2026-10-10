@@ -99,6 +99,7 @@ When anything happens that the code does not explicitly handle:
 | PRI-07 | **Test recordings & demo video** show faces of the public / teammates | M | Recordings only in `data/` (gitignored), deleted after hackathon; demo video faces blurred; teammates consent | Planned R4.2 |
 | PRI-08 | **Legal frameworks** — Singapore PDPA, India DPDP Act 2023, Australia Privacy Act, Japan APPI, Korea PIPA | H | Data minimisation + no biometrics + no PII by design; deck states posture; *not legal advice — verify before launch* | Accepted+Disclosed |
 | PRI-09 | **Data residency** — some JAPAC laws restrict cross-border transfer of personal data (e.g. India DPDP rules) | M | Data is anonymous and non-personal by design; single Singapore region for the hackathon; per-country regions if needed later — verify before launch | Accepted+Disclosed |
+| PRI-10 | **Frames and audio transit our Cloud Run proxy** (Vertex route) | H | Blur before upload (ADR-013); proxy never logs or stores frames/audio/transcripts; in-memory only; drops model audio | Planned R1.4, R2.2 |
 
 ### 3.3 Security & abuse
 | ID | Risk | Sev | Mitigation | Status |
@@ -119,6 +120,8 @@ When anything happens that the code does not explicitly handle:
 | REL-04 | Budget overrun | M | Budget alerts, session caps, per-session token limits | Planned R4.5 |
 | REL-05 | Browser/device gaps (iOS: no vibrate; Wake Lock support varies; camera permissions) | M | Feature detection + spoken fallback; supported-device list in README | Planned R1.1 |
 | REL-06 | **Scene-scan cost** — a Gemini call every 2–3 s per walker adds up | M | Low-res blurred frames; skip scan when scene unchanged / user stationary; per-session caps; measure cost per walk-hour in R4.1 | Planned R2.2, R2.7 |
+| REL-07 | **Live model retirement** — Vertex `gemini-live-2.5-flash-native-audio` discontinues 2026-12-13 | M | After judging (ends 11-06); model ID in config; migrate post-hackathon (ADR-030) | Accepted+Disclosed |
+| REL-08 | **Live Q&A latency** — Vertex Live only in us-central1, far from JAPAC users | M | Q&A is P3/non-critical; hazard alerts stay on-device; measure in R4.1; switch region when offered | Accepted |
 
 ### 3.5 Accessibility of the app itself
 | ID | Risk | Sev | Mitigation | Status |

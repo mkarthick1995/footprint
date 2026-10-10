@@ -22,12 +22,13 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
 
 ## What runs where, and why
 - **Phone (browser PWA, ADR-015):** camera / frame source, quality gate, on-device detection, face blur, safety
-  filter, alert manager (the only thing that speaks), GPS, and the **direct Gemini Live connection** using an
-  ephemeral token. Reason: hazard alerts need < 300 ms, which a server round trip can't guarantee.
-- **Cloud Run (asia-southeast1):** mints ephemeral tokens, hazard ingest + segment scores (Firestore), serves the web
-  app and the public map dashboard, rate limits and session caps.
-- **Contingency (decide in R0.5/R0.7):** if the chosen no-training tier (ADR-014) has no ephemeral-token support
-  (e.g. Vertex AI), Cloud Run proxies the Live WebSocket (Cloud Run supports WebSockets). One extra hop, still viable.
+  filter, alert manager (the only thing that speaks), GPS. Reason: hazard alerts need < 300 ms, which a server round
+  trip can't guarantee. The phone holds **no Google credentials** (ADR-030).
+- **Cloud Run (asia-southeast1, service account `footprint-api`):** Gemini on **Vertex AI** via the service account —
+  `POST /api/scan` (blurred low-res frame → `gemini-3.8-flash`, global endpoint, JSON schema) and the **Live proxy**
+  WebSocket `/api/live` (browser ↔ Cloud Run ↔ Vertex Live `gemini-live-2.5-flash-native-audio`, us-central1, AUDIO +
+  output transcription; the proxy forwards transcript text only and drops model audio). Plus hazard ingest + segment
+  scores (Firestore), the web app, the public map, rate limits and session caps.
 - **Frame source abstraction (ADR-016):** `camera | recorded clip`. Everything downstream is identical, so PC
   development and tests run on clips, phones run on the camera.
 - **Long-term client:** native Android / iOS (or Capacitor). Keep the safety pipeline a separate module so it ports

@@ -9,7 +9,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 ## Phase 0 — Setup
 - [x] R0.1 3rd member added to Hack2skill team — @mkarthick1995 2026-10-10
 - [x] R0.2 Repo scaffold + guardrails + docs pushed to github.com/mkarthick1995/footprint (public) — @mkarthick1995 2026-10-10
-- [ ] R0.3 GCP project, billing/credits, Gemini + Maps keys, region asia-southeast1
+- [~] R0.3 Project `project-d8d384af-4155-46fa-a3c` ("footprint-aicup"): billing + trial, budget alerts, APIs, Firestore Native asia-southeast1, Maps key restricted, Vertex AI verified (ADR-030), SA `footprint-api`, `.env` filled; pending: teammate IAM + owner `gcloud auth application-default login` — @mkarthick1995 2026-10-10
 - [~] R0.4 Stack confirmed (ADR-003 accepted, all ADRs to 026 accepted); pending: teammates' handles + owner split in TEAM.md — @mkarthick1995 2026-10-10
 - [x] R0.5 Verified (ADR-029): ephemeral tokens = Gemini Developer API only; Live 2-min video cap → compression + resumption + on-demand frames; text via output transcription; model IDs in config. Meta toolkit country check deferred to R3.1 — @mkarthick1995 2026-10-10
 - [x] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr; `main` protection verified via API: code-owner approval, required checks secrets/docs-sync/pr-guard (strict), linear history, conversation resolution, squash-only, auto-delete branches — @mkarthick1995 2026-10-10
@@ -20,7 +20,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R1.1 PWA camera capture
 - [ ] R1.2 On-device obstacle detection (design: ADR-024 tracking + time-to-contact)
 - [ ] R1.3 Voice alerts + haptics + priority (design: ADR-022 tiers, ADR-023 adaptive verbosity, ADR-026 user presets + safety floor)
-- [ ] R1.4 Ephemeral-token API + Gemini Live session
+- [ ] R1.4 Cloud Run Live proxy → Vertex Live (ADR-030)
 - [~] R1.5 Monorepo scaffold done (shared types + tier logic with tests, web PWA shell + frame source, Fastify API + Dockerfile, CI build-test, now a required check on main); deploy pending R0.3 — @mkarthick1995 2026-10-10
 - [ ] R1.6 Fail-loud layer (watchdog, degradation ladder, camera/orientation/battery checks)
 - [ ] R1.7 Gemini safety layer (instruction, schema, output filter, stale drop, injection)

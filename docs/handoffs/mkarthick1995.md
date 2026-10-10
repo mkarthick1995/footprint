@@ -1,28 +1,27 @@
 # Handoff — @mkarthick1995
-Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.6-owner-automerge
+Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 
 ## Now
-- Phase 0 governance done: protected main, owner-PR auto-merge live (token in `automerge` env, expires 2026-11-09).
-- Draft PR #5: safety case (SAFETY.md, ADR-011..014) + ADR-015 PWA-now/native-later, ADR-016 dev/test strategy,
-  ADR-017 billing (Proposed), ADR-018 Gemini-from-day-one, research/FACTS.md, "document after every chat" rule.
-
-- All ADRs accepted through ADR-029 (R0.5 findings: Gemini Developer API paid tier, ephemeral tokens, text via transcription).
+- R0.3 nearly done: project `project-d8d384af-4155-46fa-a3c` ("footprint-aicup") with billing, alerts, APIs,
+  Firestore (asia-southeast1), restricted Maps key, SA `footprint-api`, `.env` filled. Gemini runs on **Vertex AI**
+  (ADR-030) — Developer API needed AI Studio prepaid credit.
+- Scaffold merged (PR #12); `build-test` is a required check.
 
 ## Next
-1. R0.3 (owner, now): follow docs/SETUP_GCP.md; share project ID; teammates get Editor + own AI Studio keys.
-2. Merge the R0.5/roadmap PR (deviation → manual merge) and the scaffold PR (auto-merges).
-3. R0.4: teammates clone + `npm run setup -- --handle <x>` + `npm install`; fill handles/owners in TEAM.md.
-4. Record 3–5 street clips into data/clips/ (local only); start blind-user outreach (ETH-02); ask Discord (deadline time, credits).
-5. 10-11: thin slice per ADR-028.
+1. Run `gcloud auth application-default login` (local API → Vertex/Firestore without key files).
+2. Send teammates' Google emails → IAM Editor grants; teammates follow docs/SETUP_GCP.md + `npm install`.
+3. Merge this PR manually (R1.4 wording change = declared deviation).
+4. R1.5 deploy: first Cloud Run deployment with the `footprint-api` service account; restrict Maps key to that URL.
+5. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline time, credits).
 
 ## Blockers
 - (none)
 
 ## Gotchas / learned
-- `temp/` = owner's inbox (gitignored). Maps key moved from temp/ into `.env` on 2026-10-10 and the temp file deleted.
-- Repo-local git email is the GitHub noreply address.
-- `gh` CLI not installed; repo settings/protection changed via REST API with the Git Credential Manager token.
-- Owner PRs auto-merge after checks — open as draft or label `no-automerge` when you want to review first.
-- Merge commits are disabled — squash only.
-- Editing docs/ROADMAP.md is always a deviation: tick "This PR deviates" + Why + ADR; such PRs skip auto-merge (merge manually).
-- pr-guard only counts DEVIATION(...) comments inside apps/ services/ packages/ infra/.
+- Gemini Developer API returns 402 without AI Studio prepaid credit; Vertex AI uses the GCP trial (ADR-030).
+- Vertex Live: native-audio model needs AUDIO + output transcription (TEXT rejected); only us-central1.
+- gcloud on Windows: `%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd`; from Git Bash, args with
+  spaces break — use PowerShell. API keys used in the last 7 days need `--no-check-existing-usage` to delete.
+- `temp/` = owner's inbox (gitignored); consumed files get deleted.
+- Repo-local git email is the GitHub noreply address. Editing ROADMAP.md = declared deviation (no auto-merge).
+- Owner PRs auto-merge after checks — open as draft or label `no-automerge` to review first. Squash only.

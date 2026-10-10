@@ -1,31 +1,36 @@
-# Google Cloud setup (R0.3)
+# Google Cloud setup (R0.3) — current state and how to reproduce it
 
-Owner does steps 1–8 once; teammates do step 9–10. Decisions behind this: ADR-014, ADR-017, ADR-029.
-Never paste keys into chat, issues, PRs, or committed files — only into your local `.env` (gitignored) or Secret Manager.
+Decisions: ADR-014, ADR-017, ADR-030 (Gemini on Vertex AI). Never paste keys into chat, issues, PRs, or committed
+files — only into your local `.env` (gitignored).
 
-## Owner (once)
-1. **Project** — console.cloud.google.com → New project `footprint-aicup` (note the generated project ID; it isn't secret).
-2. **Billing** — Billing → start the **$300 free trial** and link it to the project. Billing is what moves Gemini to the
-   **paid tier, which isn't used for training** (ADR-014). Never run the judged build on the free tier (ADR-017).
-3. **Budget alerts** — Billing → Budgets & alerts → budget $100, email alerts at 25 % / 50 % / 100 %.
-4. **Enable APIs** — APIs & Services → Library: Generative Language API · Vertex AI API (fallback) · Cloud Run Admin API ·
-   Cloud Build API · Artifact Registry API · Cloud Firestore API · Secret Manager API · Routes API · Maps JavaScript API.
-5. **Firestore** — Create database → **Native mode** → location **asia-southeast1 (Singapore)**, single region.
-6. **Gemini key** — aistudio.google.com/apikey → *Create API key in existing project* → `footprint-aicup`.
-   Check AI Studio shows the project on a **paid** tier. Note available Live / Flash model IDs for `.env` (ADR-029).
-7. **Maps key** — APIs & Services → Credentials → Create API key → restrict to Routes API + Maps JavaScript API
-   (add HTTP-referrer restriction to the Cloud Run URL once it exists).
-8. **Team access** — IAM → Grant access → teammates' Google emails → role **Editor** (fine for a 7-day hackathon;
-   tighten later). Each person creates their own Gemini key in AI Studio under the same project — no shared personal keys.
+## Current state (2026-10-10)
+| Item | Value / status |
+|---|---|
+| Project | `project-d8d384af-4155-46fa-a3c` (display name `footprint-aicup`), owner @mkarthick1995 |
+| Billing | $300 free trial linked; budget $100 with alerts at 25 / 50 / 100 % |
+| APIs | Generative Language, Vertex AI, Cloud Run, Cloud Build, Artifact Registry, Firestore, Secret Manager, Routes, Maps JavaScript, API Keys |
+| Firestore | `(default)`, Native mode, **asia-southeast1** |
+| Gemini | **Vertex AI** (trial-billed). Scan `gemini-3.8-flash` @ global; Live `gemini-live-2.5-flash-native-audio` @ us-central1 |
+| Runtime identity | service account `footprint-api@project-d8d384af-4155-46fa-a3c.iam.gserviceaccount.com` — roles `aiplatform.user`, `datastore.user`; **no key file** |
+| Maps key | `footprint-maps-browser`, restricted to Maps JavaScript + Routes APIs (add HTTP-referrer restriction once the Cloud Run URL exists) |
+| AI Studio key | none — Gemini Developer API needs prepaid AI Studio credit, not used (ADR-030) |
+| Teammates | pending: IAM Editor grants |
 
-## Everyone
-9. **gcloud CLI** — `winget install Google.CloudSDK` (Windows) / `brew install --cask google-cloud-sdk` (macOS), then
-   `gcloud auth login` · `gcloud config set project <project-id>` · `gcloud config set run/region asia-southeast1`.
-10. **`.env`** — fill `GEMINI_API_KEY`, `GEMINI_LIVE_MODEL`, `GEMINI_SCAN_MODEL`, `GOOGLE_CLOUD_PROJECT`,
-    `GOOGLE_MAPS_API_KEY` (names in `.env.example`).
+## Everyone: local setup
+1. **gcloud CLI** — `winget install Google.CloudSDK` (Windows) / `brew install --cask google-cloud-sdk` (macOS).
+   On Windows the binary is at `%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd` until a new terminal
+   picks up PATH. Calling it from Git Bash with arguments that contain spaces breaks — use PowerShell for those.
+2. `gcloud auth login` → `gcloud config set project project-d8d384af-4155-46fa-a3c` → `gcloud config set run/region asia-southeast1`.
+3. `gcloud auth application-default login` — lets the local API call Vertex AI and Firestore as you, with no key file.
+4. `.env` — copy values from `.env.example`; the owner shares the Maps key privately.
+
+## Owner: grant a teammate access
+`gcloud projects add-iam-policy-binding project-d8d384af-4155-46fa-a3c --member=user:<email> --role=roles/editor`
+(emails stay out of the repo).
 
 ## Later (R1.5 / R4.5)
-- Secrets for Cloud Run: `gcloud secrets create gemini-api-key --data-file=-` (paste via stdin, never on the command line).
-- Deploy: `gcloud run deploy footprint-api --source services/api --region asia-southeast1 --allow-unauthenticated
-  --set-secrets GEMINI_API_KEY=gemini-api-key:latest` (exact script lands in `infra/` with R1.5).
-- During judging (10-19 → 11-06): min instances = 1 (REL-03); re-check model IDs (REL-02).
+- Deploy: `gcloud run deploy footprint --source . --region asia-southeast1 --allow-unauthenticated
+  --service-account footprint-api@project-d8d384af-4155-46fa-a3c.iam.gserviceaccount.com
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=...,GEMINI_SCAN_MODEL=...` (script lands in `infra/`).
+- Cloud Run request timeout up to 60 min for the Live WebSocket proxy; session caps per R2.7.
+- During judging (10-19 → 11-06): min instances = 1 (REL-03); re-check model IDs (REL-02, REL-07).
