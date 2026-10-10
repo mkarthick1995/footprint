@@ -34,6 +34,15 @@ describe('AlertManager queue rules (ADR-022)', () => {
     expect(m.next(1000)!.text).toBe('People close, left');
   });
 
+  it('people on several sides merge into one "around" message; uncertain items join their type', () => {
+    const m = new AlertManager();
+    m.update([cand({ tier: 'P1', type: 'person', bearingDeg: -20, ttcSeconds: 2 }), cand({ tier: 'P1', type: 'person', bearingDeg: 25, ttcSeconds: 3 })]);
+    expect(m.next(1000)!.text).toBe('Two people close around');
+    const m2 = new AlertManager();
+    m2.update([cand({ tier: 'P1', type: 'person', bearingDeg: 20 }), cand({ tier: 'P1', type: 'person', bearingDeg: 22, confidence: 0.4 })]);
+    expect(m2.next(1000)!.text).toBe('Two people close, right');
+  });
+
   it('ST-24: candidates gone from the latest frame or older than 1 s are never spoken', () => {
     const m = new AlertManager();
     m.update([cand({ tier: 'P1', type: 'person' }, 1000)]);
@@ -169,7 +178,7 @@ describe('wording', () => {
     const banned = /\b(clear|safe|go|cross)\b/i;
     for (const type of HAZARD_TYPES as readonly HazardType[]) {
       for (const tier of ['P0', 'P1', 'P2'] as const) {
-        for (const side of ['left', 'ahead', 'right'] as const) {
+        for (const side of ['left', 'ahead', 'right', 'around'] as const) {
           for (const n of [1, 2, 5]) {
             for (const lowConfidence of [false, true]) {
               const text = phraseFor({ tier, type, side, items: Array.from({ length: n }, () => cand({ tier, type })), lowConfidence });

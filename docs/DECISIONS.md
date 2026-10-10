@@ -207,6 +207,10 @@ crowds; minimum gap before a new message P1 1.5 s · P2 3 s · P3 6 s (P0/SYS no
 "<noun>, <side>" (P2); low confidence → "Possible obstacle". Rejected: a priority queue of individual messages —
 the newest frame is the re-check (rule 2), so the manager picks from the latest candidate set instead of queueing
 stale items. TTS "ended" events can go missing on Android → a watchdog frees the output so alerts can't stall silently.
+Crowd tuning on clips (2026-10-11): a situation already put into words within 15 s repeats as an **earcon only** (P1)
+or not at all (P2/P3) — ADR-023's "earcons for recurring items" pulled forward into Q3; **people merge across sides**
+("Two people close around", named by the nearest person's side otherwise); uncertain items join their type's group
+("possible" only if all are uncertain). Spoken/min: Singapore night lane 24 → 13, Shanghai crowd 19 → 9.
 
 ## ADR-023 Adaptive verbosity: message style follows how demanding the street is
 Accepted · 2026-10-10 (owner's proposal, refined) · extends ADR-022, mitigates SAF-06/07

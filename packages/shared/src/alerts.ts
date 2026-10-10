@@ -59,6 +59,8 @@ const P0_NOUN: Partial<Record<HazardType, string>> = { open_drain: 'Drain', spee
 const COUNT = ['', 'One', 'Two', 'Three'];
 
 export type Side = 'left' | 'ahead' | 'right';
+/** A merged group's direction: people on several sides at once are "around". */
+export type GroupSide = Side | 'around';
 
 /** Direction bucket from bearing: within ±10° counts as straight ahead. */
 export function sideOf(bearingDeg: number): Side {
@@ -75,9 +77,10 @@ export function wordCount(text: string): number {
 }
 
 interface Group {
+  key: string;
   tier: Tier;
   type: HazardType;
-  side: Side;
+  side: GroupSide;
   items: AlertCandidate[];
   /** Lowest TTC in the group (first to be encountered). */
   ttc: number;
@@ -88,11 +91,12 @@ interface Group {
 export function phraseFor(g: Pick<Group, 'tier' | 'type' | 'side' | 'items' | 'lowConfidence'>): string {
   const [one, many] = NOUN[g.type] ?? NOUN.unknown;
   const n = g.items.length;
-  const where = g.side === 'ahead' ? 'ahead' : g.side;
+  const where = g.side;
   if (g.tier === 'P0') return `Stop! ${g.lowConfidence ? 'Obstacle' : (P0_NOUN[g.type] ?? one)}`;
   const subject = g.lowConfidence ? 'Possible obstacle' : n === 1 ? one : n <= 3 ? `${COUNT[n]} ${many}` : `${cap(many)}`;
-  if (g.tier === 'P1') return g.side === 'ahead' ? `${subject} close ahead` : `${subject} close, ${where}`;
-  return `${subject}, ${where}`;
+  const spaced = g.side === 'ahead' || g.side === 'around';
+  if (g.tier === 'P1') return spaced ? `${subject} close ${where}` : `${subject} close, ${where}`;
+  return spaced && g.side === 'around' ? `${subject} ${where}` : `${subject}, ${where}`;
 }
 
 function cap(s: string): string {
@@ -176,7 +180,7 @@ export class AlertManager {
     }
     if (now - this.lastSpokenAt < MIN_GAP_MS[group.tier]) return null;
     const ids = group.items.map((c) => c.id);
-    const key = groupKey(group);
+    const key = group.key;
     for (const c of group.items) this.spokenObject.set(c.id, { tier: group.tier, at: now });
     this.spokenGroup.set(key, now);
     // Recurring situation (people streaming past): words once, then a short cue. P0 always speaks.
@@ -216,29 +220,28 @@ export class AlertManager {
       if (said && RANK[c.tier] >= RANK[said.tier] && now - said.at < objectCooldownMs) return false;
       return true;
     });
-    // Merge same tier + type + side (rule 3); crowds collapse to one message.
+    // Merge (rule 3): same tier + type + side; people merge across sides (a crowd is one situation, named by the nearest
+    // person's side or "around"). Uncertain items join their type's group; "possible" only when all are uncertain.
     const groups = new Map<string, Group>();
-    for (const c of live) {
+    for (const c of [...live].sort((a, b) => a.ttcSeconds - b.ttcSeconds)) {
       const type = c.type as HazardType;
       const side = sideOf(c.bearingDeg);
       const low = c.confidence < lowConfidence;
-      const key = `${c.tier}|${low ? 'possible' : type}|${side}`;
-      const g = groups.get(key) ?? { tier: c.tier, type, side, items: [], ttc: Infinity, lowConfidence: low };
+      const key = `${c.tier}|${type}|${type === 'person' ? '*' : side}`;
+      const g = groups.get(key) ?? { key, tier: c.tier, type, side, items: [], ttc: Infinity, lowConfidence: true };
+      if (g.items.length > 0 && g.side !== side) g.side = 'around';
       g.items.push(c);
       g.ttc = Math.min(g.ttc, c.ttcSeconds);
+      g.lowConfidence &&= low;
       groups.set(key, g);
     }
     const ranked = [...groups.values()]
       .filter((g) => {
-        const at = this.spokenGroup.get(groupKey(g));
+        const at = this.spokenGroup.get(g.key);
         // Tracker ID churn: same thing under a new ID. P0 never waits on a group cool-down shorter than its own.
         return at === undefined || now - at >= (g.tier === 'P0' ? groupCooldownMs / 2 : groupCooldownMs);
       })
       .sort((a, b) => RANK[a.tier] - RANK[b.tier] || a.ttc - b.ttc || severity(a.type) - severity(b.type));
     return ranked[0] ?? null;
   }
-}
-
-function groupKey(g: Pick<Group, 'tier' | 'type' | 'side' | 'lowConfidence'>): string {
-  return `${g.tier}|${g.lowConfidence ? 'possible' : g.type}|${g.side}`;
 }

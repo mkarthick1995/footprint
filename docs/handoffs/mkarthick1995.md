@@ -2,20 +2,19 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r1.2-detector-tracker
 
 ## Now
-- Q2 (draft PR #21): detector, tracker, exact 1/h TTC, distance, in-path, overlay, dev `/clip-eval.html`.
-- Clip regression set in `data/clips/` (gitignored): Ray-Ban cycling + CC-BY Shanghai crowd + Singapore night lane
-  (`public/SOURCES.md` has licences). Crowd clips exposed false P0s → ADR-024 refinement 2; P0 frames 3.6→1.3 % and
-  16.6→3.9 %, spot-checked P0s real (ST-31 ✅). 28 shared tests.
-- Preview: https://q02---footprint-bubu3vkhwa-as.a.run.app (0 % live traffic).
+- Q2 (draft #21): detector/tracker/TTC done; only the phone fps reading is missing.
+- Q3 (draft #22, stacked on #21): `AlertManager` (shared, 17 tests) + `AlertOutput` (earcon → speech, vibrate,
+  aria-live, TTS watchdog) wired to Q2. Clip sim: 13 / 9 spoken per min in crowds, 0.3 on the empty ride.
+- Preview q03 = Q2 + Q3 (talks). Clip regression set + licences in `data/clips/` (gitignored).
 
 ## Next
-1. Owner: phone fps on q02 (need ≥ 10, note GPU/CPU) → then Q2 [x] → ready → verify → merge → deploy.
-2. Q3 alert manager (next unclaimed): must merge crowds ("people close ahead"), earcons for repeats (SAF-31).
-3. R1.6 later: self-occlusion check (own umbrella/hat → "camera partly blocked", SAF-30).
-4. Teammates: GitHub handles (R0.4). Blind-user outreach (ETH-02). Discord (deadline, credits).
+1. Owner on phone, preview q03: fps (≥ 10, GPU/CPU) + listen 1–2 min on a street → Q2 and Q3 [x].
+2. Mark #21 ready (auto-merge) → retarget/rebase #22 onto main → ready → merge → `npm run deploy`.
+3. Next unclaimed: Q4 face blur → Q6 Gemini scan (first Gemini feature, biggest score lever).
+4. Teammates: GitHub handles (R0.4) + start pulling queue steps. Blind-user outreach (ETH-02).
 
 ## Blockers
-- Q2 completion needs the phone fps reading only.
+- Phone test by the owner (fps + listen).
 
 ## Gotchas / learned
 - Web uses shared via a Vite alias to src; tsc still reads shared dist types (root build builds shared first).
