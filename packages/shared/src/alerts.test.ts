@@ -121,7 +121,7 @@ describe('AlertManager queue rules (ADR-022)', () => {
     m.update([cand({ tier: 'P2', type: 'person', confidence: 0.3, ttcSeconds: 7 })]);
     expect(m.next(1000)).toBeNull();
     m.update([cand({ tier: 'P1', type: 'person', confidence: 0.3, bearingDeg: 25 })]);
-    expect(m.next(1000)!.text).toBe('Possible obstacle close, right');
+    expect(m.next(1000)!.text).toBe('Possible person close, right');
   });
 
   it('presets: Essential mutes P2 but P0 and SYS can never be turned off (ADR-026, ST-29)', () => {

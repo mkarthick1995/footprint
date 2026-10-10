@@ -93,7 +93,11 @@ export function phraseFor(g: Pick<Group, 'tier' | 'type' | 'side' | 'items' | 'l
   const n = g.items.length;
   const where = g.side;
   if (g.tier === 'P0') return `Stop! ${g.lowConfidence ? 'Obstacle' : (P0_NOUN[g.type] ?? one)}`;
-  const subject = g.lowConfidence ? 'Possible obstacle' : n === 1 ? one : n <= 3 ? `${COUNT[n]} ${many}` : `${cap(many)}`;
+  const generic = g.type === 'unknown' || g.type === 'obstruction' || g.type === 'street_furniture';
+  // Uncertain: keep the detector's best guess ("Possible person") — "possible obstacle" for everything hid the type.
+  const subject = g.lowConfidence
+    ? `Possible ${generic ? 'obstacle' : n === 1 ? one.toLowerCase() : many}`
+    : n === 1 ? one : n <= 3 ? `${COUNT[n]} ${many}` : `${cap(many)}`;
   const spaced = g.side === 'ahead' || g.side === 'around';
   if (g.tier === 'P1') return spaced ? `${subject} close ${where}` : `${subject} close, ${where}`;
   return spaced && g.side === 'around' ? `${subject} ${where}` : `${subject}, ${where}`;

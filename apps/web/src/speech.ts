@@ -55,16 +55,35 @@ export interface SpeakOptions {
   interrupt?: boolean;
   /** Called once when the utterance ends, errors, or is cancelled. */
   onDone?: () => void;
+  /** Called when audio actually starts (lets the caller detect a silent speech engine). */
+  onStart?: () => void;
+}
+
+/**
+ * Call synchronously inside the Start tap. Mobile Chrome only lets a page speak after it has spoken within a user
+ * gesture; our first real message comes after the camera permission prompt, which was silent on first use (Q3 test).
+ */
+export function primeSpeech(text: string): void {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+  const u = new SpeechSynthesisUtterance(text);
+  if (chosen) {
+    u.voice = chosen;
+    u.lang = chosen.lang;
+  }
+  window.speechSynthesis.speak(u);
 }
 
 /** Speak through the on-device voice. Only the alert output (alertOutput.ts) should call this. */
 export function speak(text: string, opts: SpeakOptions = {}): void {
-  const { interrupt = true, onDone } = opts;
+  const { interrupt = true, onDone, onStart } = opts;
   if (!('speechSynthesis' in window)) {
     onDone?.();
     return;
   }
   if (interrupt) window.speechSynthesis.cancel();
+  window.speechSynthesis.resume(); // Chrome can leave the queue paused after backgrounding
   const u = new SpeechSynthesisUtterance(text);
   if (chosen) {
     u.voice = chosen;
@@ -78,6 +97,7 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
     done = true;
     onDone?.();
   };
+  u.onstart = () => onStart?.();
   u.onend = finish;
   u.onerror = finish;
   window.speechSynthesis.speak(u);

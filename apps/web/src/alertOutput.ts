@@ -2,7 +2,12 @@
 // aria-live mirror. Everything that wants to say something goes through say() (system) or update() (hazards).
 import { AlertManager, type AlertCandidate, type AlertPreset, type Utterance } from '@footprint/shared';
 import { playEarcon, unlockAudio } from './earcon';
-import { cancelSpeech, speak } from './speech';
+import { cancelSpeech, primeSpeech, speak } from './speech';
+
+/** Speech that hasn't started this long after being requested is treated as a silent engine (fail loud). */
+const START_TIMEOUT_MS = 4000; // generous: a network voice can take a few seconds to load the first time
+
+export const VOICE_FAILED = 'Voice is not working. Tap Stop, then Start again.';
 
 /** If the speech engine never reports "ended" (seen on some Android builds), free the output after this. */
 function watchdogMs(text: string): number {
@@ -15,6 +20,8 @@ export class AlertOutput {
   private token = 0;
   private watchdog: number | undefined;
   private startTimer: number | undefined;
+  private silentTimer: number | undefined;
+  private voiceFailed = false;
 
   constructor(
     private readonly mirror: HTMLElement,
@@ -23,9 +30,11 @@ export class AlertOutput {
     this.manager = new AlertManager({ preset });
   }
 
-  /** Call from a user gesture (Start button) so earcons can play. */
-  unlock(): void {
+  /** Call synchronously from the Start tap: unlocks earcons and speech (mobile browsers need a gesture). */
+  unlock(firstWords = 'Starting.'): void {
     unlockAudio();
+    primeSpeech(firstWords);
+    this.voiceFailed = false;
   }
 
   /** System message (SYS): spoken next, interrupting anything below an active P0. */
@@ -68,9 +77,27 @@ export class AlertOutput {
     const lead = playEarcon(u.earcon);
     this.startTimer = window.setTimeout(() => {
       if (token !== this.token) return;
-      if (u.text) speak(u.text, { interrupt: false, onDone: done });
-      else done();
+      if (!u.text) return done();
+      window.clearTimeout(this.silentTimer);
+      this.silentTimer = window.setTimeout(() => this.reportSilentVoice(), START_TIMEOUT_MS);
+      speak(u.text, {
+        interrupt: false,
+        onStart: () => {
+          window.clearTimeout(this.silentTimer);
+          this.voiceFailed = false; // recovered
+        },
+        onDone: done,
+      });
     }, lead);
     this.watchdog = window.setTimeout(done, lead + watchdogMs(u.text));
+  }
+
+  /** The speech engine accepted text but never started: say so on screen, with a tone and vibration (SAF-05). */
+  private reportSilentVoice(): void {
+    if (this.voiceFailed) return;
+    this.voiceFailed = true;
+    this.mirror.textContent = VOICE_FAILED;
+    playEarcon('system');
+    if ('vibrate' in navigator) navigator.vibrate([300, 100, 300]);
   }
 }

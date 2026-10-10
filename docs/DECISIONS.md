@@ -211,6 +211,9 @@ Crowd tuning on clips (2026-10-11): a situation already put into words within 15
 or not at all (P2/P3) — ADR-023's "earcons for recurring items" pulled forward into Q3; **people merge across sides**
 ("Two people close around", named by the nearest person's side otherwise); uncertain items join their type's group
 ("possible" only if all are uncertain). Spoken/min: Singapore night lane 24 → 13, Shanghai crowd 19 → 9.
+Owner phone test (10-11): heard mostly "Stop! Obstacle" / "Possible obstacle" — phone detections often score < 0.5, and
+rule 6's "possible obstacle" discarded the type. Changed to **"Possible <type>"** ("Possible person close, right");
+generic "obstacle" only for unknown/furniture types, and for low-confidence P0 (a wrong type at "Stop!" could mislead).
 
 ## ADR-023 Adaptive verbosity: message style follows how demanding the street is
 Accepted · 2026-10-10 (owner's proposal, refined) · extends ADR-022, mitigates SAF-06/07

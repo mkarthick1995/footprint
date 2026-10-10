@@ -51,7 +51,6 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
 }
 
 async function start(): Promise<void> {
-  output.unlock(); // user gesture: lets earcons play
   const kind = document.querySelector<HTMLInputElement>('input[name="source"]:checked')?.value;
   try {
     if (kind === 'clip') {
@@ -116,7 +115,11 @@ async function startPerception(): Promise<void> {
   loop.start();
 }
 
-startBtn.addEventListener('click', () => void (source ? stop() : start()));
+startBtn.addEventListener('click', () => {
+  // Must run synchronously inside the tap, before any await (camera prompt), or mobile Chrome stays silent.
+  if (!source) output.unlock();
+  void (source ? stop() : start());
+});
 
 // ST-04: leaving the app or locking the screen stops protection — say so; say so again on return.
 document.addEventListener('visibilitychange', () => {
