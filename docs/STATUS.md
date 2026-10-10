@@ -10,7 +10,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [x] R0.1 3rd member added to Hack2skill team — @mkarthick1995 2026-10-10
 - [x] R0.2 Repo scaffold + guardrails + docs pushed to github.com/mkarthick1995/footprint (public) — @mkarthick1995 2026-10-10
 - [x] R0.3 Project `project-d8d384af-4155-46fa-a3c` ("footprint-aicup"): billing + trial, budget alerts, APIs, Firestore Native asia-southeast1, Maps key restricted, Vertex AI verified (ADR-030), SA `footprint-api`, owner ADC verified, both teammates granted Editor — @mkarthick1995 2026-10-10
-- [~] R0.4 Stack confirmed (ADR-003 accepted, all ADRs to 026 accepted); pending: teammates' handles + owner split in TEAM.md — @mkarthick1995 2026-10-10
+- [~] R0.4 Stack confirmed (ADR-003 accepted, all ADRs to 026 accepted); pending: teammates' GitHub handles + owner split in TEAM.md (both are collaborators; gcloud setup in progress) — @mkarthick1995 2026-10-10
 - [x] R0.5 Verified (ADR-029): ephemeral tokens = Gemini Developer API only; Live 2-min video cap → compression + resumption + on-demand frames; text via output transcription; model IDs in config. Meta toolkit country check deferred to R3.1 — @mkarthick1995 2026-10-10
 - [x] R0.6 Branch strategy, CODEOWNERS, pr-guard CI, /open-pr + /review-pr; `main` protection verified via API: code-owner approval, required checks secrets/docs-sync/pr-guard (strict), linear history, conversation resolution, squash-only, auto-delete branches — @mkarthick1995 2026-10-10
 - [x] R0.6 Owner-PR auto-merge workflow + `automerge` environment + AUTO_MERGE_TOKEN (ADR-010); verified by this line's PR auto-merging — @mkarthick1995 2026-10-10
@@ -21,7 +21,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R1.2 On-device obstacle detection (design: ADR-024 tracking + time-to-contact)
 - [ ] R1.3 Voice alerts + haptics + priority (design: ADR-022 tiers, ADR-023 adaptive verbosity, ADR-026 user presets + safety floor)
 - [ ] R1.4 Cloud Run Live proxy → Vertex Live (ADR-030)
-- [~] R1.5 Monorepo scaffold done (shared types + tier logic with tests, web PWA shell + frame source, Fastify API + Dockerfile, CI build-test, now a required check on main); deploy pending R0.3 — @mkarthick1995 2026-10-10
+- [x] R1.5 Scaffold + first Cloud Run deploy: https://footprint-804307041024.asia-southeast1.run.app (service `footprint`, SA `footprint-api`, asia-southeast1, max 2 instances); `npm run deploy`; Maps key referrer-locked — @mkarthick1995 2026-10-10
 - [ ] R1.6 Fail-loud layer (watchdog, degradation ladder, camera/orientation/battery checks)
 - [ ] R1.7 Gemini safety layer (instruction, schema, output filter, stale drop, injection)
 - [ ] R1.8 On-device face blur before upload

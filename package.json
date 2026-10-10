@@ -20,7 +20,8 @@
     "test": "npm run build -w packages/shared && npm test --workspaces --if-present",
     "dev:web": "npm run dev -w apps/web",
     "dev:api": "npm run dev -w services/api",
-    "start": "npm start -w services/api"
+    "start": "npm start -w services/api",
+    "deploy": "node infra/deploy.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
