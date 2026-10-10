@@ -4,6 +4,10 @@ R?.? <!-- required: e.g. R1.2 — or [docs] / [chore] / [off-roadmap] -->
 ## What & why
 <!-- 2–4 lines. Which judging criterion does this improve? Tech 40 / Impact 25 / Innovation 25 / UX 10 -->
 
+## Definition of Done (required for non-draft code PRs — CI checks this)
+- [ ] This PR fully completes queue step(s): Q? — every DoD item met, tests added, STATUS line set to [x]
+<!-- Not finished? Keep the PR as a draft, or release the step with the remaining items listed here. -->
+
 ## Roadmap deviation (required — CI checks this)
 - [ ] This PR deviates from docs/ROADMAP.md
 <!-- Tick it if ANY of: work outside the item's scope, new feature/dependency not in the roadmap,

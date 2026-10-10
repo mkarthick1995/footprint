@@ -32,7 +32,10 @@ walking guidance, and every walk contributes to a shared street-accessibility ma
 2. Name the roadmap item (`docs/ROADMAP.md`, e.g. `R1.2`) the user's request belongs to.
 3. If it maps to nothing → §4 Deviation protocol, before writing any code.
 
-**During** — one session = one roadmap item. Small, demoable increments. Deploy early.
+**Picking work** — run `/next`: it checks claims (STATUS `[~]` lines, open PRs, remote branches), takes the first
+unclaimed build-queue step, and claims it (branch + STATUS line + draft PR). Never take a claimed step (ADR-031).
+
+**During** — one session = one queue step, finished to its full DoD. Can't finish? Release it explicitly (STATUS §How to pick up work).
 
 **End** (task done, or context ≈ 50 % full) → update docs (§5) → write handoff (§6) → tell user to `/clear` / start fresh.
 
@@ -71,7 +74,7 @@ Enforced by the Claude Stop hook, git `pre-commit`, and CI. **Never bypass** (`-
 ## 6. Handoff — resume without transcripts
 Each member owns `docs/handoffs/<handle>.md` (template: `docs/handoffs/TEMPLATE.md`). **Overwrite** it (≤ 25 lines):
 Now / Next / Blockers / Gotchas. A fresh session with any AI must be able to continue from STATUS + handoff alone.
-Commands (Claude & Gemini): `/resume`, `/handoff`, `/scope-check`, `/done <R-id>`, `/open-pr`, `/review-pr <n>` (owner).
+Commands (Claude & Gemini): `/next`, `/resume`, `/handoff`, `/scope-check`, `/done <R-id>`, `/open-pr`, `/review-pr <n>` + `/verify <n>` (owner).
 
 ## 7. Token discipline
 - Search, don't dump: grep/glob + line ranges. Never read lockfiles, build output, `node_modules/`, `data/`.
@@ -111,7 +114,8 @@ tools/guard/     guardrail scripts (hooks, secret scan, docs check)   .githooks/
 - **Never commit or push to `main`.** Work on `r<id>-short-name` (or `docs-`/`chore-`/`hotfix-`) from fresh `main`.
   If the user is on `main` when asking for code changes, create the branch first.
 - Commit: `type(scope): summary [R1.2]` — must contain a roadmap ID or `[docs]` / `[chore]` / `[off-roadmap]`.
-- Finish with `/open-pr`: self-review against the roadmap, PR template fully filled, deviations declared.
+- Finish with `/open-pr`: self-review against the step's DoD, PR template fully filled, deviations declared.
+  Only a **fully completed** step may leave draft (CI checks the "fully completes" box). The owner runs `/verify`.
 - **The code owner (`.github/CODEOWNERS`) is the mandatory approver** for teammates' PRs. The owner's own PRs are
   auto-merged by CI after checks pass (ADR-010) — so when working for the owner, open PRs as **draft** or add the
   `no-automerge` label if the change needs a human look first. AI never merges or approves PRs itself.

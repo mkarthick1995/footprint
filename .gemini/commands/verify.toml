@@ -1,0 +1,10 @@
+description = "(Code owner) Verify a PR before merging: DoD, tests, safety, docs; then advise merge or changes"
+prompt = """
+Verify PR {{args}} for the code owner before merge (ADR-031). A step is fully done or not done.
+1. git fetch origin; check out the PR branch in a temporary worktree (git worktree add ../verify-{{args}} origin/<branch>); run npm ci && npm run typecheck && npm test && npm run build. Report pass/fail with failing output. Remove the worktree at the end.
+2. DoD audit: find the step(s) the PR claims in docs/STATUS.md; for EACH DoD item: met / not met / not verifiable, with evidence (file:line, test name, measured number). Any "not met" -> REQUEST CHANGES.
+3. Safety: SAFETY.md sections 1-2, ADR-012 outputs, privacy (faces, location, audio, logs), risk IDs and ST results updated honestly. Missed Critical/High scenario -> REQUEST CHANGES.
+4. Docs + checklist: STATUS line [x] with numbers where required; ARCHITECTURE / DECISIONS / SAFETY / .env.example / README match the code; no undeclared deviation.
+5. After merge: remind me to run npm run deploy and smoke-test the step on the live URL (and a phone if it touches camera, audio, or sensors).
+6. Verdict: MERGE / REQUEST CHANGES / BLOCK + numbered must-fix list. Don't approve or merge on GitHub yourself.
+"""

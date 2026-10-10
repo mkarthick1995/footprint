@@ -1,0 +1,10 @@
+description = "Pick the first unclaimed build-queue step, claim it (branch + STATUS + draft PR), and start its DoD"
+prompt = """
+Pick up the next piece of work (ADR-031, docs/STATUS.md -> "How to pick up work").
+1. git fetch origin --prune; git switch main && git pull. Read the Build queue in docs/STATUS.md.
+2. Find claims: STATUS lines marked [~], remote branches (git branch -r), open PRs (gh pr list if available). Any of these = taken; skip it.
+3. Choose the first unclaimed [ ] step (if blocked by an unfinished earlier step, say so and pick the next unblocked one). Tell me the step and its DoD in <= 5 lines, then wait for my "go".
+4. On "go": create r<roadmap-id>-<slug> from fresh main; set the line to "[~] ... -- @<handle> claimed <today>" (handle: git config aicup.handle); commit "chore: claim Qn [R?.?]"; push; open a DRAFT PR titled "Qn R?.? <title>" with the PR template. This is the lock others see.
+5. Run the SAFETY.md section 7 review, then build until EVERY DoD item is met, with tests. Keep STATUS, ARCHITECTURE, SAFETY (risk IDs / ST results), DECISIONS, .env.example current in the same branch.
+6. When done: set the line to "[x] ... -- @<handle> <today>" with measured numbers where the DoD asks, then /open-pr (tick "fully completes", mark ready). If you must stop early, release the step (STATUS rule 5).
+"""

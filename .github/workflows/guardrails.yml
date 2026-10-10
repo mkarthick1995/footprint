@@ -78,4 +78,5 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_HEAD_REF: ${{ github.head_ref }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
         run: node tools/guard/cli.mjs pr-guard origin/${{ github.base_ref }}

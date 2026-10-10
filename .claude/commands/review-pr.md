@@ -9,7 +9,7 @@ Review PR $ARGUMENTS for the code owner. Be thorough and blunt; the owner decide
 `git log origin/main..origin/<branch>`. Read only the roadmap items it claims (`docs/ROADMAP.md`) and the
 ARCHITECTURE / DECISIONS sections it touches.
 
-**Report in this order:**
+**Report in this order** (use `/verify` instead when deciding to merge — it also runs the checks):
 1. **⚠️ Roadmap deviations (top of report).** Compare every changed area to the claimed item's scope and exit criteria.
    - *Declared* deviations: is the "Why" convincing? Does the ADR exist? Are `DEVIATION(ADR-0xx)` comments at each site?
    - *Undeclared* deviations: anything out of scope with no disclosure → list with `file:line`. These are must-fix.
