@@ -10,6 +10,7 @@
 | `HACKATHON.md` | Requirements, judging, submission | Lead (re-verify before submitting) |
 | `ARCHITECTURE.md` | Touching interfaces, infra, data model | Whoever changes them |
 | `DECISIONS.md` | Before reversing anything; when choosing between options | Append-only |
+| `SETUP_GCP.md` | Setting up Google Cloud, keys, gcloud | Owner |
 | `TEAM.md` | Onboarding, git workflow, ownership | Lead |
 | `AI_PLAYBOOK.md` | Token/session practices | Team |
 | `research/FACTS.md` | **Before researching anything** — verified facts with dates and sources | Whoever looks something up |

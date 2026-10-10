@@ -30,7 +30,7 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 ## Phase 2 — Differentiators (10-13 → 10-15)
 | ID | Item | Owner | Exit criteria |
 |---|---|---|---|
-| R2.1 | Walking directions (Maps Routes API) narrated/adapted by Gemini | C | Turn-by-turn spoken on a real walk |
+| R2.1 | **Route corridor** (ADR-027): destination → Routes API walking polyline → prefetch community hazards + route summary. No turn-by-turn (users keep Google Maps for turns) | C | Hazards along a real route announced; summary spoken |
 | R2.2 | Gemini **scene scan** every ~2–3 s: JSON schema for static hazards, footpath, surface, crossing (ADR-019) | A | Schema-valid output on test clips; cost per walk-hour measured |
 | R2.3 | Community hazards: observations → clusters → confirm at ≥ 2 walks → decay; route prefetch + "reported…" alerts (ADR-020) | C | ST-18 passes; walk 2 hears walk 1's confirmed hazard |
 | R2.4 | Public hazard map dashboard (judges can open without a phone) | C | Map renders from Firestore |
@@ -57,9 +57,16 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 | R4.7 | **Safety & limitations disclosure**: onboarding acknowledgement, in-app limitations, README + deck slide + video line; approved wording only; run full ST matrix and record results (ETH-01/04, SAF-14) | All | SAFETY.md §6 filled in; disclaimer in app, README, deck |
 
 ## Cut order if late (cut from the top)
-R3.x → R2.5 → R2.1 narration (keep plain directions) → polish. **Never cut:** R1.x (incl. safety R1.6–R1.8),
+R3.x → R2.5 safer-route suggestion → polish. **Never cut:** R1.x (incl. safety R1.6–R1.8),
 R2.3, R2.4, R2.6, R2.7, R4.x. Safety items are not "extra": an unsafe demo loses Impact and Tech credibility.
 If R1.8 face blur costs too much fps, fall back to heavy downscaling + no storage and disclose it (ADR-013) — don't drop silently.
+
+## Build order (ADR-028)
+1. **10-11 → 10-12 thin slice, deployed:** clip/camera → detector → alert manager (P0/P1) → TTS; scene scan →
+   `/observations` → Firestore → map page; Cloud Run URL tested on a phone. `packages/shared` types first.
+2. **Deepen by safety + score:** R1.7 → R1.6 → R1.8 → ADR-022/023 tiers → R2.3 evidence model → R1.4 Live Q&A →
+   R2.1 corridor + R2.5 summary → R2.6/R2.7.
+3. **10-16** feature freeze, field tests, full ST matrix · **10-17** video, deck, submit.
 
 ## Rule for every item
 Before starting any item, run the SAFETY.md §7 review; update affected risk IDs in the same PR.
