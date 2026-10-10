@@ -73,6 +73,9 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   mode, GPU delegate with CPU fallback, score ≥ 0.35, ≤ 10 results. WASM runtime self-hosted at `/mediapipe/wasm`
   (copied at build, ~38 MB, one variant loaded); model (7.3 MB) from `storage.googleapis.com`, cached by the browser.
   `perception.ts` loop: rAF → detect → `Tracker` → `candidateFor` → candidates (overlay now; alert manager in Q3).
+  **Clip evaluator (dev only):** `npm run dev` → `/clip-eval.html` (`src/dev/clipEval.ts`) seeks a local clip at a fixed
+  sample fps, runs the same pipeline deterministically and reports per-track tier escalations + label counts. Not in
+  the production build (Vite builds `index.html` only); clips never leave the browser.
 - **Motion (ADR-024):** tracker → looming-based TTC (box growth) + approximate distance (pinhole, typical heights)
   + user walking speed (accelerometer cadence, GPS) + gyroscope sway compensation → speed, direction, in-path.
 - **User preferences (ADR-026):** presets Essential / Standard / Detailed + category and channel toggles, stored

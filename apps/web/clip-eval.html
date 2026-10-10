@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Footprint clip evaluator (dev)</title>
+    <style>
+      body { font: 14px system-ui; margin: 16px; background: #111; color: #eee; }
+      .stage { position: relative; max-width: 480px; }
+      video, canvas { width: 100%; display: block; }
+      canvas { position: absolute; inset: 0; }
+      pre { white-space: pre-wrap; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Clip evaluator (dev only)</h1>
+    <p>Runs the Q2 pipeline over a local clip. Nothing is uploaded.</p>
+    <input id="clip" type="file" accept="video/*" />
+    <label>sample fps <input id="fps" type="number" value="10" min="1" max="30" /></label>
+    <label>camera HFOV° <input id="hfov" type="number" placeholder="65" /></label>
+    <button id="run">Run</button>
+    <div class="stage"><video id="video" muted playsinline></video><canvas id="overlay"></canvas></div>
+    <pre id="out"></pre>
+    <script type="module" src="/src/dev/clipEval.ts"></script>
+  </body>
+</html>
