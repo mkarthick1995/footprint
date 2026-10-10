@@ -6,15 +6,14 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.6-owner-automerge
 - Draft PR #5: safety case (SAFETY.md, ADR-011..014) + ADR-015 PWA-now/native-later, ADR-016 dev/test strategy,
   ADR-017 billing (Proposed), ADR-018 Gemini-from-day-one, research/FACTS.md, "document after every chat" rule.
 
-- All ADRs 001–026 accepted by owner (2026-10-10); ADR-027/028 proposed.
+- All ADRs accepted through ADR-029 (R0.5 findings: Gemini Developer API paid tier, ephemeral tokens, text via transcription).
 
 ## Next
-1. Confirm ADR-027 (no turn-by-turn) + ADR-028 (thin slice first).
-2. R0.3 (owner, today): GCP project + $300 trial + billing alerts, Gemini + Maps keys, IAM for teammates.
-3. R0.5: verify Live TEXT output, ephemeral tokens per tier, Live model ID, session limits → pick tier.
-4. R0.4: teammates clone + `npm run setup -- --handle <x>`; fill handles/owners in TEAM.md.
-5. Record 3–5 street clips (local data/ only) for PC development; start blind-user outreach (ETH-02).
-6. 10-11: scaffold monorepo (apps/web, services/api, packages/shared) + thin slice.
+1. R0.3 (owner, now): follow docs/SETUP_GCP.md; share project ID; teammates get Editor + own AI Studio keys.
+2. Merge the R0.5/roadmap PR (deviation → manual merge) and the scaffold PR (auto-merges).
+3. R0.4: teammates clone + `npm run setup -- --handle <x>` + `npm install`; fill handles/owners in TEAM.md.
+4. Record 3–5 street clips into data/clips/ (local only); start blind-user outreach (ETH-02); ask Discord (deadline time, credits).
+5. 10-11: thin slice per ADR-028.
 
 ## Blockers
 - (none)

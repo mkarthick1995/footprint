@@ -257,7 +257,7 @@ Accepted · 2026-10-10 (owner's proposal, refined; confirmed) · extends ADR-022
 - Stored **locally on the device** (no account); fully screen-reader operable; current preset announced at walk start.
 
 ## ADR-027 Don't rebuild turn-by-turn navigation; use the route only for hazards and the summary
-**Proposed** · 2026-10-10 — owner to confirm (changes R2.1 → roadmap deviation)
+Accepted · 2026-10-10 (confirmed by owner) — R2.1 rewritten
 Context: Google Maps already offers accessible walking navigation with TalkBack/VoiceOver. Rebuilding spoken
 turn-by-turn in 7 days duplicates it, adds risk SAF-11 (GPS error at turns), and competes with our alerts for the
 user's ears. Proposal: R2.1 becomes "route corridor": user names a destination → Routes API gives the walking
@@ -266,7 +266,7 @@ polyline → used to prefetch community hazards along it and speak the ADR-021 r
 Score: no loss on Innovation/Impact (our differentiator is hazards + community map); fewer failure modes.
 
 ## ADR-028 Build order: thin end-to-end slice first, then deepen
-**Proposed** · 2026-10-10 — owner to confirm
+Accepted · 2026-10-10 (confirmed by owner)
 Day 1–2 (10-11 → 10-12): one ugly but complete path, deployed — clip/camera → detector → alert manager (P0/P1 only)
 → TTS; scene scan → `/observations` → Firestore → map page; Cloud Run URL tested on a phone. Then deepen in order of
 safety and score: R1.7 safety filter → R1.6 fail-loud → R1.8 face blur → ADR-022/023 tiers → R2.3 evidence model →
@@ -274,6 +274,26 @@ R1.4 Gemini Live Q&A → R2.5 summary → R2.6/R2.7. Feature freeze 10-16; 10-16
 deck, submit. Rationale: integration problems surface on day 2, not day 6, and a demoable build exists at all times.
 Shared TypeScript types (`packages/shared`: Observation, Hazard, Alert, Tier) are created first so 3 people can work
 in parallel. Safety-critical pure logic (alert manager, output filter, evidence model) gets unit tests (Vitest).
+
+## ADR-029 Gemini integration details (R0.5 findings)
+Accepted · 2026-10-10 · settles ADR-014 tier, refines ADR-019
+- **Tier = paid Gemini Developer API** (AI Studio key in the owner's billing-enabled GCP project). Ephemeral tokens
+  exist only on the Gemini Developer API (v1alpha), not Vertex AI, and paid usage isn't used for training (ADR-014).
+  Vertex AI stays the fallback (would need a Cloud Run WebSocket proxy).
+- **Ephemeral tokens:** minted by Cloud Run per walk; default 1 min to open a session, 30 min to send messages; can be
+  locked to a fixed config so the system instruction stays server-side.
+- **Session limits:** audio+video sessions are capped at 2 min without compression (audio-only 15 min); a
+  connection lives ~10 min. → enable **context window compression** + **session resumption** (handle valid ~2 h),
+  reconnect on GoAway.
+- **Text-only output:** native-audio Live models reject TEXT-only modality. → request AUDIO **with output audio
+  transcription**, **never play the audio**, filter the transcript, speak it with our TTS (SAF-21). Use TEXT modality
+  directly where the chosen model supports it (Gemini 3.1 Flash Live lists text output).
+- **Video to Live only on demand:** for push-to-talk questions, send the current blurred frame(s) with the question
+  instead of streaming video continuously → avoids the 2-min cap and cuts cost. Continuous street understanding is
+  the separate scene scan (standard generateContent with JSON schema, ADR-019).
+- **Model IDs change often** (seen: `gemini-3.1-flash-live-preview`, newer "Gemini 3.8 Live" referenced, Vertex
+  `gemini-live-2.5-flash-native-audio`): keep model IDs in config (`GEMINI_LIVE_MODEL`, `GEMINI_SCAN_MODEL`), confirm
+  in AI Studio once the key exists, re-check before submission (REL-02).
 
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
