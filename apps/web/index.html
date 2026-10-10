@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111111" />
+    <title>Footprint</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Footprint</h1>
+      <p>Extra information about the street for blind and low-vision pedestrians.</p>
+      <p class="warning">
+        Footprint can miss obstacles and never tells you when it is safe to cross. Keep using your cane or guide dog.
+      </p>
+
+      <fieldset>
+        <legend>Camera source</legend>
+        <label><input type="radio" name="source" value="camera" checked /> Phone camera</label>
+        <label><input type="radio" name="source" value="clip" /> Recorded clip (development)</label>
+        <input id="clip-file" type="file" accept="video/*" aria-label="Choose a recorded street clip" hidden />
+      </fieldset>
+
+      <button id="start" type="button">Start walking</button>
+
+      <!-- Every spoken message is mirrored here so screen readers and sighted helpers can follow along. -->
+      <div id="status" role="status" aria-live="polite">Not started.</div>
+
+      <video id="preview" playsinline muted aria-hidden="true"></video>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

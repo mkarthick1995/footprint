@@ -38,7 +38,11 @@ Gemini Live API · Cloud Run (asia-southeast1) · Firestore · Secret Manager ·
 npm run setup -- --handle <your-github-handle>   # git hooks, .env, your handoff file
 npm run status                                    # project brief
 npm run check                                     # secret scan + docs sync
+npm install                                       # dependencies (Node 22)
+npm run dev:api & npm run dev:web                 # API on :8080, web on :5173 (proxies /api)
+npm test && npm run build                         # unit tests, production build
 ```
+Layout: `packages/shared` (types + pure safety logic) · `apps/web` (PWA) · `services/api` (Cloud Run, serves the web build).
 Contributors and AI assistants: start with [`AGENTS.md`](AGENTS.md).
 
 ## Team
