@@ -16,6 +16,8 @@ client_secret*.json
 
 # ── Personal / private (never commit) ──────────────────
 .private/
+# Owner's temporary inbox: files are consumed, moved to a proper place, then deleted
+temp/
 .ai-local/
 CLAUDE.local.md
 GEMINI.local.md

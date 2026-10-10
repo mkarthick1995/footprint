@@ -85,6 +85,9 @@ Commands (Claude & Gemini): `/resume`, `/handoff`, `/scope-check`, `/done <R-id>
 - Do **not** read `.env`, `.private/`, or key files into context.
 - Never commit: personal data, teammates' personal details (use GitHub handles), raw street recordings / faces (`data/` is gitignored), service-account JSON.
 - Gemini API key never ships to the browser — backend mints **ephemeral tokens**.
+- `temp/` is a **temporary inbox** (gitignored, never committed). To consume a file: view it with long tokens masked
+  first; move secrets into `.env` with a script that never prints them; move other information to its proper doc;
+  **delete the consumed file**; tell the user what went where. Never echo inbox contents into chat or commits.
 - Leaked a secret? **Rotate first**, then purge history, then tell the team.
 
 ## 9. Advisor stance (mandatory)

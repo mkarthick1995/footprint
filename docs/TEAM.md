@@ -1,6 +1,7 @@
 # Team & collaboration
 
 Use **GitHub handles only** in this repo (public). Personal details (phones, emails, employer) → `.private/` (gitignored).
+Short-lived files you want an AI to pick up (notes, keys to move into `.env`) → `temp/` (gitignored; consumed files get deleted).
 
 | Role | Handle | Workstream (proposed — confirm in R0.4) |
 |---|---|---|
