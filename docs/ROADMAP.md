@@ -9,7 +9,7 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 |---|---|---|---|
 | R0.1 | Team formation confirmed on Hack2skill (3rd member accepted) | A | Before **10-11** closes |
 | R0.2 | Repo scaffold, guardrails, docs; pushed to GitHub (public) | A | All 3 cloned + `npm run setup` done |
-| R0.3 | GCP project on owner's account ($300 trial → paid Gemini tier, ADR-017), budget alerts $25/$50/$100, Gemini + Maps keys, IAM for teammates, region `asia-southeast1` | A | Billing + alerts on; keys in each `.env`; Secret Manager ready |
+| R0.3 | GCP project on owner's account ($300 trial; Gemini via Vertex AI, ADR-030), budget alerts, Firestore (asia-southeast1), Maps key restricted, Cloud Run service account, IAM for teammates | A | Billing + alerts on; Vertex call works; `.env` filled; teammates have access |
 | R0.4 | Confirm stack (ADR-003) and owners | All | ADR-003 → Accepted |
 | R0.5 | Verify: Gemini Live ephemeral tokens, current Live model ID, Meta toolkit country availability | A | Findings in DECISIONS / ARCHITECTURE |
 | R0.6 | Protected `main` + CODEOWNERS + required checks enabled on GitHub (ADR-008) | A | A test PR can't merge without owner approval |
@@ -21,7 +21,7 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 | R1.1 | PWA camera capture (rear camera, screen-wake lock) + **frame-source abstraction: camera or recorded clip** (ADR-016) | B | Works on Android Chrome + iOS Safari; clips replay on PC |
 | R1.2 | On-device obstacle detection (MediaPipe / TF.js), proximity heuristic | B | ≥ 10 fps on a mid-range phone |
 | R1.3 | Voice alerts (TTS) + haptics + alert priority/cool-down | B | No alert spam; critical alerts interrupt |
-| R1.4 | Cloud Run API: ephemeral token endpoint; client ↔ Gemini Live session, push-to-talk, **TEXT responses spoken by our TTS** (ADR-019) | A | Ask a question, get a filtered spoken answer |
+| R1.4 | Cloud Run **Live proxy** (`/api/live` WebSocket → Vertex Live, AUDIO + transcription, forwards transcript text only) for push-to-talk Q&A, spoken by our TTS (ADR-019/030) | A | Ask a question, get a filtered spoken answer |
 | R1.5 | **Deploy skeleton to Cloud Run** (early!) + HTTPS URL | A | Public URL works from a phone |
 | R1.6 | **Fail-loud layer**: watchdog + alive tick, degradation ladder L0–L3, camera quality (dark/blur/frozen/covered), orientation check, battery/thermal warnings (SAF-05/08/09/17) | B | ST-01, ST-04, ST-05, ST-06 pass |
 | R1.7 | **Gemini safety layer**: system instruction, response schema, output filter (no all-clear / crossing / identity), stale-result drop > 2 s, prompt-injection handling (SAF-03/04, SEC-04, PRI-03) | A | ST-07, ST-08, ST-09, ST-12, ST-13 pass |

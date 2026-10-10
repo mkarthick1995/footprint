@@ -55,7 +55,7 @@ const SECRET_PATTERNS = [
 ];
 const ALLOW_MARKER = 'secret-scan:allow';
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
-const EMAIL_ALLOW = /(example\.(com|org|net)|noreply|users\.noreply\.github\.com|@anthropic\.com|hack2skill\.com)/i;
+const EMAIL_ALLOW = /(example\.(com|org|net)|noreply|users\.noreply\.github\.com|@anthropic\.com|hack2skill\.com|\.iam\.gserviceaccount\.com)/i;
 
 export function toRepoPath(p) {
   const rel = isAbsolute(p) ? relative(ROOT, p) : p;

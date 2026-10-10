@@ -295,6 +295,26 @@ Accepted · 2026-10-10 · settles ADR-014 tier, refines ADR-019
   `gemini-live-2.5-flash-native-audio`): keep model IDs in config (`GEMINI_LIVE_MODEL`, `GEMINI_SCAN_MODEL`), confirm
   in AI Studio once the key exists, re-check before submission (REL-02).
 
+## ADR-030 Gemini on Vertex AI (trial-billed), Cloud Run proxies Live — supersedes ADR-029's tier and token parts
+Accepted · 2026-10-10 (owner's choice) · settles ADR-014 / ADR-017
+Context (tested 2026-10-10): the Gemini Developer API returns **402 "prepayment credits are depleted"** — it needs
+prepaid credit in AI Studio, which the $300 Google Cloud trial doesn't cover. **Vertex AI works on the trial credit**
+(gemini-3.8-flash and gemini-2.5-flash answered, global and asia-southeast1). Vertex Live:
+`gemini-live-2.5-flash-native-audio` in **us-central1** works with AUDIO + output transcription (transcript correct);
+TEXT-only is rejected (1007 "Text output is not supported for native audio output model"); not offered in
+asia-southeast1; `gemini-3.8-live` is Developer-API only.
+Decision:
+- **All Gemini calls go through Cloud Run on Vertex AI**, authenticated by the runtime service account
+  `footprint-api` (roles: aiplatform.user, datastore.user; no key file). The browser never holds Google credentials —
+  no ephemeral tokens needed (more secure than ADR-029's design).
+- Scan: `gemini-3.8-flash` on the global endpoint. Live Q&A: Cloud Run WebSocket proxy to Vertex Live in us-central1,
+  AUDIO + transcription, proxy forwards **transcript text only** (SAF-21). Session compression/resumption per ADR-029.
+- Vertex terms: customer data isn't used for training (ADR-014 satisfied).
+- The AI Studio key was deleted; `GEMINI_API_KEY` is unused.
+Trade-offs: extra hop for scan and Q&A (non-critical paths; hazard alerts stay on-device); Live from us-central1 adds
+latency for Asia (REL-08); `gemini-live-2.5-flash-native-audio` discontinues **2026-12-13**, after judging (REL-07);
+proxy must be rate-limited (SEC-02). Revisit AI Studio prepaid credit only if the newer Live model proves clearly better.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow
