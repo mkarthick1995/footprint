@@ -20,6 +20,7 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.6-owner-automerge
 - (none)
 
 ## Gotchas / learned
+- `temp/` = owner's inbox (gitignored). Maps key moved from temp/ into `.env` on 2026-10-10 and the temp file deleted.
 - Repo-local git email is the GitHub noreply address.
 - `gh` CLI not installed; repo settings/protection changed via REST API with the Git Credential Manager token.
 - Owner PRs auto-merge after checks — open as draft or label `no-automerge` when you want to review first.

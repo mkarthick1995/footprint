@@ -36,6 +36,7 @@ export const FORBIDDEN_PATHS = [
   { re: /(^|\/)(credentials|client_secret[^/]*|[^/]*service[-_]?account[^/]*|[^/]*-sa-key[^/]*)\.json$/i, why: 'cloud credentials' },
   { re: /(^|\/)\.private\//, why: 'private team notes' },
   { re: /(^|\/)\.ai-local\//, why: 'personal AI context dumps' },
+  { re: /^temp\//, why: 'temporary inbox (may contain secrets)' },
   { re: /^data\/(?!README\.md$)/, why: 'local data (recordings may contain faces / location)' },
   { re: /\.(mp4|mov|avi|mkv|webm|heic)$/i, why: 'raw media (upload demo video to YouTube instead)' },
 ];
