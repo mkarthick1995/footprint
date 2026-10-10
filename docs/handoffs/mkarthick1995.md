@@ -6,10 +6,10 @@ Updated: 2026-10-10 · Tool: Claude Code · Branch: r0.3-vertex-gcp-setup
 - Phase 0 done except R0.4 handles. Teammates are collaborators with GCP Editor; doing gcloud setup.
 
 ## Next
-1. Teammates: clone, `npm run setup -- --handle <x>`, `npm install`, gcloud + ADC (docs/SETUP_GCP.md); send handles → TEAM.md.
-2. Phase 1 thin slice (ADR-028): R1.2 detector + tracker (B), R2.2 scene scan endpoint (A), R2.3 observations → Firestore (C).
-3. Test the live URL on a real Android phone (camera permission, TTS, wake lock).
-4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline time, credits).
+1. Merge the build-queue PR (ADR-031; declared deviation → manual merge). Tell teammates: run `/next` when free.
+2. Q1 (R1.1 frame source) claimed next by me via draft PR.
+3. Teammates: clone, setup, gcloud + ADC; send GitHub handles → TEAM.md (R0.4).
+4. Record 3–5 street clips into data/clips/ (local only); blind-user outreach (ETH-02); Discord (deadline, credits).
 
 ## Blockers
 - (none)

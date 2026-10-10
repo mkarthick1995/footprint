@@ -6,8 +6,8 @@ anchored on files**, not long memories.
 
 ## Session lifecycle
 ```
-/resume → branch r<id>-name → build + test → /done <R-id> → /open-pr → /handoff → /clear (or new session)
-                                                         owner: /review-pr <n> → approve + squash-merge on GitHub
+/next (claim Qn: branch + STATUS + draft PR) → build to full DoD + tests → /done → /open-pr (ready) → /handoff → /clear
+                                                          owner: /verify <n> → merge → npm run deploy
 ```
 - `/resume`: reads STATUS + your handoff, names the next item, flags deadline risk.
 - `/done R1.2`: marks the item, updates ARCHITECTURE/DECISIONS if affected.

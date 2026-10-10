@@ -14,6 +14,8 @@ import {
 } from './lib.mjs';
 
 const [cmd, ...args] = process.argv.slice(2);
+// PR template checkbox for the Definition of Done (ADR-031).
+const DOD_TICKED = /-\s*\[x\]\s*This PR fully completes queue step/i;
 const fail = (msg) => { console.error(`\n✖ ${msg}\n`); process.exit(1); };
 
 function scan(files, getText) {
@@ -154,6 +156,13 @@ switch (cmd) {
     // Safety review (docs/SAFETY.md §7) is mandatory for code changes.
     const codeChanged = files.some(f => CODE_PATHS.test(f));
     const riskIds = ((body.match(/^\s*\**Risk IDs:?\**:?\s*(.*)$/mi) || [])[1] || '').replace(/<!--.*?-->/g, '').trim();
+    // Definition of Done (ADR-031): a non-draft code PR must declare the queue step(s) fully complete.
+    const isDraft = process.env.PR_DRAFT === 'true';
+    const dodTicked = DOD_TICKED.test(body);
+    if (codeChanged && !isDraft && !dodTicked) {
+      problems.push('Code PR is ready for review but the Definition of Done box is not ticked. Finish every DoD item of the step (docs/STATUS.md) and tick "fully completes", or keep the PR as a draft.');
+    }
+
     if (codeChanged && !riskIds) {
       problems.push('Code changed but the "Risk IDs:" line in the Safety review section is empty. List affected risk IDs from docs/SAFETY.md or write "none: <reason>".');
     }
@@ -166,6 +175,7 @@ switch (cmd) {
       `**Safety review — Risk IDs:** ${riskIds || (codeChanged ? '⛔ missing' : '— (no code changed)')}`,
       signals.length ? `**Signals:** ${signals.join('; ')}` : '',
       devComments.length ? '**DEVIATION comments:**\n' + devComments.slice(0, 15).map(d => `- \`${d}\``).join('\n') : '',
+      `**Definition of Done:** ${codeChanged ? (process.env.PR_DRAFT === 'true' ? 'draft (work in progress)' : (DOD_TICKED.test(body) ? '✅ step(s) declared complete' : '⛔ not declared')) : '— (no code changed)'}`,
       `**Files changed:** ${files.length}`,
       problems.length ? '### ✖ Problems\n' + problems.map(p => `- ${p}`).join('\n') : '### ✔ Passed',
     ].filter(Boolean).join('\n\n');

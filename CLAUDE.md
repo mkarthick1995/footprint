@@ -9,7 +9,8 @@
   - **PreToolUse** → blocks secrets in tracked files, reading `.env`, git bypasses (`--no-verify`, `add -f`, force push),
     pushing to `main`, `gh pr merge` / approve, and `ALLOW_*` owner overrides.
   - **Stop** → blocks finishing while code changed but `docs/STATUS.md` didn't.
-- Commands: `/resume`, `/handoff`, `/scope-check`, `/done <R-id>`, `/open-pr`, `/review-pr <n>` (code owner).
+- Commands: `/next` (claim the next queue step), `/resume`, `/handoff`, `/scope-check`, `/done <R-id>`, `/open-pr`,
+  `/review-pr <n>` and `/verify <n>` (code owner).
 - `/clear` between roadmap items; `/compact <focus>` instead of plain `/compact`.
 - Personal memory plugins (e.g. claude-mem) are optional and personal. **Repo docs remain the source of truth** —
   teammates on Gemini cannot see your memory.

@@ -315,6 +315,18 @@ Trade-offs: extra hop for scan and Q&A (non-critical paths; hazard alerts stay o
 latency for Asia (REL-08); `gemini-live-2.5-flash-native-audio` discontinues **2026-12-13**, after judging (REL-07);
 proxy must be rate-limited (SEC-02). Revisit AI Studio prepaid credit only if the newer Live model proves clearly better.
 
+## ADR-031 Pull-based build queue with a strict Definition of Done
+Accepted · 2026-10-10 (owner's process) · refines ADR-028 (order) and ADR-008 (workflow)
+- Work is not pre-assigned. Whoever is available takes the **first unclaimed step** of the numbered build queue in
+  `docs/STATUS.md` (Q1…Q14), each with an explicit **DoD**. The queue order implements ADR-028's safety-first order
+  (face blur and the output filter come before anything is sent to or spoken from Gemini).
+- **Claim = branch + STATUS line `[~] @handle` + draft PR**, opened immediately so others see the lock.
+- **A step is either fully done or not done.** Non-draft code PRs must tick "fully completes step(s)" (CI `pr-guard`).
+  Unfinished work is released explicitly (remaining items in PR + handoff), never merged as done.
+- **The owner verifies** each PR with `/verify` (DoD, tests, ST checks, safety review) before merging, then deploys.
+- AIs use `/next` to pick and claim, `/open-pr` to finish, and update STATUS in the same PR as the code.
+Roadmap "Owner" columns are historical; ownership comes from claims.
+
 ## ADR-010 Auto-merge the code owner's PRs; teammates' PRs keep mandatory owner approval
 Accepted · 2026-10-10 · amends ADR-008
 Context: GitHub can't self-approve, and branch protection has no per-author rules. Decision: workflow

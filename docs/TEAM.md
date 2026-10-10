@@ -24,6 +24,12 @@ Short-lived files you want an AI to pick up (notes, keys to move into `.env`) �
 - One short sync call per day (15 min): blockers, scope changes, demo-readiness.
 - Scope changes are decided together and recorded as an ADR.
 
+## Who builds what (ADR-031)
+Nobody is pre-assigned. When you're free, run `/next` in your AI tool: it takes the first unclaimed step of the build
+queue in `docs/STATUS.md`, claims it (branch + STATUS line + draft PR) and works through its Definition of Done.
+Finish the whole step, then `/open-pr` and mark the PR ready. Tell the team in chat which step you finished.
+Can't finish? Release it as described in STATUS — never leave a half-done step claimed silently.
+
 ## Branch & PR workflow (mandatory)
 **`main` is protected. Nobody commits or pushes to it directly. Every change arrives via a PR approved by the
 code owner (@mkarthick1995 — see `.github/CODEOWNERS`).**
