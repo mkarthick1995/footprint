@@ -29,6 +29,8 @@ export const MESSAGES = {
   wakeLockUnsupported: 'This browser cannot keep the screen on. If the screen locks, alerts turn off.',
   wakeLockLost: 'The screen may lock. If it does, alerts turn off.',
   chooseClip: 'Choose a recorded clip first.',
+  detectorFailed: 'Obstacle detection could not start. Alerts are off.',
+  detectorStopped: 'Obstacle detection stopped. Alerts are off.',
 } as const;
 
 /** Scales (width, height) down so width ≤ maxWidth, keeping aspect ratio. Never upscales; never returns 0. */

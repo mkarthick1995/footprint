@@ -34,6 +34,8 @@ before it goes in the deck or drives a decision.** Add new facts here whenever y
 | Vertex Live: `gemini-live-2.5-flash-native-audio` works in **us-central1** with AUDIO + output transcription; TEXT rejected (1007); not in asia-southeast1; `gemini-3.8-live` not on Vertex | 10-10 | Tested | own test |
 | Models visible to our Developer-API key (10-10): Live `gemini-3.8-live`, `gemini-3.1-flash-live-preview`, `gemini-2.5-flash-native-audio-*`; Flash `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.5-flash(-lite)`; `gemini-2.5-flash-lite` closed to new users | 10-10 | Tested | own test |
 | New projects: Cloud Run **source deploy fails** until the default compute SA gets `roles/run.builder` (403 storage.objects.get on the run-sources bucket) | 10-10 | Tested | own deploy |
+| `@mediapipe/tasks-vision` 1.1.0: wasm folder ~38 MB (3 variants); package doesn't export package.json (resolve main entry); EfficientDet-Lite0 float16 model 7.25 MB | 10-10 | Tested | own build |
+| Desktop Chrome (GPU delegate): ~62 fps (rAF-capped), ~16 ms inference at 640 px; real street photo → 6–9 tracked people/vehicles | 10-10 | Tested | own browser test |
 | Cloud Run revision tags must be **≥ 3 characters**; `--no-traffic --tag=x` gives a preview URL `https://<tag>---<service>-<hash>-as.a.run.app` | 10-10 | Tested | own deploy |
 | A `--no-traffic` preview deploy **pins live traffic** to the old revision; later normal deploys stay at 0 % until `gcloud run services update-traffic --to-latest` | 10-10 | Tested (Q1 production deploy) | own deploy |
 | Cloud Run front end returns **411** for a POST with no body/Content-Length (not an app error) | 10-10 | Tested | own smoke test |

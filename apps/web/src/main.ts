@@ -1,5 +1,9 @@
-// Entry point. Detector (Q2) and alert manager (Q3) plug in here; until Q3, announce() is the only speaking path.
+// Entry point. Detector (Q2) runs here; the alert manager (Q3) will turn candidates into speech.
+// Until Q3, announce() is the only speaking path and candidates are shown on the debug overlay only.
+import { createDetector, type OnDeviceDetector } from './detector';
 import { grabFrame, openCamera, openClip, type FrameSource } from './frameSource';
+import { drawOverlay } from './overlay';
+import { PerceptionLoop } from './perception';
 import { cameraErrorMessage, MESSAGES } from './messages';
 import { currentVoiceName, speak } from './speech';
 import { ScreenWakeLock } from './wakeLock';
@@ -9,9 +13,13 @@ const statusEl = document.querySelector<HTMLDivElement>('#status')!;
 const video = document.querySelector<HTMLVideoElement>('#preview')!;
 const clipInput = document.querySelector<HTMLInputElement>('#clip-file')!;
 const frameInfo = document.querySelector<HTMLParagraphElement>('#frame-info');
+const overlay = document.querySelector<HTMLCanvasElement>('#overlay')!;
 
 let source: FrameSource | null = null;
 let frameTimer: number | undefined;
+let detector: OnDeviceDetector | null = null;
+let loop: PerceptionLoop | null = null;
+let perfText = '';
 
 /** Mirror of every spoken message (SAFETY.md: fail loud). Moves into the alert manager in Q3. */
 function announce(text: string): void {
@@ -29,6 +37,9 @@ document.querySelectorAll<HTMLInputElement>('input[name="source"]').forEach((rad
 
 async function stop(message: string = MESSAGES.stopped): Promise<void> {
   window.clearInterval(frameTimer);
+  loop?.stop();
+  loop = null;
+  overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height);
   source?.stop();
   source = null;
   await wakeLock.release();
@@ -63,12 +74,42 @@ async function start(): Promise<void> {
   startBtn.textContent = 'Stop';
   announce(MESSAGES.started);
   await wakeLock.acquire();
+  await startPerception();
   // Development readout proving frames flow at the size later steps use (Q2 detector / Q6 scan).
   const canvas = document.createElement('canvas');
   frameTimer = window.setInterval(() => {
     const frame = source ? grabFrame(source.video, 640, canvas) : null;
-    if (frameInfo) frameInfo.textContent = frame ? `Frames: ${frame.width}×${frame.height} (${source?.kind}) · voice: ${currentVoiceName()}` : 'Waiting for frames…';
+    if (frameInfo) frameInfo.textContent = frame ? `Frames: ${frame.width}×${frame.height} (${source?.kind}) · voice: ${currentVoiceName()} · ${perfText}` : 'Waiting for frames…';
   }, 1000);
+}
+
+/** Q2: load the detector once (model is cached by the browser) and run the perception loop. Fail loud on errors. */
+async function startPerception(): Promise<void> {
+  if (!source) return;
+  try {
+    perfText = 'loading detector…';
+    detector ??= await createDetector();
+  } catch (err) {
+    console.error(err);
+    perfText = 'detector failed';
+    announce(MESSAGES.detectorFailed);
+    return;
+  }
+  if (!source) return; // stopped while loading
+  loop = new PerceptionLoop(detector, source.video, {
+    onCandidates: (candidates, tracks, frame, stats) => {
+      drawOverlay(overlay, frame, tracks, candidates);
+      const top = [...candidates].sort((a, b) => a.ttcSeconds - b.ttcSeconds)[0];
+      perfText = `${stats.fps.toFixed(1)} fps · ${stats.inferenceMs.toFixed(0)} ms · ${detector?.delegate} · ${stats.tracks} tracked` +
+        (top ? ` · top: ${top.type} ${top.tier}` : '');
+    },
+    onError: (err) => {
+      console.error(err);
+      perfText = 'detector error';
+      announce(MESSAGES.detectorStopped);
+    },
+  });
+  loop.start();
 }
 
 startBtn.addEventListener('click', () => void (source ? stop() : start()));

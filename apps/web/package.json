@@ -8,10 +8,13 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "predev": "node scripts/copy-mediapipe.mjs",
+    "prebuild": "node scripts/copy-mediapipe.mjs"
   },
   "dependencies": {
-    "@footprint/shared": "0.1.0"
+    "@footprint/shared": "0.1.0",
+    "@mediapipe/tasks-vision": "^1.1.0"
   },
   "devDependencies": {
     "vite": "^8.3.4"
