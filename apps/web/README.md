@@ -1,5 +1,8 @@
 # apps/web — PWA client
 
-Not scaffolded yet (waits for ADR-003, roadmap R1.1).
-Planned: Vite + TypeScript PWA · rear camera capture · MediaPipe Tasks Vision on-device detection ·
-alert manager (TTS + haptics, priority + cool-down) · Gemini Live session via ephemeral token · GPS · Maps route · `/map` dashboard.
+Vite + TypeScript. `npm run dev:web` (from repo root) → http://localhost:5173, proxies `/api` to the local API.
+
+- `src/frameSource.ts` — camera or recorded clip (ADR-016)
+- `src/main.ts` — start/stop, fail-loud announcements (temporary until the alert manager, R1.3)
+
+Next: R1.2 detector + tracker (ADR-024), R1.3 alert manager (ADR-022/023/026), R1.6–R1.8 safety layers.

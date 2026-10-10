@@ -33,6 +33,17 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
 - **Long-term client:** native Android / iOS (or Capacitor). Keep the safety pipeline a separate module so it ports
   unchanged; the backend doesn't change.
 
+## Code layout (R1.5 scaffold)
+```
+packages/shared   @footprint/shared — types (Observation, Hazard, AlertCandidate, Tier) + pure logic (tiers.ts). Unit-tested.
+apps/web          Vite + TypeScript PWA. frameSource.ts (camera | clip), main.ts (start/stop, fail-loud announcements)
+services/api      Fastify on Cloud Run: /api/healthz, /api/session-token (R1.4, 501 for now), /api/observations (R2.3, 501),
+                  serves apps/web/dist on the same URL
+Dockerfile        multi-stage build for Cloud Run (root context); .gcloudignore keeps secrets/data out of uploads
+```
+Unbuilt endpoints return **501**, never fake success (fail loud). Safety-critical pure logic lives in `packages/shared`
+so the client and server share one tested implementation.
+
 ## Components
 | Component | Path | Responsibility | Item |
 |---|---|---|---|

@@ -21,7 +21,7 @@ Format: `- [ ] R1.2 Description — @handle YYYY-MM-DD`
 - [ ] R1.2 On-device obstacle detection (design: ADR-024 tracking + time-to-contact)
 - [ ] R1.3 Voice alerts + haptics + priority (design: ADR-022 tiers, ADR-023 adaptive verbosity, ADR-026 user presets + safety floor)
 - [ ] R1.4 Ephemeral-token API + Gemini Live session
-- [ ] R1.5 Deploy skeleton to Cloud Run
+- [~] R1.5 Monorepo scaffold done (shared types + tier logic with tests, web PWA shell + frame source, Fastify API + Dockerfile, CI build-test); deploy pending R0.3 — @mkarthick1995 2026-10-10
 - [ ] R1.6 Fail-loud layer (watchdog, degradation ladder, camera/orientation/battery checks)
 - [ ] R1.7 Gemini safety layer (instruction, schema, output filter, stale drop, injection)
 - [ ] R1.8 On-device face blur before upload
