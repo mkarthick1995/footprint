@@ -66,6 +66,10 @@ Gemini output ─► schema validation ─► freshness check (≤ 2 s) ─► o
 Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation ladder L0–L3 (always announced)
 ```
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
+  Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
+  `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,
+  dropped if stale, interrupted by P0/P1). The manager is private to `AlertOutput`, and `speakGuard.test.ts` fails the
+  build if any other file speaks or queues text (R1.7).
   Q3: `AlertManager` (`packages/shared/src/alerts.ts`, pure, clock-injected) decides what/when from the latest frame's
   candidates + queued SYS messages; `AlertOutput` (`apps/web/src/alertOutput.ts`) renders earcon → on-device speech,
   `navigator.vibrate`, and mirrors words to the aria-live `#status`. `announce()` in `main.ts` = SYS via the manager.
