@@ -28,13 +28,13 @@ describe('padBox', () => {
 });
 
 describe('headRegion', () => {
-  it('takes the top share of a person box, full width', () => {
-    expect(headRegion({ x: 200, y: 40, w: 100, h: 250 }, frame)).toEqual({ x: 200, y: 40, w: 100, h: 70 });
+  it('takes the top 35 % of a person box plus a margin (15 % each side, 8 % above)', () => {
+    expect(headRegion({ x: 200, y: 40, w: 100, h: 250 }, frame)).toEqual({ x: 185, y: 20, w: 130, h: 107.5 });
   });
   it('is clamped when the person box runs off the frame', () => {
     const r = headRegion({ x: 600, y: -50, w: 100, h: 200 }, frame)!;
-    expect([r.x, r.y, r.w]).toEqual([600, 0, 40]);
-    expect(r.h).toBeCloseTo(6, 6); // 200 × 0.28 − 50: floating-point, not exactly 6
+    expect([r.x, r.y, r.w]).toEqual([585, 0, 55]);
+    expect(r.h).toBeCloseTo(20, 6); // −66 + 86, clamped at the top edge
   });
 });
 
@@ -47,7 +47,7 @@ describe('blurRegions', () => {
     });
     expect(r).toEqual([
       { x: 85, y: 82, w: 80, h: 96 },
-      { x: 300, y: 20, w: 80, h: 56 },
+      { x: 288, y: 4, w: 104, h: 86 },
     ]);
   });
   it('rounds outwards so a region never shrinks', () => {
@@ -58,7 +58,7 @@ describe('blurRegions', () => {
     expect(blurRegions({ faces: [{ x: 900, y: 900, w: 20, h: 20 }], frame })).toEqual([]);
   });
   it('drops slivers too small to hold a face', () => {
-    expect(blurRegions({ faces: [], persons: [{ x: 0, y: 0, w: 1, h: 3 }], frame })).toEqual([]);
+    expect(blurRegions({ faces: [], persons: [{ x: 639.6, y: 0, w: 0.3, h: 3 }], frame })).toEqual([]); // < 1 px wide even after padding
   });
   it('returns nothing when nothing was detected (no spurious blur)', () => {
     expect(blurRegions({ faces: [], frame })).toEqual([]);
