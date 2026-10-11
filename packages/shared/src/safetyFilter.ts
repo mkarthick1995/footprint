@@ -83,7 +83,10 @@ const ALL_CLEAR: RegExp[] = [
 /** Go / cross instructions and permissions. */
 const CROSSING: RegExp[] = [
   /\b(?:you can|you may|you could|you should|you might|you must|can|may|should|must|ok to|okay to|time to|ready to|go ahead and|ahead and|start to|begin to|start|begin|continue to|proceed to|free to|clear to|safe to|fine to|good to|now) (?:to )?(?:cross|go|walk|proceed|step|move|continue|run|hurry)(?:ing)?\b/,
-  /\b(?:cross|go|walk|proceed|step|move|run|hurry|continue) (?:now|ahead|across|forward|out|on|over|quickly|fast|straight|immediately)\b/,
+  // "step" is deliberately absent: "a step ahead" is a hazard (a stair or kerb), not an instruction. Step commands are
+  // caught by the sentence-start rule below and by "you can / now step" above (owner review 2026-10-12).
+  /\b(?:cross|go|walk|proceed|move|run|hurry|continue) (?:now|ahead|across|forward|out|on|over|quickly|fast|straight|immediately)\b/,
+  /^(?:please |now )?step (?:now|across|out|off|over|onto|into the road)\b/,
   /\bcross (?:the )?(?:road|street|junction|intersection|here|there|safely)\b/,
   /\bcrossing (?:the )?(?:road|street) (?:now|is)\b/,
   /^(?:please )?(?:cross|go|walk|proceed|step forward|move forward|run|hurry)\b/,

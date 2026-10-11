@@ -158,7 +158,7 @@ When anything happens that the code does not explicitly handle:
 - It **does not identify people** — by design.
 - **Spoken model text is filtered by a phrase list, not understood.** An unusual paraphrase of "it's fine to go" could
   slip through, so the filter is one layer next to the system instruction and structured output. It also over-blocks
-  (any use of "safe" or "clear", gendered or clothing words), and it cannot check whether a description is *true*.
+  (any use of "safe" or "clear", gendered or clothing words), and it cannot check whether a description is *true* It must never swallow a hazard: "a step ahead" was once blocked as a crossing instruction (fixed 2026-10-12, regression-tested); nationality/clothing words in shop or sign names ("Chinese restaurant", "children crossing") are still over-blocked.
 - It is **not an emergency service, medical device, or certified mobility aid**, and does not replace a white cane,
   guide dog, or orientation & mobility training.
 - As a web app, it **only works while the app is open and the screen is on**; locking the phone or switching apps

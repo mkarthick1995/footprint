@@ -16,6 +16,13 @@ describe('filterModelText — clean text passes unchanged', () => {
     'Traffic sounds busy on your left.',
     'The traffic light appears green. Please verify.', // hedged + verify is allowed (SAFETY §5)
     'The surface is uneven for the next few steps.',
+    // Steps and kerbs are hazards, never instructions (owner review 10-12: "a step ahead" was blocked as "crossing").
+    'There is a step ahead, about 2 metres.',
+    'A step ahead.',
+    'Steps going down ahead.',
+    'Kerb ahead, step down.',
+    'One step up in front of you.',
+    'A drop of one step on the right.',
   ];
   it.each(clean)('passes: %s', (text) => {
     const r = filterModelText(text);
@@ -58,6 +65,9 @@ describe('go / cross instructions are blocked (ST-08)', () => {
     'Please cross.',
     "It's your turn to cross.",
     'You are free to go.',
+    'Step forward now.',
+    'Step out now.',
+    'You can step onto the road.',
   ];
   it.each(instructions)('blocks: %s', (text) => {
     const r = filterModelText(text);
