@@ -273,6 +273,18 @@ Accepted · 2026-10-10 (confirmed by owner) — refines ADR-020, implement in R2
 - **We do not retrain detection models from community data**: we store no images (ADR-007/013), so there's nothing
   to train on. Better models would need a separate, opt-in, consented, blurred data programme — future work, disclosed.
 
+*Implementation (Q7, 2026-10-12):* `packages/shared/src/community.ts` (pure, tested). Prior Beta(1,1); a sighting adds its
+confidence to α, a not-seen walk adds 1 to β; evidence decays with half-life = type TTL / 2. Each walk counts **once per
+hazard** (repeated scans can't confirm alone). **Expiry rule changed from p < 0.3 to p < 0.5 with ≥ 2 not-seen walks**:
+with the prior, two not-seen walks can never pull two sightings below 0.3, so refuted hazards would never leave the map;
+a hazard seen by more walks needs proportionally more not-seen walks. Once confirmed, a hazard stays confirmed until
+expired (asymmetric, SAF-29). Walk IDs are stored only as `sha256(walkId:hazardId)` prefixes, so hazards can't be linked
+into a route (PRI-04). Clustering and the bbox read use a **latitude-band query + in-memory filter** instead of geohash
+ranges (no composite indexes; bbox capped at 0.05°); geohash is still stored. Spoken form: "Pothole reported ahead,
+3 walkers" — the age is left out to stay within ADR-023's word cap. Client privacy: an observation leaves the phone only
+when its point is ≥ 200 m from the walk start **and** the walker is ≥ 200 m past it; unreleased points are dropped at
+the end of the walk (the trip-end trim, ADR-020/PRI-04).
+
 ## ADR-026 User-controlled alert levels with a safety floor
 Accepted · 2026-10-10 (owner's proposal, refined; confirmed) · extends ADR-022/023
 - **Floor (cannot be turned off):** P0 imminent hazards and SYS (camera lost, offline, stopped). Safety rate caps also stay.

@@ -282,7 +282,8 @@ export interface PublicHazard extends LatLng {
 }
 
 export function toPublic(h: HazardRecord, now: number): PublicHazard {
-  return { id: h.id, type: h.type, lat: h.lat, lng: h.lng, reports: h.seen.length, lastSeen: h.lastSeen, status: statusOf(h, now) };
+  const r5 = (v: number) => Math.round(v * 1e5) / 1e5;
+  return { id: h.id, type: h.type, lat: r5(h.lat), lng: r5(h.lng), reports: h.seen.length, lastSeen: h.lastSeen, status: statusOf(h, now) };
 }
 
 // ---------- Client-side privacy trimming (PRI-04) ----------
