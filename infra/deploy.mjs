@@ -36,6 +36,8 @@ const args = [
   '--memory=512Mi',
   '--port=8080',
   `--set-env-vars=${Object.entries(ENV).map(([k, v]) => `${k}=${v}`).join(',')}`,
+  // Browser Maps key (public by design, referrer-locked) from Secret Manager — never in the repo or the build (Q8).
+  '--set-secrets=MAPS_BROWSER_KEY=maps-browser-key:latest',
   '--quiet',
 ];
 

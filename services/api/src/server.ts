@@ -39,9 +39,17 @@ export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInst
   // R2.3: community hazards — observations in, confirmed hazards out (ADR-020/025).
   await registerCommunity(app, opts.community);
 
+  // R2.4: the hazard map page needs the browser Maps key. It is public by design (sent to Google from the browser) and
+  // referrer-locked to our URLs; it comes from Secret Manager at runtime so it is never in the repo or the build.
+  app.get('/api/map-config', async (_req, reply) => {
+    reply.header('cache-control', 'public, max-age=300');
+    return { mapsKey: process.env.MAPS_BROWSER_KEY || process.env.GOOGLE_MAPS_API_KEY || null };
+  });
+
   const webDist = opts.webDist ?? DEFAULT_WEB_DIST;
   if (existsSync(webDist)) {
     await app.register(fastifyStatic, { root: webDist });
+    app.get('/map', async (_req, reply) => reply.sendFile('map.html'));
   }
 
   return app;

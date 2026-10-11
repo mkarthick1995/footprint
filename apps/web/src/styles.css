@@ -77,3 +77,8 @@ video,
   font-size: 0.8rem;
   color: #aaa;
 }
+
+/* Links readable on the dark background (contrast ≥ 4.5:1). */
+main a {
+  color: #ffd84d;
+}
