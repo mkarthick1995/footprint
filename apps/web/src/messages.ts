@@ -31,6 +31,9 @@ export const MESSAGES = {
   chooseClip: 'Choose a recorded clip first.',
   detectorFailed: 'Obstacle detection could not start. Alerts are off.',
   detectorStopped: 'Obstacle detection stopped. Alerts are off.',
+  scanDown: 'Scene descriptions are unavailable. Obstacle alerts still work.',
+  scanUp: 'Scene descriptions are back.',
+  scanCapped: 'Scene descriptions are paused for today. Obstacle alerts still work.',
   blurUnavailable: 'Privacy protection could not start. Scene descriptions are off. Obstacle alerts still work.',
 } as const;
 

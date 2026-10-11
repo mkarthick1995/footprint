@@ -25,7 +25,7 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
   filter, alert manager (the only thing that speaks), GPS. Reason: hazard alerts need < 300 ms, which a server round
   trip can't guarantee. The phone holds **no Google credentials** (ADR-030).
 - **Cloud Run (asia-southeast1, service account `footprint-api`):** Gemini on **Vertex AI** via the service account —
-  `POST /api/scan` (blurred low-res frame → `gemini-3.8-flash`, global endpoint, JSON schema) and the **Live proxy**
+  `POST /api/scan` (blurred low-res frame → `gemini-3.6-flash`, thinking off, global endpoint, JSON schema — ADR-034) and the **Live proxy**
   WebSocket `/api/live` (browser ↔ Cloud Run ↔ Vertex Live `gemini-live-2.5-flash-native-audio`, us-central1, AUDIO +
   output transcription; the proxy forwards transcript text only and drops model audio). Plus hazard ingest + segment
   scores (Firestore), the web app, the public map, rate limits and session caps.
@@ -65,6 +65,16 @@ Gemini output ─► schema validation ─► freshness check (≤ 2 s) ─► o
                   (invalid → drop)     (stale → drop)            (all-clear / cross / identity → neutral fallback)
 Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation ladder L0–L3 (always announced)
 ```
+- **Scene scan (Q6, ADR-019 layer 2, ADR-034):** `SceneScanner` (`apps/web/src/sceneScan.ts`) every 2.5 s, one request in
+  flight: 32×18 grayscale fingerprint → skip if unchanged (standing still) or page hidden → `FaceBlurrer.getUploadJpeg`
+  (blur on frame + 4 tiles, ≤ 640 px, synchronous JPEG) → `POST /api/scan` (`image/jpeg`, random `x-session-id` per walk)
+  → `services/api/src/scan.ts`: JPEG/session checks, per-session 30/min + per-client 60/min + per-instance daily cap
+  (`SCAN_DAILY_CAP`, default 5000; in memory, max 2 instances) → Vertex `gemini-3.6-flash` with `SCAN_RESPONSE_SCHEMA`
+  (enums only, no free text) → `parseScanResult` on server **and** client → results older than 2 s from capture dropped
+  (SAF-03) → `scanToCandidates` (static hazards only, never P0; missing footpath / crossing as P2; stable IDs per type +
+  direction) merged with on-device candidates into the alert manager; surface notes ("Wet surface.") via
+  `AlertOutput.sayModelText` (filtered, P3, preset-aware). Three failures in a row → "Scene descriptions are
+  unavailable…"; recovery and the daily cap are announced too. Server logs method + path only (no body, no client IP).
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
   Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
   `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,

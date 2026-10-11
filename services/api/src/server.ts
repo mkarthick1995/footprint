@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { registerScan, type ScanOptions } from './scan.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_WEB_DIST = resolve(here, '../../../apps/web/dist');
@@ -11,11 +12,17 @@ const DEFAULT_WEB_DIST = resolve(here, '../../../apps/web/dist');
 export interface ServerOptions {
   webDist?: string;
   logger?: boolean;
+  scan?: ScanOptions;
 }
 
 export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInstance> {
-  // Never log request bodies: they may carry location data (PRI-06).
-  const app = Fastify({ logger: opts.logger ?? false, bodyLimit: 64 * 1024 });
+  // Never log request bodies (frames, locations — PRI-06/PRI-10) or client addresses: requests log method + path only.
+  // trustProxy: behind Cloud Run's front end, req.ip is the client (used only in memory, for rate limits).
+  const app = Fastify({
+    logger: opts.logger ? { serializers: { req: (r) => ({ method: r.method, url: r.url }) } } : false,
+    bodyLimit: 64 * 1024,
+    trustProxy: true,
+  });
 
   app.get('/api/healthz', async () => ({ ok: true }));
 
@@ -23,6 +30,9 @@ export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInst
   app.post('/api/session-token', async (_req, reply) =>
     reply.code(501).send({ error: 'not_implemented', item: 'R1.4' }),
   );
+
+  // R2.2: Gemini scene scan (blurred frame → validated JSON).
+  await registerScan(app, opts.scan);
 
   // R2.3: community observations (ADR-020/025).
   app.post('/api/observations', async (_req, reply) =>

@@ -24,6 +24,8 @@ export interface AlertManagerOptions {
   preset?: AlertPreset;
   /** On-device candidates older than this are stale and never spoken (SAF-22). */
   maxAgeMs?: number;
+  /** Scan candidates (static hazards, 1–3 s old on arrival) stay valid this long after their frame was captured. */
+  scanMaxAgeMs?: number;
   /** Same object, same or lower tier: don't repeat within this window (hysteresis). */
   objectCooldownMs?: number;
   /** Same type + side + tier from *any* track (tracker ID churn in crowds): don't repeat within this window. */
@@ -159,7 +161,7 @@ export class AlertManager {
 
   constructor(opts: AlertManagerOptions = {}) {
     this.opts = {
-      preset: 'standard', maxAgeMs: 1000, objectCooldownMs: 8000, groupCooldownMs: 4000, lowConfidence: 0.5, repeatAsCueMs: 15000,
+      preset: 'standard', maxAgeMs: 1000, scanMaxAgeMs: 4000, objectCooldownMs: 8000, groupCooldownMs: 4000, lowConfidence: 0.5, repeatAsCueMs: 15000,
       ...opts,
     };
   }
@@ -269,10 +271,10 @@ export class AlertManager {
 
   /** Highest-priority group still worth saying. */
   private pick(now: number): Group | null {
-    const { preset, maxAgeMs, objectCooldownMs, groupCooldownMs, lowConfidence } = this.opts;
+    const { preset, maxAgeMs, scanMaxAgeMs, objectCooldownMs, groupCooldownMs, lowConfidence } = this.opts;
     const live = this.candidates.filter((c) => {
       if (c.tier === 'SYS' || c.type === 'system') return false;
-      if (now - c.observedAt > maxAgeMs) return false; // stale (SAF-22)
+      if (now - c.observedAt > (c.source === 'scan' ? scanMaxAgeMs : maxAgeMs)) return false; // stale (SAF-22)
       if (!tierAllowed(c.tier, preset)) return false; // P0 floor inside tierAllowed (ADR-026)
       if (c.confidence < lowConfidence && (c.tier === 'P2' || c.tier === 'P3')) return false; // low + far → drop
       const said = this.spokenObject.get(c.id);

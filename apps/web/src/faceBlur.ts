@@ -3,7 +3,7 @@
 // raw frame. Later steps (Q6 scene scan, Q10 live Q&A) must use getUploadFrame / getUploadJpeg — enforced by
 // uploadGuard.test.ts.
 import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
-import { blurRegions, heldPersonBoxes, pixelBlock, PERSON_HOLD_MS, type Box, type FrameInfo, type PersonSnapshot } from '@footprint/shared';
+import { blurRegions, heldPersonBoxes, iou, pixelBlock, PERSON_HOLD_MS, type Box, type FrameInfo, type PersonSnapshot } from '@footprint/shared';
 import { frameToJpeg, grabFrame } from './frameSource';
 
 /** Self-hosted runtime (copied by scripts/copy-mediapipe.mjs), same as the object detector. */
@@ -29,6 +29,7 @@ export interface UploadFrame {
 export class FaceBlurrer {
   private readonly canvas = document.createElement('canvas');
   private readonly scratch = document.createElement('canvas');
+  private readonly tile = document.createElement('canvas');
   /** Recent person snapshots (≤ PERSON_HOLD_MS): a one-frame detector miss must not leave a face unblurred. */
   private persons: PersonSnapshot[] = [];
 
@@ -74,10 +75,7 @@ export class FaceBlurrer {
     const c = grabFrame(video, UPLOAD_MAX_WIDTH, this.canvas);
     if (!c) return null;
     try {
-      const faces = this.detector.detect(c).detections.flatMap((d) => {
-        const b = d.boundingBox;
-        return b ? [{ x: b.originX, y: b.originY, w: b.width, h: b.height }] : [];
-      });
+      const faces = this.detectFaces(c);
       const frame = { width: c.width, height: c.height };
       const persons = heldPersonBoxes(this.persons, performance.now(), frame);
       const faceRegions = blurRegions({ faces, frame });
@@ -108,6 +106,36 @@ export class FaceBlurrer {
   close(): void {
     this.discard();
     this.detector.close();
+  }
+
+  /**
+   * Faces on the whole frame plus 4 overlapping tiles (60 % of each side). BlazeFace resizes its input to 128 px, so a
+   * face 3–8 m away is a few pixels on the whole frame; inside a tile it is ~1.7× larger and gets found (Q6 leak audit).
+   * Costs 5 detections per upload frame (~1 every 2–3 s), not per camera frame.
+   */
+  private detectFaces(c: HTMLCanvasElement): Box[] {
+    const found: Box[] = [];
+    const add = (canvas: HTMLCanvasElement, ox: number, oy: number) => {
+      for (const d of this.detector.detect(canvas).detections) {
+        const b = d.boundingBox;
+        if (!b) continue;
+        const box = { x: b.originX + ox, y: b.originY + oy, w: b.width, h: b.height };
+        if (!found.some((f) => iou(f, box) >= 0.3)) found.push(box);
+      }
+    };
+    add(c, 0, 0);
+    const tw = Math.round(c.width * 0.6);
+    const th = Math.round(c.height * 0.6);
+    this.tile.width = tw;
+    this.tile.height = th;
+    const t = this.tile.getContext('2d');
+    if (!t) throw new Error('no tile 2d context');
+    for (const [ox, oy] of [[0, 0], [c.width - tw, 0], [0, c.height - th], [c.width - tw, c.height - th]] as const) {
+      t.drawImage(c, ox, oy, tw, th, 0, 0, tw, th);
+      add(this.tile, ox, oy);
+    }
+    this.tile.width = 1; // wipe
+    return found;
   }
 
   /** Pixelate one region: average it down to a few blocks, then draw it back up without smoothing. */

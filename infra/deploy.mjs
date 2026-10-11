@@ -16,7 +16,7 @@ const RUNTIME_SA = `footprint-api@${PROJECT}.iam.gserviceaccount.com`;
 const ENV = {
   GOOGLE_GENAI_USE_VERTEXAI: 'true',
   GOOGLE_CLOUD_PROJECT: PROJECT,
-  GEMINI_SCAN_MODEL: process.env.GEMINI_SCAN_MODEL || 'gemini-3.8-flash',
+  GEMINI_SCAN_MODEL: process.env.GEMINI_SCAN_MODEL || 'gemini-3.6-flash',
   GEMINI_SCAN_LOCATION: process.env.GEMINI_SCAN_LOCATION || 'global',
   GEMINI_LIVE_MODEL: process.env.GEMINI_LIVE_MODEL || 'gemini-live-2.5-flash-native-audio',
   GEMINI_LIVE_LOCATION: process.env.GEMINI_LIVE_LOCATION || 'us-central1',

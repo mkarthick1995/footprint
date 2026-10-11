@@ -9,7 +9,14 @@ export const FACE_PAD = 0.3;
  * Top share of a person box treated as "head" when the face detector found nothing there. Costs nothing (we already have
  * person boxes from the object detector) and covers profiles, hats and small faces the face model misses.
  */
-export const HEAD_FRACTION = 0.28;
+export const HEAD_FRACTION = 0.35;
+
+/**
+ * Margin around the head band (fraction of the person box): faces of people leaning, turning or partly outside the
+ * box leaked with a tight band (Q6 leak audit, Singapore clip, 2026-10-12).
+ */
+export const HEAD_PAD_X = 0.15;
+export const HEAD_PAD_Y = 0.08;
 
 /** Pixelation grid: the longer side of a blurred region is reduced to about this many blocks. */
 export const BLUR_CELLS = 6;
@@ -34,9 +41,11 @@ export function padBox(box: Box, frame: Pick<FrameInfo, 'width' | 'height'>, pad
   return clampBox({ x: box.x - dx, y: box.y - dy, w: box.w + 2 * dx, h: box.h + 2 * dy }, frame);
 }
 
-/** The head area of a person (or rider) box: its top `fraction`, full width, clamped to the frame. */
+/** The head area of a person (or rider) box: its top `fraction` plus a margin on the sides and above, clamped. */
 export function headRegion(person: Box, frame: Pick<FrameInfo, 'width' | 'height'>, fraction = HEAD_FRACTION): Box | null {
-  return clampBox({ x: person.x, y: person.y, w: person.w, h: person.h * fraction }, frame);
+  const dx = person.w * HEAD_PAD_X;
+  const dy = person.h * HEAD_PAD_Y;
+  return clampBox({ x: person.x - dx, y: person.y - dy, w: person.w + 2 * dx, h: person.h * fraction + dy }, frame);
 }
 
 /** Map a box from one frame size to another (e.g. video pixels → the 640 px upload canvas). */
