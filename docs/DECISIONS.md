@@ -341,6 +341,25 @@ Trade-offs: extra hop for scan and Q&A (non-critical paths; hazard alerts stay o
 latency for Asia (REL-08); `gemini-live-2.5-flash-native-audio` discontinues **2026-12-13**, after judging (REL-07);
 proxy must be rate-limited (SEC-02). Revisit AI Studio prepaid credit only if the newer Live model proves clearly better.
 
+## ADR-034 Scene-scan model: gemini-3.6-flash, thinking off (replaces ADR-030's scan model)
+Proposed · 2026-10-12 (owner asked for faster scans; owner confirmation pending) · R2.2 · keeps SAF-03's 2 s rule
+Benchmark on 10 frames (6 CC-BY hazard photos with known answers: open pit, potholes, flooded road, pothole at a
+zebra, drain beside a path; 4 street frames), same prompt and JSON schema, medium image resolution:
+| Model (endpoint, thinking) | Latency | Result |
+|---|---|---|
+| gemini-3.8-flash (global, LOW; MINIMAL rejected; budget 0 not always honoured) | 2.4–18 s, erratic | correct |
+| gemini-3.7-flash (global; thinks ~150 tokens even at budget 0) | 3.1–4.2 s | correct |
+| gemini-2.5-flash (asia-southeast1, off) | 0.96–1.1 s | correct, but **retires ~2026-10-16/20** — before judging |
+| gemini-3.1-flash-lite (global, off) | 1.3–1.5 s | correct, a few odd footpath states |
+| **gemini-3.6-flash (global, off)** | **1.3–1.9 s** | **correct on 10/10**, kerbs included |
+Decision: `gemini-3.6-flash`, `thinkingBudget: 0`, temperature 0, full system instruction (a shortened prompt was not
+faster and lost hazards), medium image resolution (low was not faster). 3.6 / 3.7 / 3.8-flash and 3.1-flash-lite are
+global-only on Vertex (404 in asia-southeast1). Keeps the client's 2 s freshness rule (SAF-03) — the alternative of
+aging distances for a slow model is no longer needed. Thinking is off because the answer is a short enum list: it
+added latency, not accuracy. Config: `GEMINI_SCAN_MODEL`, `GEMINI_SCAN_THINKING` (off | low | …),
+`GEMINI_SCAN_MEDIA_RES`. Cost ≈ 1,100 input + 60–130 output tokens per scan. Risk: model IDs change often (REL-07) —
+re-run the benchmark before judging.
+
 ## ADR-031 Pull-based build queue with a strict Definition of Done
 Accepted · 2026-10-10 (owner's process) · refines ADR-028 (order) and ADR-008 (workflow)
 - Work is not pre-assigned. Whoever is available takes the **first unclaimed step** of the numbered build queue in
