@@ -89,11 +89,13 @@ describe('SceneScanner', () => {
     expect(s.stats.failed).toBe(1);
   });
 
-  it('rate limited → backs off 30 s; daily cap → announces once and stops scanning', async () => {
-    const { once, status, sent } = await setup([json(429, {}), json(503, { error: 'daily_cap' })]);
+  it('ST-03: rate limited → scan reported down at once and backs off 30 s; daily cap → announced once, scanning stops', async () => {
+    const { s, once, status, sent } = await setup([json(429, {}), json(503, { error: 'daily_cap' })]);
     expect(await once()).toBe(30_000);
+    expect(status).toEqual(['down']);
+    expect((s as unknown as { down: boolean }).down).toBe(true);
     await once();
-    expect(status).toEqual(['capped']);
+    expect(status).toEqual(['down', 'capped']);
     await once();
     expect(sent).toHaveLength(2);
   });

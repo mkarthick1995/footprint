@@ -3,6 +3,7 @@ import { AlertOutput } from './alertOutput';
 import { CommunityClient } from './community';
 import { createDetector, type OnDeviceDetector } from './detector';
 import { FaceBlurrer } from './faceBlur';
+import { HealthMonitor } from './health';
 import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
 import { PerceptionLoop } from './perception';
@@ -38,12 +39,25 @@ const SCAN_MESSAGES: Record<ScanStatus, string> = {
   up: MESSAGES.scanUp,
   capped: MESSAGES.scanCapped,
 };
+/** Q9: fail-loud monitor — camera quality, angle, detector heartbeat, scan, battery, heat, location (ladder L0–L3). */
+let detectorBeat = 0;
+let detectorFps = 0;
+const health = new HealthMonitor({
+  video,
+  detectorBeat: () => detectorBeat,
+  detectorFps: () => detectorFps,
+  sceneOk: () => scanner.healthy,
+  gpsAge: () => community.gpsAge(),
+  announce,
+});
+
 /** Q7: community hazard map — scan findings shared anonymously; confirmed reports spoken as "reported". */
 const community = new CommunityClient({ onLocationOff: () => announce(MESSAGES.locationOff) });
 const scanner = new SceneScanner({
   video,
   blurrer: () => blurrer,
-  onStatus: (status) => announce(SCAN_MESSAGES[status]),
+  // Scan down/back is part of the degradation ladder (L1, announced by the health monitor); only the cap is said here.
+  onStatus: (status) => { if (status === 'capped') announce(SCAN_MESSAGES[status]); },
   onContext: (text) => output.sayModelText(text, { kind: 'context' }),
   onScan: (result) => community.onScan(result),
 });
@@ -67,6 +81,8 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   loop = null;
   scanner.stop();
   community.stop();
+  health.stop();
+  detectorBeat = 0;
   blurrer?.clearPersons();
   output.reset();
   overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height);
@@ -109,6 +125,7 @@ async function start(): Promise<void> {
   await startPerception();
   scanner.start();
   if (source?.kind === 'camera') community.start(); // recorded clips have no location
+  health.start();
   // Development readout (no frame is grabbed for it). With ?debug=blur it also shows the blurred upload frame (ST-10).
   frameTimer = window.setInterval(() => {
     const v = source?.video;
@@ -168,7 +185,11 @@ async function startPerception(): Promise<void> {
   loop = new PerceptionLoop(detector, source.video, {
     onCandidates: (candidates, tracks, frame, stats) => {
       drawOverlay(overlay, frame, tracks, candidates);
-      output.update([...candidates, ...scanner.candidates(), ...community.candidates()], frame.ts);
+      detectorBeat = performance.now();
+      detectorFps = stats.fps;
+      // L2/L3: the camera image can't be trusted — alerts derived from it are withheld (SAFETY §2); map reports remain.
+      const cameraTrusted = health.level === 'L0' || health.level === 'L1';
+      output.update(cameraTrusted ? [...candidates, ...scanner.candidates(), ...community.candidates()] : community.candidates(), frame.ts);
       // Head-area backstop for the face blur: people and riders as seen by the object detector.
       blurrer?.setPersons(tracks.filter((t) => t.type === 'person' || t.type === 'cyclist').map((t) => t.box), frame);
       const top = [...candidates].sort((a, b) => a.ttcSeconds - b.ttcSeconds)[0];
@@ -186,7 +207,10 @@ async function startPerception(): Promise<void> {
 
 startBtn.addEventListener('click', () => {
   // Must run synchronously inside the tap, before any await (camera prompt), or mobile Chrome stays silent.
-  if (!source) output.unlock();
+  if (!source) {
+    output.unlock();
+    HealthMonitor.requestMotionPermission(); // iOS: motion sensors need the tap too
+  }
   void (source ? stop() : start());
 });
 
@@ -197,6 +221,7 @@ document.addEventListener('visibilitychange', () => {
     announce(MESSAGES.paused);
   } else {
     void wakeLock.reacquireIfNeeded();
+    health.resume();
     announce(MESSAGES.resumed);
   }
 });

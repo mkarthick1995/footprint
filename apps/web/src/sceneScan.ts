@@ -84,6 +84,14 @@ export class SceneScanner {
     this.down = false;
   }
 
+  /** For the fail-loud ladder (L1): false while scans are failing or the phone is offline; null before the first scan. */
+  get healthy(): boolean | null {
+    if (!this.running) return null;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
+    if (this.down) return false;
+    return this.stats.sent > 0 ? true : null;
+  }
+
   /** Scan candidates still valid at `now` (the alert manager also expires them by age). */
   candidates(): AlertCandidate[] {
     return this.active;
@@ -133,6 +141,8 @@ export class SceneScanner {
       return SCAN_INTERVAL_MS;
     }
     if (res.status === 429) {
+      // Quota / rate limit isn't a blip: report the scan as down now (ST-03), then back off.
+      this.fails = FAILS_BEFORE_DOWN - 1;
       this.fail();
       return RATE_LIMIT_BACKOFF_MS;
     }

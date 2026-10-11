@@ -69,6 +69,7 @@ export class CommunityClient {
   private passes = new Map<string, PassState>();
   private session = '';
   private active = false;
+  private lastGoodFixAt = 0;
   readonly stats = { queued: 0, sent: 0, failed: 0, notSeen: 0, hazardsNearby: 0 };
 
   constructor(private readonly opts: CommunityOptions) {}
@@ -119,6 +120,7 @@ export class CommunityClient {
     const fix: Fix = { lat: c.latitude, lng: c.longitude, accuracy: c.accuracy, ts: p.timestamp };
     this.fix = fix;
     if (c.accuracy > MAX_ACCURACY_M) return;
+    this.lastGoodFixAt = this.now;
     this.walkStart ??= { lat: fix.lat, lng: fix.lng };
     // Heading: GPS course while moving; otherwise the direction of the last ≥ 8 m of movement.
     if (c.heading !== null && Number.isFinite(c.heading) && (c.speed ?? 0) >= MIN_SPEED_MPS) this.heading = c.heading;
@@ -130,6 +132,12 @@ export class CommunityClient {
     void this.flush();
     if (!this.fetchCentre || distanceM(this.fetchCentre, fix) >= REFETCH_M) void this.refresh(fix);
     this.trackPasses(null);
+  }
+
+  /** ms since the last usable GPS fix (for the "location lost" warning); null when location isn't in use. */
+  gpsAge(): number | null {
+    if (!this.active) return null;
+    return this.lastGoodFixAt ? this.now - this.lastGoodFixAt : null;
   }
 
   /** A fresh scan (≤ 2 s old) arrived: queue its static hazards as observations; count it for "not seen" votes. */

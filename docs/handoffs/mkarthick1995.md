@@ -2,13 +2,13 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r1.2-detector-tracker
 
 ## Now
-- Q1–Q8 done. Q8: public `/map` page (Google Map + accessible list) of confirmed community hazards.
-- Map is empty until real walks confirm hazards (≥ 2 walks). Record two real walks on one street before the video.
+- Q1–Q9 done. Q9: fail-loud ladder L0–L3 + quality gate + orientation + battery/heat + GPS-lost warnings.
+- Outdoor phone test (open check) should now also try: cover the lens, point at the ground, airplane mode.
 
 ## Next
-1. Next unclaimed: Q9 fail-loud layer (watchdogs, degradation ladder, camera-quality checks) — safety core.
-2. Outdoor phone test (open check): detector + Gemini scan + map, then look at /map on a laptop.
-3. FOLLOWUPS #1; scan model benchmark before judging; Cloud Run IP log exclusion (Q12).
+1. Next unclaimed: Q10 Gemini Live Q&A proxy (voice question → filtered answer) — the big Gemini/UX demo moment.
+2. FOLLOWUPS #1 (detector on camera frames); scan model benchmark before judging; Cloud Run IP log exclusion (Q12).
+3. Feature freeze 10-16: Q10 must land first; Q11–Q14 get triaged (cut list) on 10-14.
 
 ## Blockers
 - None.
