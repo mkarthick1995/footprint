@@ -3,7 +3,7 @@
 // raw frame. Later steps (Q6 scene scan, Q10 live Q&A) must use getUploadFrame / getUploadJpeg — enforced by
 // uploadGuard.test.ts.
 import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
-import { blurRegions, pixelBlock, scaleBox, type Box, type FrameInfo } from '@footprint/shared';
+import { blurRegions, heldPersonBoxes, pixelBlock, PERSON_HOLD_MS, type Box, type FrameInfo, type PersonSnapshot } from '@footprint/shared';
 import { frameToJpeg, grabFrame } from './frameSource';
 
 /** Self-hosted runtime (copied by scripts/copy-mediapipe.mjs), same as the object detector. */
@@ -14,8 +14,6 @@ export const FACE_MODEL_URL =
 
 /** Uploads are never wider than this (ADR-013: downscale ≤ 640 px). */
 export const UPLOAD_MAX_WIDTH = 640;
-/** Person boxes older than this are not used for head areas (the perception loop updates them every frame). */
-const PERSON_MAX_AGE_MS = 1000;
 
 export interface UploadFrame {
   /** Blurred frame, ≤ UPLOAD_MAX_WIDTH wide. Owned by the blurrer: encode or copy it before the next call. */
@@ -31,7 +29,8 @@ export interface UploadFrame {
 export class FaceBlurrer {
   private readonly canvas = document.createElement('canvas');
   private readonly scratch = document.createElement('canvas');
-  private persons: { boxes: Box[]; frame: FrameInfo; at: number } | null = null;
+  /** Recent person snapshots (≤ PERSON_HOLD_MS): a one-frame detector miss must not leave a face unblurred. */
+  private persons: PersonSnapshot[] = [];
 
   private constructor(
     private readonly detector: FaceDetector,
@@ -56,11 +55,17 @@ export class FaceBlurrer {
 
   /** Latest person / rider boxes from the perception loop (video pixels); used for the head-area backstop. */
   setPersons(boxes: readonly Box[], frame: FrameInfo): void {
-    this.persons = { boxes: [...boxes], frame, at: performance.now() };
+    const now = performance.now();
+    this.persons = this.persons.filter((s) => now - s.at <= PERSON_HOLD_MS);
+    const snap = { boxes: [...boxes], frame: { width: frame.width, height: frame.height }, at: now };
+    // ≤ 10 snapshots per second: replace the newest one while it is < 100 ms old, so the history stays small.
+    const last = this.persons[this.persons.length - 1];
+    if (last && now - last.at < 100 && this.persons.length > 1) this.persons[this.persons.length - 1] = { ...snap, at: last.at };
+    else this.persons.push(snap);
   }
 
   clearPersons(): void {
-    this.persons = null;
+    this.persons = [];
   }
 
   /** A blurred, downscaled copy of the current video frame — or null (fail closed). Never returns raw pixels. */
@@ -74,13 +79,7 @@ export class FaceBlurrer {
         return b ? [{ x: b.originX, y: b.originY, w: b.width, h: b.height }] : [];
       });
       const frame = { width: c.width, height: c.height };
-      let persons: Box[] = [];
-      const p = this.persons;
-      if (p && performance.now() - p.at <= PERSON_MAX_AGE_MS && p.frame.width > 0) {
-        const sx = c.width / p.frame.width;
-        const sy = c.height / p.frame.height;
-        persons = p.boxes.map((b) => scaleBox(b, sx, sy));
-      }
+      const persons = heldPersonBoxes(this.persons, performance.now(), frame);
       const faceRegions = blurRegions({ faces, frame });
       const regions = blurRegions({ faces, persons, frame });
       const ctx = c.getContext('2d');

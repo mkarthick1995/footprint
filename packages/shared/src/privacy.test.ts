@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blurRegions, clampBox, headRegion, padBox, pixelBlock, scaleBox } from './privacy.js';
+import { blurRegions, clampBox, headRegion, heldPersonBoxes, padBox, pixelBlock, scaleBox } from './privacy.js';
 
 const frame = { width: 640, height: 360 };
 
@@ -77,5 +77,28 @@ describe('pixelBlock', () => {
 describe('scaleBox', () => {
   it('maps video pixels to the upload canvas', () => {
     expect(scaleBox({ x: 1000, y: 500, w: 200, h: 400 }, 0.5, 0.5)).toEqual({ x: 500, y: 250, w: 100, h: 200 });
+  });
+});
+
+describe('heldPersonBoxes (detector gaps must not unblur a face)', () => {
+  const video = { width: 1280, height: 720 };
+  const p = { x: 100, y: 50, w: 80, h: 200 };
+  it('keeps a person seen 600 ms ago even if the newest frame has nobody', () => {
+    const history = [
+      { boxes: [p], frame: video, at: 400 },
+      { boxes: [], frame: video, at: 1000 },
+    ];
+    expect(heldPersonBoxes(history, 1000, frame)).toEqual([{ x: 50, y: 25, w: 40, h: 100 }]);
+  });
+  it('keeps one region per person across many snapshots (newest position wins)', () => {
+    const moved = { ...p, x: 104 };
+    const history = Array.from({ length: 60 }, (_, i) => ({ boxes: [i === 59 ? moved : p], frame: video, at: 1000 + i * 16 }));
+    expect(heldPersonBoxes(history, 1960, frame)).toEqual([{ x: 52, y: 25, w: 40, h: 100 }]);
+  });
+  it('drops boxes older than the hold window', () => {
+    expect(heldPersonBoxes([{ boxes: [p], frame: video, at: 0 }], 1500, frame)).toEqual([]);
+  });
+  it('ignores snapshots with an unknown frame size', () => {
+    expect(heldPersonBoxes([{ boxes: [p], frame: { width: 0, height: 0 }, at: 1000 }], 1000, frame)).toEqual([]);
   });
 });
