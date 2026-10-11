@@ -3,6 +3,7 @@
 // Never produces an "all clear": silence means "nothing to report", never "safe" (ADR-012).
 import type { AlertCandidate, AlertPreset, HazardType, Tier } from './types.js';
 import { SEVERITY_ORDER, tierAllowed } from './tiers.js';
+import { filterModelText, type FilterResult } from './safetyFilter.js';
 
 export type Earcon = 'imminent' | 'near' | 'system' | null;
 
@@ -37,6 +38,30 @@ export interface AlertManagerOptions {
 const MIN_GAP_MS: Record<Tier, number> = { SYS: 0, P0: 0, P1: 1500, P2: 3000, P3: 6000 };
 
 const RANK: Record<Tier, number> = { SYS: 0, P0: 1, P1: 2, P2: 3, P3: 4 };
+
+/** Minimum gap before spoken answers to a user question (the user is waiting, so shorter than ambient P3 context). */
+const ANSWER_GAP_MS = 1500;
+/** Queued model text is dropped if it has not been spoken within this time (an old answer is worse than none, SAF-22). */
+const MODEL_TEXT_TTL_MS = 10_000;
+/** ADR-023: P3 is at most 2 sentences and ~30 words. */
+const P3_MAX_SENTENCES = 2;
+
+export type ModelTextKind = 'answer' | 'context';
+
+/** Keep the first sentences that fit the P3 caps; cut a single over-long sentence at a word boundary. */
+function capP3(text: string): string {
+  const parts = text.split(/(?<=[.!?…])\s+/u).filter((s) => s.trim());
+  const out: string[] = [];
+  let words = 0;
+  for (const s of parts.slice(0, P3_MAX_SENTENCES)) {
+    const n = wordCount(s);
+    if (words + n > WORD_CAP.P3) break;
+    out.push(s);
+    words += n;
+  }
+  if (out.length > 0) return out.join(' ');
+  return (parts[0] ?? '').split(/\s+/).slice(0, WORD_CAP.P3).join(' ');
+}
 
 const NOUN: Record<HazardType, [singular: string, plural: string]> = {
   pothole: ['Pothole', 'potholes'],
@@ -122,6 +147,8 @@ const VIBRATE: Record<Tier, number[] | null> = { SYS: [300], P0: [80, 40, 80, 40
 export class AlertManager {
   private candidates: AlertCandidate[] = [];
   private systemQueue: string[] = [];
+  /** Model-derived text that already passed the safety filter (P3). Only `modelText()` can add to it (R1.7). */
+  private contextQueue: { text: string; kind: ModelTextKind; expiresAt: number }[] = [];
   private spokenObject = new Map<string, { tier: Tier; at: number }>();
   private spokenGroup = new Map<string, number>();
   /** Last time each group was put into words (not just cued). */
@@ -151,6 +178,23 @@ export class AlertManager {
     this.systemQueue.push(text);
   }
 
+  /**
+   * The ONLY way model-derived text (Gemini answers, scene descriptions) can reach the speaker (R1.7, ADR-012).
+   * The text is filtered here, capped to P3 length, and queued as P3: it is spoken when no hazard is pending and is
+   * interrupted by P0/P1. Returns the filter result so the caller can count blocked output (reasons only — never log
+   * the text). `kind: 'context'` is ambient description and obeys the user's preset; `'answer'` replies to a question.
+   */
+  modelText(raw: unknown, now: number, opts: { kind?: ModelTextKind; ttlMs?: number } = {}): FilterResult {
+    const kind = opts.kind ?? 'answer';
+    const result = filterModelText(raw);
+    const text = capP3(result.text);
+    if (!text) return result;
+    if (kind === 'context' && !tierAllowed('P3', this.opts.preset)) return result; // muted by preset; still filtered
+    this.contextQueue.push({ text, kind, expiresAt: now + (opts.ttlMs ?? MODEL_TEXT_TTL_MS) });
+    if (this.contextQueue.length > 2) this.contextQueue.shift(); // only the latest matter
+    return result;
+  }
+
   /** Tell the manager the output finished (or was cut) so lower tiers may speak again. */
   finished(): void {
     this.current = null;
@@ -162,6 +206,7 @@ export class AlertManager {
     this.spokenObject.clear();
     this.spokenGroup.clear();
     this.wordedGroup.clear();
+    this.contextQueue = [];
     this.current = null;
   }
 
@@ -176,7 +221,7 @@ export class AlertManager {
       return this.emit({ text: sys, tier: 'SYS', earcon: 'system', vibrate: VIBRATE.SYS, interrupt: true, ids: [] }, now);
     }
     const group = this.pick(now);
-    if (!group) return null;
+    if (!group) return this.nextModelText(now, speaking);
     // Interrupt rules: P0 cuts anything below P0; P1 cuts P2/P3; otherwise wait for the output to be idle.
     if (speaking && this.current !== null) {
       const canCut = (group.tier === 'P0' && RANK[this.current] > RANK.P0) || (group.tier === 'P1' && RANK[this.current] > RANK.P1);
@@ -203,6 +248,17 @@ export class AlertManager {
       },
       now,
     );
+  }
+
+  /** P3: queued, already-filtered model text — only when no hazard group is waiting and the output is idle. */
+  private nextModelText(now: number, speaking: boolean): Utterance | null {
+    this.contextQueue = this.contextQueue.filter((c) => c.expiresAt > now); // stale answers are never spoken
+    const item = this.contextQueue[0];
+    if (!item || speaking) return null;
+    const gap = item.kind === 'answer' ? ANSWER_GAP_MS : MIN_GAP_MS.P3;
+    if (now - this.lastSpokenAt < gap) return null;
+    this.contextQueue.shift();
+    return this.emit({ text: item.text, tier: 'P3', earcon: null, vibrate: null, interrupt: false, ids: [] }, now);
   }
 
   private emit(u: Utterance, now: number): Utterance {

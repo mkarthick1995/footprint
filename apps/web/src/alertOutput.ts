@@ -1,6 +1,13 @@
 // The only speaking path (Q3, ADR-022): renders AlertManager decisions as earcon → speech, vibration, and an
 // aria-live mirror. Everything that wants to say something goes through say() (system) or update() (hazards).
-import { AlertManager, type AlertCandidate, type AlertPreset, type Utterance } from '@footprint/shared';
+import {
+  AlertManager,
+  type AlertCandidate,
+  type AlertPreset,
+  type FilterResult,
+  type ModelTextKind,
+  type Utterance,
+} from '@footprint/shared';
 import { playEarcon, unlockAudio } from './earcon';
 import { cancelSpeech, primeSpeech, speak } from './speech';
 
@@ -15,7 +22,8 @@ function watchdogMs(text: string): number {
 }
 
 export class AlertOutput {
-  readonly manager: AlertManager;
+  // Private on purpose (R1.7): model text must enter through sayModelText(), never through the manager directly.
+  private readonly manager: AlertManager;
   private busy = false;
   private token = 0;
   private watchdog: number | undefined;
@@ -37,10 +45,26 @@ export class AlertOutput {
     this.voiceFailed = false;
   }
 
-  /** System message (SYS): spoken next, interrupting anything below an active P0. */
+  /**
+   * System message (SYS): spoken next, interrupting anything below an active P0.
+   * For our OWN fixed wording only (fail-loud announcements) — never pass model-derived text here; use sayModelText().
+   */
   say(text: string): void {
     this.manager.system(text);
     this.pump();
+  }
+
+  /**
+   * The single entry point for model-derived text (Gemini answers, scene descriptions — Q6, Q10). The safety filter is
+   * always applied (all-clear / crossing / signal / identity / injection), the text is capped to P3 length and queued as
+   * P3: spoken when no hazard is pending, interrupted by P0/P1, dropped if stale. Returns the filter result.
+   */
+  sayModelText(raw: unknown, opts: { kind?: ModelTextKind; ttlMs?: number } = {}): FilterResult {
+    const result = this.manager.modelText(raw, performance.now(), opts);
+    // Reasons only: the blocked text may describe a bystander (PRI-03), so it is never logged.
+    if (result.blocked) console.warn(`model text filtered: ${result.reasons.join(', ')}`);
+    this.pump();
+    return result;
   }
 
   /** Latest frame's hazard candidates. */
