@@ -77,5 +77,39 @@ export function grabFrame(video: HTMLVideoElement, maxWidth: number, canvas?: HT
 
 /** Encode a grabbed frame as JPEG (for uploads after face blur, Q4/Q6). */
 export function frameToJpeg(canvas: HTMLCanvasElement, quality = 0.7): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/jpeg', quality));
+  // Synchronous encode: canvas.toBlob is asynchronous and, while the detector keeps the GPU busy, its callback waited
+  // ~1 s on desktop Chrome (Q6 measurement) — enough to make every scan stale. toDataURL encodes a 640 px frame in a
+  // few ms on the main thread.
+  try {
+    const url = canvas.toDataURL('image/jpeg', quality);
+    const comma = url.indexOf(',');
+    if (!url.startsWith('data:image/jpeg') || comma < 0) return Promise.resolve(null);
+    const bin = atob(url.slice(comma + 1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return Promise.resolve(new Blob([bytes], { type: 'image/jpeg' }));
+  } catch {
+    return Promise.resolve(null); // e.g. a tainted canvas: fail closed, nothing is sent
+  }
+}
+
+/** Size of the change-detection fingerprint (Q6): far too small to show anything identifiable, never uploaded. */
+export const SIGNATURE_W = 32;
+export const SIGNATURE_H = 18;
+
+/**
+ * A 32×18 grayscale fingerprint of the current frame, used only to skip scans while the view is unchanged
+ * (standing still). Returns null when no frame is available.
+ */
+export function frameSignature(video: HTMLVideoElement, canvas: HTMLCanvasElement): Uint8Array | null {
+  if (!(video.videoWidth > 0) || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return null;
+  canvas.width = SIGNATURE_W;
+  canvas.height = SIGNATURE_H;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.drawImage(video, 0, 0, SIGNATURE_W, SIGNATURE_H);
+  const rgba = ctx.getImageData(0, 0, SIGNATURE_W, SIGNATURE_H).data;
+  const out = new Uint8Array(SIGNATURE_W * SIGNATURE_H);
+  for (let i = 0; i < out.length; i++) out[i] = (rgba[i * 4]! * 77 + rgba[i * 4 + 1]! * 150 + rgba[i * 4 + 2]! * 29) >> 8;
+  return out;
 }

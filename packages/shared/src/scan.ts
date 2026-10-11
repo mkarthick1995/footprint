@@ -180,3 +180,22 @@ export function scanSurfaceNote(scan: ScanResult): string {
   if (scan.surface === 'wet') return 'Wet surface.';
   return '';
 }
+
+/** Mean absolute difference (0–255) between two frame fingerprints; Infinity when they can't be compared. */
+export function signatureDiff(a: ArrayLike<number> | null, b: ArrayLike<number> | null): number {
+  if (!a || !b || a.length !== b.length || a.length === 0) return Infinity;
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += Math.abs(a[i]! - b[i]!);
+  return sum / a.length;
+}
+
+/** Below this fingerprint difference the view counts as unchanged (standing still) and the scan is skipped. */
+export const UNCHANGED_DIFF = 4;
+
+/** Vertex price for the scan model (USD per 1M tokens; gemini-3.6-flash introductory rate to 2026-12-31). */
+export const SCAN_PRICE_PER_M = { input: 0.75, output: 3.75 } as const;
+
+/** Cost in USD of one scan from its token usage. */
+export function scanCostUsd(usage: { inputTokens: number; outputTokens: number }): number {
+  return (usage.inputTokens * SCAN_PRICE_PER_M.input + usage.outputTokens * SCAN_PRICE_PER_M.output) / 1_000_000;
+}
