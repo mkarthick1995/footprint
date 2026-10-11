@@ -36,7 +36,8 @@ Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Vision: [`docs/V
 Footprint gives extra information about the street; it never tells you a path is safe or when to cross.
 Faces of passers-by are blurred on the phone before any frame is sent; no images, video, or audio are stored;
 hazard reports are anonymous and coarse. It can miss obstacles, can't see behind or beside you, works poorly in the
-dark, and needs internet for scene descriptions. Full safety case, limitations, and test results:
+dark, and needs internet for scene descriptions. When something fails — camera covered or too dark, phone pointed at the
+ground, internet lost, detector stalled — it says so out loud and tells you what still works. Full safety case, limitations, and test results:
 [`docs/SAFETY.md`](docs/SAFETY.md).
 
 ## Tech

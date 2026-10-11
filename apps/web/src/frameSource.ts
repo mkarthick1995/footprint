@@ -101,15 +101,15 @@ export const SIGNATURE_H = 18;
  * A 32×18 grayscale fingerprint of the current frame, used only to skip scans while the view is unchanged
  * (standing still). Returns null when no frame is available.
  */
-export function frameSignature(video: HTMLVideoElement, canvas: HTMLCanvasElement): Uint8Array | null {
+export function frameSignature(video: HTMLVideoElement, canvas: HTMLCanvasElement, w = SIGNATURE_W, h = SIGNATURE_H): Uint8Array | null {
   if (!(video.videoWidth > 0) || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return null;
-  canvas.width = SIGNATURE_W;
-  canvas.height = SIGNATURE_H;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return null;
-  ctx.drawImage(video, 0, 0, SIGNATURE_W, SIGNATURE_H);
-  const rgba = ctx.getImageData(0, 0, SIGNATURE_W, SIGNATURE_H).data;
-  const out = new Uint8Array(SIGNATURE_W * SIGNATURE_H);
+  ctx.drawImage(video, 0, 0, w, h);
+  const rgba = ctx.getImageData(0, 0, w, h).data;
+  const out = new Uint8Array(w * h);
   for (let i = 0; i < out.length; i++) out[i] = (rgba[i * 4]! * 77 + rgba[i * 4 + 1]! * 150 + rgba[i * 4 + 2]! * 29) >> 8;
   return out;
 }

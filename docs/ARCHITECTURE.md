@@ -93,6 +93,14 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   and renders AdvancedMarker pins (colour by type, `DEMO_MAP_ID`) plus an ordered list — the list is the accessible
   primary view and keeps working when Maps fails to load. Default view Singapore Chinatown; `?lat=&lng=&z=` overrides;
   "Show my area" uses one-off geolocation. Confirmed hazards only, no walk data.
+- **Fail-loud layer (Q9, SAFETY §2):** `HealthMonitor` (`apps/web/src/health.ts`) ticks every 0.5 s while visible:
+  frozen camera (video time unchanged 2 s), camera quality (`frameStats` on a 64×36 fingerprint → covered / dark /
+  blurred), DeviceOrientation beta (ground / sky), detector heartbeat (`onCandidates` timestamp; stall 3 s → L3),
+  scene scan health (`SceneScanner.healthy`: offline, 3 failures or a 429 → false). `evaluateLadder` + `LadderTracker`
+  (`packages/shared/src/health.ts`, hysteresis: worse 1.5 s, better 3 s, L3 immediate) announce level changes through
+  `announce()` (SYS). At L2/L3 the main loop withholds on-device and scan candidates (community reports still flow).
+  One-off warnings: battery 20/10/5 %, detector < 5 fps for 10 s, Compute Pressure "critical", GPS lost 30 s. Paused
+  while hidden; `resume()` resets timing so a pause isn't read as a frozen camera.
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
   Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
   `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,
