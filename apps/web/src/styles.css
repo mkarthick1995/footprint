@@ -55,10 +55,15 @@ button:focus-visible {
 }
 
 video,
-#overlay {
+#overlay,
+#blur-debug {
   width: 100%;
   border-radius: 0.5rem;
   display: block;
+}
+
+#blur-debug[hidden] {
+  display: none;
 }
 
 #overlay {

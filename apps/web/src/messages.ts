@@ -31,6 +31,7 @@ export const MESSAGES = {
   chooseClip: 'Choose a recorded clip first.',
   detectorFailed: 'Obstacle detection could not start. Alerts are off.',
   detectorStopped: 'Obstacle detection stopped. Alerts are off.',
+  blurUnavailable: 'Privacy protection could not start. Scene descriptions are off. Obstacle alerts still work.',
 } as const;
 
 /** Scales (width, height) down so width ≤ maxWidth, keeping aspect ratio. Never upscales; never returns 0. */

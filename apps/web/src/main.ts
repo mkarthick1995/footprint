@@ -1,7 +1,8 @@
 // Entry point. Detector (Q2) → candidates → alert output (Q3), the only speaking path.
 import { AlertOutput } from './alertOutput';
 import { createDetector, type OnDeviceDetector } from './detector';
-import { grabFrame, openCamera, openClip, type FrameSource } from './frameSource';
+import { FaceBlurrer } from './faceBlur';
+import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
 import { PerceptionLoop } from './perception';
 import { cameraErrorMessage, MESSAGES } from './messages';
@@ -14,12 +15,18 @@ const video = document.querySelector<HTMLVideoElement>('#preview')!;
 const clipInput = document.querySelector<HTMLInputElement>('#clip-file')!;
 const frameInfo = document.querySelector<HTMLParagraphElement>('#frame-info');
 const overlay = document.querySelector<HTMLCanvasElement>('#overlay')!;
+const blurDebug = document.querySelector<HTMLCanvasElement>('#blur-debug');
+const blurInfo = document.querySelector<HTMLParagraphElement>('#blur-info');
+/** ST-10: `?debug=blur` shows exactly the frame that would be uploaded, so a tester can see the faces are blurred. */
+const debugBlur = new URLSearchParams(location.search).get('debug') === 'blur';
 
 let source: FrameSource | null = null;
 let frameTimer: number | undefined;
 let detector: OnDeviceDetector | null = null;
 let loop: PerceptionLoop | null = null;
 let perfText = '';
+/** Face blur (R1.8). Null until loaded, or when it failed — then nothing may be uploaded (fail closed). */
+let blurrer: FaceBlurrer | null = null;
 
 const output = new AlertOutput(statusEl);
 
@@ -40,6 +47,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   window.clearInterval(frameTimer);
   loop?.stop();
   loop = null;
+  blurrer?.clearPersons();
   output.reset();
   overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height);
   source?.stop();
@@ -47,6 +55,8 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   await wakeLock.release();
   startBtn.textContent = 'Start walking';
   if (frameInfo) frameInfo.textContent = '';
+  if (blurInfo) blurInfo.textContent = '';
+  if (blurDebug) blurDebug.hidden = true;
   announce(message);
 }
 
@@ -77,17 +87,44 @@ async function start(): Promise<void> {
   announce(MESSAGES.started);
   await wakeLock.acquire();
   await startPerception();
-  // Development readout proving frames flow at the size later steps use (Q2 detector / Q6 scan).
-  const canvas = document.createElement('canvas');
+  // Development readout (no frame is grabbed for it). With ?debug=blur it also shows the blurred upload frame (ST-10).
   frameTimer = window.setInterval(() => {
-    const frame = source ? grabFrame(source.video, 640, canvas) : null;
-    if (frameInfo) frameInfo.textContent = frame ? `Frames: ${frame.width}×${frame.height} (${source?.kind}) · voice: ${currentVoiceName()} · ${perfText}` : 'Waiting for frames…';
+    const v = source?.video;
+    if (frameInfo) {
+      frameInfo.textContent = v && v.videoWidth > 0
+        ? `Video: ${v.videoWidth}×${v.videoHeight} (${source?.kind}) · voice: ${currentVoiceName()} · ${perfText}`
+        : 'Waiting for frames…';
+    }
+    if (debugBlur && v && blurrer && blurDebug && blurInfo) {
+      const f = blurrer.getUploadFrame(v);
+      if (f) {
+        blurDebug.hidden = false;
+        blurDebug.width = f.canvas.width;
+        blurDebug.height = f.canvas.height;
+        blurDebug.getContext('2d')?.drawImage(f.canvas, 0, 0);
+        blurInfo.textContent = `blur ${blurrer.delegate}: ${f.faces} face(s), ${f.heads} head area(s), ${f.ms.toFixed(0)} ms · upload ${f.canvas.width}×${f.canvas.height}`;
+      } else {
+        blurInfo.textContent = 'blur: no upload frame (fail closed)';
+      }
+    }
   }, 1000);
+}
+
+/** R1.8: load the face-blur model in the background. If it fails, say so; uploads stay off (no raw frames, ever). */
+async function loadBlurrer(): Promise<void> {
+  try {
+    blurrer ??= await FaceBlurrer.create();
+  } catch (err) {
+    console.error(err);
+    blurrer = null;
+    announce(MESSAGES.blurUnavailable);
+  }
 }
 
 /** Q2: load the detector once (model is cached by the browser) and run the perception loop. Fail loud on errors. */
 async function startPerception(): Promise<void> {
   if (!source) return;
+  void loadBlurrer(); // in parallel; does not delay obstacle detection
   try {
     perfText = 'loading detector…';
     detector ??= await createDetector();
@@ -102,6 +139,8 @@ async function startPerception(): Promise<void> {
     onCandidates: (candidates, tracks, frame, stats) => {
       drawOverlay(overlay, frame, tracks, candidates);
       output.update(candidates, frame.ts);
+      // Head-area backstop for the face blur: people and riders as seen by the object detector.
+      blurrer?.setPersons(tracks.filter((t) => t.type === 'person' || t.type === 'cyclist').map((t) => t.box), frame);
       const top = [...candidates].sort((a, b) => a.ttcSeconds - b.ttcSeconds)[0];
       perfText = `${stats.fps.toFixed(1)} fps · ${stats.inferenceMs.toFixed(0)} ms · ${detector?.delegate} · ${stats.tracks} tracked` +
         (top ? ` · top: ${top.type} ${top.tier}` : '');
