@@ -24,7 +24,8 @@ every walk improves a shared street-accessibility map.
 3. **Gemini Live on demand**: ask a question by voice ("is there a footpath on my left?"); the answer is filtered for
    safety and spoken by the app. *(in progress)*
 4. **Hazards are logged with GPS (no images)** to Firestore → a shared accessibility map, so every walk warns the
-   next person. *(in progress)*
+   next person: "Pothole reported ahead, 3 walkers". A hazard needs two separate walks to be confirmed; nothing is
+   shared within 200 m of where a walk starts or ends.
 
 One alert manager decides what is said and when (most urgent first, merged, rate-limited); a safety filter blocks any
 "all clear", crossing instruction or description of people.

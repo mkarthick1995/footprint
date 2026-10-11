@@ -1,5 +1,6 @@
 // Entry point. Detector (Q2) → candidates → alert output (Q3), the only speaking path.
 import { AlertOutput } from './alertOutput';
+import { CommunityClient } from './community';
 import { createDetector, type OnDeviceDetector } from './detector';
 import { FaceBlurrer } from './faceBlur';
 import { openCamera, openClip, type FrameSource } from './frameSource';
@@ -37,11 +38,14 @@ const SCAN_MESSAGES: Record<ScanStatus, string> = {
   up: MESSAGES.scanUp,
   capped: MESSAGES.scanCapped,
 };
+/** Q7: community hazard map — scan findings shared anonymously; confirmed reports spoken as "reported". */
+const community = new CommunityClient({ onLocationOff: () => announce(MESSAGES.locationOff) });
 const scanner = new SceneScanner({
   video,
   blurrer: () => blurrer,
   onStatus: (status) => announce(SCAN_MESSAGES[status]),
   onContext: (text) => output.sayModelText(text, { kind: 'context' }),
+  onScan: (result) => community.onScan(result),
 });
 
 /** System messages (fail loud): queued as SYS in the alert manager, mirrored to the aria-live status. */
@@ -62,6 +66,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   loop?.stop();
   loop = null;
   scanner.stop();
+  community.stop();
   blurrer?.clearPersons();
   output.reset();
   overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height);
@@ -103,6 +108,7 @@ async function start(): Promise<void> {
   await wakeLock.acquire();
   await startPerception();
   scanner.start();
+  if (source?.kind === 'camera') community.start(); // recorded clips have no location
   // Development readout (no frame is grabbed for it). With ?debug=blur it also shows the blurred upload frame (ST-10).
   frameTimer = window.setInterval(() => {
     const v = source?.video;
@@ -130,7 +136,8 @@ async function start(): Promise<void> {
 function scanReadout(): string {
   const s = scanner.stats;
   const hours = Math.max(1 / 60, (performance.now() - s.startedAt) / 3_600_000);
-  return `scan ${s.ok}/${s.sent} ok · ${s.stale} stale · ${s.failed} failed · ${s.unchanged} unchanged · ${s.lastRoundTripMs} ms (prep ${s.lastPrepMs}, model ${s.lastServerMs}) · $${s.costUsd.toFixed(4)} ($${(s.costUsd / hours).toFixed(2)}/h)`;
+  const c = community.stats;
+  return `map ${c.sent}/${c.queued} sent · ${c.notSeen} not-seen · ${c.hazardsNearby} reported nearby · scan ${s.ok}/${s.sent} ok · ${s.stale} stale · ${s.failed} failed · ${s.unchanged} unchanged · ${s.lastRoundTripMs} ms (prep ${s.lastPrepMs}, model ${s.lastServerMs}) · $${s.costUsd.toFixed(4)} ($${(s.costUsd / hours).toFixed(2)}/h)`;
 }
 
 /** R1.8: load the face-blur model in the background. If it fails, say so; uploads stay off (no raw frames, ever). */
@@ -161,7 +168,7 @@ async function startPerception(): Promise<void> {
   loop = new PerceptionLoop(detector, source.video, {
     onCandidates: (candidates, tracks, frame, stats) => {
       drawOverlay(overlay, frame, tracks, candidates);
-      output.update([...candidates, ...scanner.candidates()], frame.ts);
+      output.update([...candidates, ...scanner.candidates(), ...community.candidates()], frame.ts);
       // Head-area backstop for the face blur: people and riders as seen by the object detector.
       blurrer?.setPersons(tracks.filter((t) => t.type === 'person' || t.type === 'cyclist').map((t) => t.box), frame);
       const top = [...candidates].sort((a, b) => a.ttcSeconds - b.ttcSeconds)[0];

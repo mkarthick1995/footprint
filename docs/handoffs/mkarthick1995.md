@@ -2,14 +2,15 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r1.2-detector-tracker
 
 ## Now
-- Q1–Q6 done (Q4/Q5 by @chill-guy-1234, reviewed + fixed). Q6: Gemini scene scan live on preview q06 →
-  production after merge. Model gemini-3.6-flash, thinking off (ADR-034).
-- Outdoor phone test still open (STATUS open questions) — now also listen for scan alerts ("Pothole, ahead").
+- Q1–Q7 done. Q7: community hazard map (Firestore, evidence model, privacy trim, "reported" alerts). Production
+  deploy after merge.
+- Outdoor phone test (open check) now covers detector + Gemini scan + community map; GPS permission prompt appears
+  on first camera walk. The map only has data after real walks (≥ 2 walks to confirm).
 
 ## Next
-1. Next unclaimed: Q7 community hazards (backend + client posts scan observations) — pairs with Q6.
-2. FOLLOWUPS #1 (detector loop on camera frames, not display refresh) before the field test.
-3. Re-run the scan model benchmark before judging (model IDs change; REL-07). Cloud Run IP log exclusion → Q12.
+1. Next unclaimed: Q8 hazard map page (Maps JS, referrer-locked key) — shows confirmed hazards; strong demo visual.
+2. Seed demo data honestly for the video: two real walks on one street (no fake reports — ETH/SEC-03).
+3. FOLLOWUPS #1 (detector on camera frames); scan model benchmark before judging; Cloud Run IP log exclusion (Q12).
 
 ## Blockers
 - None.

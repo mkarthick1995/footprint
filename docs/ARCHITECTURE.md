@@ -75,6 +75,17 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   direction) merged with on-device candidates into the alert manager; surface notes ("Wet surface.") via
   `AlertOutput.sayModelText` (filtered, P3, preset-aware). Three failures in a row → "Scene descriptions are
   unavailable…"; recovery and the daily cap are announced too. Server logs method + path only (no body, no client IP).
+- **Community hazards (Q7, ADR-020/025):** `CommunityClient` (`apps/web/src/community.ts`) — camera walks only:
+  `watchPosition` (≤ 25 m accuracy; heading from GPS course or the last ≥ 8 m of movement). Each fresh scan's static
+  hazards (confidence ≥ 0.6, very close / near; "near" needs a heading) are placed by heading + side offset and queued;
+  queued points are POSTed only when ≥ 200 m from the walk start and the walker is ≥ 200 m past them (dropped at walk
+  end). `services/api/src/community.ts`: `POST /api/observations` (schema, accuracy ≤ 25 m, per-walk 20/min + per-client
+  60/min) → Firestore transaction: latitude-band read → same type within 15 m → `applyObservation` (Beta evidence) →
+  `hazards/{id}` + raw `observations` (rounded ~5 m, `expireAt` + Firestore TTL 7 d). `GET /api/hazards?bbox=` (≤ 0.05°
+  per side) returns confirmed hazards without walk hashes. The client fetches ~±550 m and re-fetches every 200 m;
+  confirmed reports within 30 m and ≤ 60° of the heading (≤ 12 m when heading unknown, "nearby") become P2 candidates
+  worded "<type> reported ahead, N walkers". Passing a report 2–10 m ahead during ≥ 2 fresh scans that never showed it
+  queues one "not seen" vote (same privacy release rule).
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
   Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
   `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,
