@@ -11,5 +11,15 @@ export default defineConfig({
     // Dev: forward API calls to the local Cloud Run service (npm run dev:api).
     proxy: { '/api': 'http://localhost:8080' },
   },
-  build: { outDir: 'dist', sourcemap: true },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    // Two pages: the walking app and the public hazard map (Q8). clip-eval.html stays dev-only.
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        map: fileURLToPath(new URL('./map.html', import.meta.url)),
+      },
+    },
+  },
 });

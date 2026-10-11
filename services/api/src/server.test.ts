@@ -16,3 +16,14 @@ describe('api skeleton', () => {
     expect(res.statusCode).toBe(501);
   });
 });
+
+describe('map page support (Q8)', () => {
+  it('serves the browser Maps key from the environment, or null', async () => {
+    const before = process.env.MAPS_BROWSER_KEY;
+    process.env.MAPS_BROWSER_KEY = 'test-browser-key';
+    const res = await app.inject({ method: 'GET', url: '/api/map-config' });
+    expect(res.json()).toEqual({ mapsKey: 'test-browser-key' });
+    if (before === undefined) delete process.env.MAPS_BROWSER_KEY;
+    else process.env.MAPS_BROWSER_KEY = before;
+  });
+});

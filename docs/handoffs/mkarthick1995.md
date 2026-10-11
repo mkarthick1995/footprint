@@ -2,15 +2,13 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r1.2-detector-tracker
 
 ## Now
-- Q1–Q7 done. Q7: community hazard map (Firestore, evidence model, privacy trim, "reported" alerts). Production
-  deploy after merge.
-- Outdoor phone test (open check) now covers detector + Gemini scan + community map; GPS permission prompt appears
-  on first camera walk. The map only has data after real walks (≥ 2 walks to confirm).
+- Q1–Q8 done. Q8: public `/map` page (Google Map + accessible list) of confirmed community hazards.
+- Map is empty until real walks confirm hazards (≥ 2 walks). Record two real walks on one street before the video.
 
 ## Next
-1. Next unclaimed: Q8 hazard map page (Maps JS, referrer-locked key) — shows confirmed hazards; strong demo visual.
-2. Seed demo data honestly for the video: two real walks on one street (no fake reports — ETH/SEC-03).
-3. FOLLOWUPS #1 (detector on camera frames); scan model benchmark before judging; Cloud Run IP log exclusion (Q12).
+1. Next unclaimed: Q9 fail-loud layer (watchdogs, degradation ladder, camera-quality checks) — safety core.
+2. Outdoor phone test (open check): detector + Gemini scan + map, then look at /map on a laptop.
+3. FOLLOWUPS #1; scan model benchmark before judging; Cloud Run IP log exclusion (Q12).
 
 ## Blockers
 - None.

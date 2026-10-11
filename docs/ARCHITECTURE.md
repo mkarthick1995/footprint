@@ -86,6 +86,13 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   confirmed reports within 30 m and ≤ 60° of the heading (≤ 12 m when heading unknown, "nearby") become P2 candidates
   worded "<type> reported ahead, N walkers". Passing a report 2–10 m ahead during ≥ 2 fresh scans that never showed it
   queues one "not seen" vote (same privacy release rule).
+- **Hazard map page (Q8):** `/map` (`apps/web/map.html` + `src/map.ts`, second Vite entry; Fastify serves it at `/map`).
+  Loads Maps JS with the browser key from `GET /api/map-config` (Cloud Run env `MAPS_BROWSER_KEY` from Secret Manager
+  `maps-browser-key`; key referrer-locked to the live, hash and preview URLs + localhost:5173/5183, Maps/Routes APIs only).
+  On map `idle` it queries `GET /api/hazards` for the view (shrunk to ≤ 0.05° around the centre with a "zoom in" note)
+  and renders AdvancedMarker pins (colour by type, `DEMO_MAP_ID`) plus an ordered list — the list is the accessible
+  primary view and keeps working when Maps fails to load. Default view Singapore Chinatown; `?lat=&lng=&z=` overrides;
+  "Show my area" uses one-off geolocation. Confirmed hazards only, no walk data.
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
   Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
   `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,

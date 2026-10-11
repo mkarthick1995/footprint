@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111111" />
+    <title>Footprint hazard map</title>
+    <meta name="description" content="Street hazards reported by people walking with Footprint, confirmed by at least two separate walks." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <style>
+      main.map-page { max-width: 64rem; }
+      .map-tools { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 0.75rem 0; }
+      .map-tools button { width: auto; padding: 0.6rem 1rem; font-size: 1rem; margin: 0; }
+      #map { width: 100%; height: min(60vh, 32rem); border-radius: 0.5rem; background: #1f2937; }
+      #map.map-unavailable { display: flex; align-items: center; justify-content: center; padding: 1rem; text-align: center; height: auto; min-height: 6rem; }
+      #hazard-list { padding-left: 1.25rem; line-height: 1.6; }
+      #hazard-list li { margin: 0.4rem 0; }
+      main.map-page a { color: #ffd84d; }
+      main.map-page a:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+      .note { opacity: 0.85; font-size: 0.95rem; }
+      .skip { position: absolute; left: -9999px; }
+      .skip:focus { left: 1rem; top: 1rem; background: #fff; color: #000; padding: 0.5rem; z-index: 10; }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#list-heading">Skip to the list of hazards</a>
+    <main class="map-page">
+      <h1>Footprint hazard map</h1>
+      <p>
+        Potholes, open drains, kerbs, missing footpaths and crossings reported by people walking with Footprint.
+        A hazard appears only after at least two separate walks reported it.
+      </p>
+      <p class="warning">Reports can be out of date or wrong. Never rely on this map alone for your safety.</p>
+
+      <div class="map-tools">
+        <button id="locate" type="button">Show my area</button>
+        <a href="/">Back to the walking app</a>
+      </div>
+      <p id="map-status" role="status" aria-live="polite">Loading the map…</p>
+
+      <div id="map" role="region" aria-label="Map of reported hazards. The same hazards are listed below."></div>
+
+      <h2 id="list-heading" tabindex="-1">Reported hazards in this area (<span id="hazard-count">0</span>)</h2>
+      <ol id="hazard-list"></ol>
+      <p class="note">
+        No names, accounts, photos or walking routes are stored. Locations are rounded to about 5 metres and nothing is
+        shared within 200 metres of where a walk starts or ends.
+      </p>
+    </main>
+    <script type="module" src="/src/map.ts"></script>
+  </body>
+</html>

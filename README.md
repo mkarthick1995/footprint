@@ -11,7 +11,7 @@ every walk improves a shared street-accessibility map.
 | | |
 |---|---|
 | **Live app** | https://footprint-804307041024.asia-southeast1.run.app (on-device alerts + Gemini scene scan; features land daily) |
-| **Hazard map** | _coming soon_ |
+| **Hazard map** | https://footprint-804307041024.asia-southeast1.run.app/map |
 | **Demo video** | _coming soon_ |
 | **Status** | [`docs/STATUS.md`](docs/STATUS.md) |
 
@@ -40,7 +40,7 @@ dark, and needs internet for scene descriptions. Full safety case, limitations, 
 [`docs/SAFETY.md`](docs/SAFETY.md).
 
 ## Tech
-Gemini on Vertex AI (scene scan: gemini-3.6-flash · Live API) · Cloud Run (asia-southeast1) · Firestore · Secret Manager · Google Maps Platform · MediaPipe (web) · PWA
+Gemini on Vertex AI (scene scan: gemini-3.6-flash · Live API) · Cloud Run (asia-southeast1) · Firestore · Maps JavaScript API · Secret Manager · Google Maps Platform · MediaPipe (web) · PWA
 
 ## Development
 ```bash
