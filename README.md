@@ -10,16 +10,24 @@ every walk improves a shared street-accessibility map.
 
 | | |
 |---|---|
-| **Live app** | https://footprint-804307041024.asia-southeast1.run.app (skeleton — features land daily) |
+| **Live app** | https://footprint-804307041024.asia-southeast1.run.app (on-device alerts + Gemini scene scan; features land daily) |
 | **Hazard map** | _coming soon_ |
 | **Demo video** | _coming soon_ |
 | **Status** | [`docs/STATUS.md`](docs/STATUS.md) |
 
 ## How it works
-1. **Phone camera → on-device detection** for fast-moving dangers (people, vehicles, bikes) — spoken + haptic alerts in < 300 ms.
-2. **Gemini Live** watches the street (~1 fps) and listens: describes footpaths, potholes, crossings; answers questions.
-3. **Google Maps walking directions**, narrated and adapted by Gemini.
-4. **Hazards are logged with GPS (no images)** to Firestore → a public accessibility map and safer routes for the next person.
+1. **Phone camera → on-device detection** (MediaPipe, 14–30 fps) for moving dangers — people, bikes, vehicles —
+   with time-to-contact; spoken + haptic alerts with no network round trip.
+2. **Gemini scene scan** (Vertex AI, `gemini-3.6-flash`): every ~2.5 s one face-blurred photo → structured JSON of
+   ground hazards the phone model can't see — potholes, open drains, kerbs and steps, missing footpath, crossings.
+   Answers older than 2 s are dropped; nothing is stored.
+3. **Gemini Live on demand**: ask a question by voice ("is there a footpath on my left?"); the answer is filtered for
+   safety and spoken by the app. *(in progress)*
+4. **Hazards are logged with GPS (no images)** to Firestore → a shared accessibility map, so every walk warns the
+   next person. *(in progress)*
+
+One alert manager decides what is said and when (most urgent first, merged, rate-limited); a safety filter blocks any
+"all clear", crossing instruction or description of people.
 
 Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Vision: [`docs/VISION.md`](docs/VISION.md)
 
@@ -31,7 +39,7 @@ dark, and needs internet for scene descriptions. Full safety case, limitations, 
 [`docs/SAFETY.md`](docs/SAFETY.md).
 
 ## Tech
-Gemini Live API · Cloud Run (asia-southeast1) · Firestore · Secret Manager · Google Maps Platform · MediaPipe (web) · PWA
+Gemini on Vertex AI (scene scan: gemini-3.6-flash · Live API) · Cloud Run (asia-southeast1) · Firestore · Secret Manager · Google Maps Platform · MediaPipe (web) · PWA
 
 ## Development
 ```bash
