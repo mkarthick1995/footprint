@@ -79,4 +79,6 @@ export interface AlertCandidate {
   source: ObservationSource | 'community' | 'system';
   /** Epoch milliseconds when the underlying observation was made. */
   observedAt: number;
+  /** Community reports: distinct walks that reported it (spoken as "N walkers", SAF-18). */
+  reports?: number;
 }

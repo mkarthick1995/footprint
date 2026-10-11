@@ -9,6 +9,7 @@ import {
   signatureDiff,
   UNCHANGED_DIFF,
   type AlertCandidate,
+  type ScanResult,
 } from '@footprint/shared';
 import type { FaceBlurrer } from './faceBlur';
 import { frameSignature } from './frameSource';
@@ -44,6 +45,8 @@ export interface SceneScannerOptions {
   onStatus: (status: ScanStatus) => void;
   /** Model-derived context text: must go to AlertOutput.sayModelText (the filtered path, R1.7). */
   onContext: (text: string) => void;
+  /** Every fresh, validated scan (Q7: becomes community observations). */
+  onScan?: (scan: ScanResult) => void;
   fetchImpl?: typeof fetch;
 }
 
@@ -160,6 +163,7 @@ export class SceneScanner {
     }
     this.stats.ok++;
     this.active = scanToCandidates(scan, t0);
+    this.opts.onScan?.(scan);
     const note = scanSurfaceNote(scan);
     if (note && note !== this.lastNote) this.opts.onContext(note);
     this.lastNote = note;

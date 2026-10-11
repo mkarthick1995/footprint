@@ -112,13 +112,21 @@ interface Group {
   /** Lowest TTC in the group (first to be encountered). */
   ttc: number;
   lowConfidence: boolean;
+  /** From the community map: worded as "reported", never "there is" (SAF-18). */
+  community?: boolean;
 }
 
 /** Wording for a merged group. Short, direction-first, bucketed distance — never metres (SAF-23). */
-export function phraseFor(g: Pick<Group, 'tier' | 'type' | 'side' | 'items' | 'lowConfidence'>): string {
+export function phraseFor(g: Pick<Group, 'tier' | 'type' | 'side' | 'items' | 'lowConfidence' | 'community'>): string {
   const [one, many] = NOUN[g.type] ?? NOUN.unknown;
   const n = g.items.length;
   const where = g.side;
+  if (g.community) {
+    // Someone else's report, possibly old or already fixed: "reported", how many walkers, never "there is" (SAF-18).
+    const reports = Math.max(...g.items.map((c) => c.reports ?? 1));
+    const place = g.side === 'around' ? 'nearby' : g.side;
+    return `${one} reported ${place}${reports >= 2 ? `, ${reports} walkers` : ''}`;
+  }
   if (g.tier === 'P0') return `Stop! ${g.lowConfidence ? 'Obstacle' : (P0_NOUN[g.type] ?? one)}`;
   const generic = g.type === 'unknown' || g.type === 'obstruction' || g.type === 'street_furniture';
   // Uncertain: keep the detector's best guess ("Possible person") — "possible obstacle" for everything hid the type.
@@ -287,10 +295,12 @@ export class AlertManager {
     const groups = new Map<string, Group>();
     for (const c of [...live].sort((a, b) => a.ttcSeconds - b.ttcSeconds)) {
       const type = c.type as HazardType;
-      const side = sideOf(c.bearingDeg);
+      // Unknown direction (community report while the walker's heading is unknown) → "nearby".
+      const side: GroupSide = Number.isNaN(c.bearingDeg) ? 'around' : sideOf(c.bearingDeg);
       const low = c.confidence < lowConfidence;
-      const key = `${c.tier}|${type}|${type === 'person' ? '*' : side}`;
-      const g = groups.get(key) ?? { key, tier: c.tier, type, side, items: [], ttc: Infinity, lowConfidence: true };
+      const community = c.source === 'community';
+      const key = `${c.tier}|${type}|${type === 'person' ? '*' : side}${community ? '|community' : ''}`;
+      const g = groups.get(key) ?? { key, tier: c.tier, type, side, items: [], ttc: Infinity, lowConfidence: true, community };
       if (g.items.length > 0 && g.side !== side) g.side = 'around';
       g.items.push(c);
       g.ttc = Math.min(g.ttc, c.ttcSeconds);

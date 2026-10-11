@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { registerCommunity, type CommunityOptions } from './community.js';
 import { registerScan, type ScanOptions } from './scan.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -13,6 +14,7 @@ export interface ServerOptions {
   webDist?: string;
   logger?: boolean;
   scan?: ScanOptions;
+  community?: CommunityOptions;
 }
 
 export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInstance> {
@@ -34,10 +36,8 @@ export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInst
   // R2.2: Gemini scene scan (blurred frame → validated JSON).
   await registerScan(app, opts.scan);
 
-  // R2.3: community observations (ADR-020/025).
-  app.post('/api/observations', async (_req, reply) =>
-    reply.code(501).send({ error: 'not_implemented', item: 'R2.3' }),
-  );
+  // R2.3: community hazards — observations in, confirmed hazards out (ADR-020/025).
+  await registerCommunity(app, opts.community);
 
   const webDist = opts.webDist ?? DEFAULT_WEB_DIST;
   if (existsSync(webDist)) {
