@@ -54,16 +54,27 @@ button:focus-visible {
   margin-top: 1rem;
 }
 
-video,
-#overlay,
-#blur-debug {
+#blur-view,
+#overlay {
   width: 100%;
   border-radius: 0.5rem;
   display: block;
 }
 
-#blur-debug[hidden] {
+#blur-view[hidden] {
   display: none;
+}
+
+/* The raw camera image is never visible. It still plays (the detector and the blur read it) but is invisible,
+   out of the layout and out of reach of taps. */
+#preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 #overlay {

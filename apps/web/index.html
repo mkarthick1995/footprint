@@ -30,10 +30,11 @@
       <div id="status" role="status" aria-live="polite">Not started.</div>
 
       <p id="frame-info" class="dev" aria-hidden="true"></p>
-      <!-- Development only (?debug=blur): the exact blurred frame that would be uploaded (ST-10). -->
       <p id="blur-info" class="dev" aria-hidden="true"></p>
-      <canvas id="blur-debug" aria-hidden="true" hidden></canvas>
+      <!-- The picture on screen is the blurred upload frame (#blur-view). The raw <video> is kept invisible: it only
+           feeds the detector and the blur, so faces are never shown, recorded or shared from the screen (ST-10). -->
       <div class="stage" aria-hidden="true">
+        <canvas id="blur-view" hidden></canvas>
         <video id="preview" playsinline muted></video>
         <canvas id="overlay"></canvas>
       </div>

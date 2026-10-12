@@ -21,8 +21,8 @@ Anything that changes behaviour must re-run the Q2 clip evaluation (`/clip-eval.
 ## Face-blur follow-ups (from the Q4 phone test, 2026-10-11)
 | # | Finding | Suggested action | Fold into | When |
 |---|---|---|---|---|
-| 8 | The raw camera preview on screen is unblurred by design (it never leaves the phone), so a **screen recording for the demo video shows bystanders' faces** | Add a "demo / privacy preview" mode that blurs the on-screen preview too, or record with the blurred canvas as the main view | R4.2 (demo video) | Before recording |
-| 9 | `?debug=blur` works in production builds (read from the URL). It shows only the blurred frame, so nothing leaks, but it costs one blur per second | Keep for now (useful proof for judges); gate to development builds only if it ever shows a cost or confusion | Q4 / R4.5 | Optional |
+| 8 | ~~The raw camera preview on screen is unblurred, so a screen recording shows bystanders' faces~~ **Done 2026-10-12:** the on-screen view is the blurred upload frame by default; the raw video is invisible. Watch the detector fps on a phone (one blur every 200 ms) | If fps drops, raise `PREVIEW_INTERVAL_MS` in `apps/web/src/main.ts` | R4.2 (demo video) | Check on phone |
+| 9 | ~~`?debug=blur` works in production builds~~ **Obsolete 2026-10-12:** the parameter is gone; the blurred view is the default | None | Q4 | Closed |
 | 10 | Faces that are small or far are not blurred well: detection runs on the 640 px downscaled frame | Detect on the full-resolution frame, then blur the 640 px copy; measure the extra milliseconds on a phone first | Q4 follow-up | After the phone measurement |
 
 ## Detector findings from the Q4 phone test (2026-10-11, Android, Brave, battery 23–24 %, indoors)

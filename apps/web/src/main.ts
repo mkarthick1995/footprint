@@ -18,13 +18,15 @@ const video = document.querySelector<HTMLVideoElement>('#preview')!;
 const clipInput = document.querySelector<HTMLInputElement>('#clip-file')!;
 const frameInfo = document.querySelector<HTMLParagraphElement>('#frame-info');
 const overlay = document.querySelector<HTMLCanvasElement>('#overlay')!;
-const blurDebug = document.querySelector<HTMLCanvasElement>('#blur-debug');
+/** The on-screen camera view. It shows the blurred upload frame only; the raw `<video>` stays invisible (ST-10). */
+const blurView = document.querySelector<HTMLCanvasElement>('#blur-view')!;
 const blurInfo = document.querySelector<HTMLParagraphElement>('#blur-info');
-/** ST-10: `?debug=blur` shows exactly the frame that would be uploaded, so a tester can see the faces are blurred. */
-const debugBlur = new URLSearchParams(location.search).get('debug') === 'blur';
+/** How often the on-screen view is refreshed. Each refresh is one face-detection + blur pass (~12–30 ms). */
+const PREVIEW_INTERVAL_MS = 200;
 
 let source: FrameSource | null = null;
 let frameTimer: number | undefined;
+let previewTimer: number | undefined;
 let detector: OnDeviceDetector | null = null;
 let loop: PerceptionLoop | null = null;
 let perfText = '';
@@ -77,6 +79,7 @@ document.querySelectorAll<HTMLInputElement>('input[name="source"]').forEach((rad
 
 async function stop(message: string = MESSAGES.stopped): Promise<void> {
   window.clearInterval(frameTimer);
+  window.clearInterval(previewTimer);
   loop?.stop();
   loop = null;
   scanner.stop();
@@ -92,7 +95,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   startBtn.textContent = 'Start walking';
   if (frameInfo) frameInfo.textContent = '';
   if (blurInfo) blurInfo.textContent = '';
-  if (blurDebug) blurDebug.hidden = true;
+  hidePreview();
   announce(message);
 }
 
@@ -126,7 +129,8 @@ async function start(): Promise<void> {
   scanner.start();
   if (source?.kind === 'camera') community.start(); // recorded clips have no location
   health.start();
-  // Development readout (no frame is grabbed for it). With ?debug=blur it also shows the blurred upload frame (ST-10).
+  // Development readout (no frame is grabbed for it).
+  previewTimer = window.setInterval(drawPreview, PREVIEW_INTERVAL_MS);
   frameTimer = window.setInterval(() => {
     const v = source?.video;
     if (frameInfo) {
@@ -134,19 +138,42 @@ async function start(): Promise<void> {
         ? `Video: ${v.videoWidth}×${v.videoHeight} (${source?.kind}) · voice: ${currentVoiceName()} · ${perfText} · ${scanReadout()}`
         : 'Waiting for frames…';
     }
-    if (debugBlur && v && blurrer && blurDebug && blurInfo) {
-      const f = blurrer.getUploadFrame(v);
-      if (f) {
-        blurDebug.hidden = false;
-        blurDebug.width = f.canvas.width;
-        blurDebug.height = f.canvas.height;
-        blurDebug.getContext('2d')?.drawImage(f.canvas, 0, 0);
-        blurInfo.textContent = `blur ${blurrer.delegate}: ${f.faces} face(s), ${f.heads} head area(s), ${f.ms.toFixed(0)} ms · upload ${f.canvas.width}×${f.canvas.height}`;
-      } else {
-        blurInfo.textContent = 'blur: no upload frame (fail closed)';
-      }
-    }
   }, 1000);
+}
+
+function hidePreview(): void {
+  blurView.hidden = true;
+  blurView.width = 1; // resizing clears the canvas, so no frame lingers
+  blurView.height = 1;
+}
+
+/**
+ * The picture on screen is the blurred upload frame, never the raw camera image (ST-10): what a viewer, a screen
+ * recording or a demo video sees is what Gemini would get. Fail closed — until the blur model is loaded, or when a
+ * pass fails, nothing is shown rather than the raw video.
+ */
+function drawPreview(): void {
+  const v = source?.video;
+  if (!v || v.videoWidth === 0 || !blurrer) {
+    hidePreview();
+    if (blurInfo) blurInfo.textContent = source ? 'View hidden until face blur is ready.' : '';
+    return;
+  }
+  const f = blurrer.getUploadFrame(v);
+  if (!f) {
+    hidePreview();
+    if (blurInfo) blurInfo.textContent = 'View hidden: blur failed (fail closed).';
+    return;
+  }
+  blurView.hidden = false;
+  if (blurView.width !== f.canvas.width || blurView.height !== f.canvas.height) {
+    blurView.width = f.canvas.width;
+    blurView.height = f.canvas.height;
+  }
+  blurView.getContext('2d')?.drawImage(f.canvas, 0, 0);
+  if (blurInfo) {
+    blurInfo.textContent = `blur ${blurrer.delegate}: ${f.faces} face(s), ${f.heads} head area(s), ${f.ms.toFixed(0)} ms · view ${f.canvas.width}×${f.canvas.height}`;
+  }
 }
 
 /** Dev readout for the scene scan: counts, last round trip, cost so far and per walking hour (REL-06). */
