@@ -52,6 +52,26 @@ export interface AlertManagerOptions {
 /** Minimum gap after any message before a message of this tier may start (ADR-023 rate caps). */
 const MIN_GAP_MS: Record<Tier, number> = { SYS: 0, P0: 0, P1: 1500, P2: 3000, P3: 6000 };
 
+/**
+ * Street demand (ADR-023): many close hazards in a short time = a demanding street. Then only close warnings are worded
+ * (P2/P3 muted, P1 at most one per 3 s); a one-time heads-up says so. Calm again after a quiet spell (hysteresis).
+ */
+export const DEMAND = {
+  /** Close-hazard messages (P0/P1, words or cues) in this window… */
+  windowMs: 10_000,
+  /** …at least this many → demanding. */
+  enterCount: 4,
+  /** Back to normal after this long with fewer than `exitCount` in the window. */
+  exitAfterMs: 15_000,
+  exitCount: 2,
+  /** P1 gap while demanding (ST-26: ≤ 1 spoken message per 3 s). */
+  p1GapMs: 3000,
+} as const;
+
+export const DEMAND_HEADS_UP = 'Busy street. Only close warnings for now.';
+
+export type StreetDemand = 'normal' | 'demanding';
+
 const RANK: Record<Tier, number> = { SYS: 0, P0: 1, P1: 2, P2: 3, P3: 4 };
 
 /** Minimum gap before spoken answers to a user question (the user is waiting, so shorter than ambient P3 context). */
@@ -180,8 +200,14 @@ export class AlertManager {
   private current: Tier | null = null;
   /** The answer being spoken now (for "only P0 interrupts an answer" and resume). */
   private currentAnswer: { text: string; expiresAt: number } | null = null;
+  /** The system message being spoken (replayed if an imminent alert cuts it). */
+  private currentSys: string | null = null;
   /** Last words actually spoken (for "Repeat"). */
   private lastWords = '';
+  /** Times of recent close-hazard messages, for the street-demand level. */
+  private closeHits: number[] = [];
+  private demand: StreetDemand = 'normal';
+  private calmSince = 0;
   private readonly opts: Required<AlertManagerOptions>;
 
   constructor(opts: AlertManagerOptions = {}) {
@@ -189,6 +215,14 @@ export class AlertManager {
       preset: 'standard', maxAgeMs: 1000, scanMaxAgeMs: 4000, objectCooldownMs: 8000, groupCooldownMs: 4000, lowConfidence: 0.5, repeatAsCueMs: 15000,
       ...opts,
     };
+  }
+
+  get streetDemand(): StreetDemand {
+    return this.demand;
+  }
+
+  get preset(): AlertPreset {
+    return this.opts.preset;
   }
 
   setPreset(preset: AlertPreset): void {
@@ -225,6 +259,7 @@ export class AlertManager {
   /** Tell the manager the output finished (or was cut) so lower tiers may speak again. */
   finished(): void {
     this.current = null;
+    this.currentSys = null;
     this.currentAnswer = null;
   }
 
@@ -237,15 +272,20 @@ export class AlertManager {
     this.contextQueue = [];
     this.current = null;
     this.currentAnswer = null;
+    this.closeHits = [];
+    this.demand = 'normal';
+    this.calmSince = 0;
   }
 
   /** Decide what to say at `now` (ms, same clock as `observedAt`). `speaking` = the output is busy. */
   next(now: number, speaking = this.current !== null): Utterance | null {
+    this.checkCalm(now);
     if (!speaking) this.current = null;
     const sys = this.systemQueue[0];
     if (sys !== undefined) {
-      // SYS waits only for an active P0 hazard message (ADR-022 table).
-      if (speaking && this.current === 'P0') return null;
+      // SYS waits for an active P0 hazard message (ADR-022 table) — and for another SYS message: back-to-back system
+      // messages (e.g. "started" + alert level + earbud tip) used to cut each other off mid-sentence (found 10-13).
+      if (speaking && (this.current === 'P0' || this.current === 'SYS')) return null;
       this.systemQueue.shift();
       return this.emit({ text: sys, tier: 'SYS', earcon: 'system', vibrate: VIBRATE.SYS, interrupt: true, ids: [] }, now);
     }
@@ -256,11 +296,17 @@ export class AlertManager {
     // repeating what the answer was saying cut it off mid-sentence.
     if (speaking && this.current !== null) {
       const canCut =
-        (group.tier === 'P0' && RANK[this.current] > RANK.P0) ||
+        (group.tier === 'P0' && (RANK[this.current] > RANK.P0 || this.current === 'SYS')) ||
         (group.tier === 'P1' && RANK[this.current] > RANK.P1 && this.currentAnswer === null);
       if (!canCut) return null;
     }
-    if (now - this.lastSpokenAt < MIN_GAP_MS[group.tier]) return null;
+    // An imminent alert cutting a system message: say the message again right after (it is never lost).
+    if (speaking && this.current === 'SYS' && group.tier === 'P0' && this.currentSys) this.systemQueue.unshift(this.currentSys);
+    const demanding = this.demand === 'demanding';
+    // Demanding street: words only for close hazards, and fewer of them (ADR-023, ST-26).
+    if (demanding && (group.tier === 'P2' || group.tier === 'P3')) return null;
+    const gap = demanding && group.tier === 'P1' ? DEMAND.p1GapMs : MIN_GAP_MS[group.tier];
+    if (now - this.lastSpokenAt < gap) return null;
     const ids = group.items.map((c) => c.id);
     const key = group.key;
     for (const c of group.items) this.spokenObject.set(c.id, { tier: group.tier, at: now });
@@ -313,7 +359,30 @@ export class AlertManager {
     return true;
   }
 
+  /** Track close-hazard messages; switch demand level with hysteresis; queue the heads-up once on entering. */
+  private updateDemand(u: Utterance, now: number): void {
+    if (u.tier === 'P0' || u.tier === 'P1') this.closeHits.push(now);
+    this.closeHits = this.closeHits.filter((t) => now - t <= DEMAND.windowMs);
+    if (this.demand === 'normal' && this.closeHits.length >= DEMAND.enterCount) {
+      this.demand = 'demanding';
+      this.calmSince = 0;
+      this.systemQueue.push(DEMAND_HEADS_UP);
+    }
+  }
+
+  /** Back to normal after a quiet spell — checked every cycle, also when nothing is being said. */
+  private checkCalm(now: number): void {
+    if (this.demand !== 'demanding') return;
+    this.closeHits = this.closeHits.filter((t) => now - t <= DEMAND.windowMs);
+    if (this.closeHits.length < DEMAND.exitCount) {
+      this.calmSince ||= now;
+      if (now - this.calmSince >= DEMAND.exitAfterMs) this.demand = 'normal'; // signalled by silence, not speech
+    } else this.calmSince = 0;
+  }
+
   private emit(u: Utterance, now: number): Utterance {
+    this.currentSys = u.tier === 'SYS' ? u.text : null;
+    this.updateDemand(u, now);
     this.lastSpokenAt = now;
     this.current = u.tier;
     if (u.text) this.lastWords = u.text;

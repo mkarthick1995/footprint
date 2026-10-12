@@ -16,6 +16,9 @@ import {
 } from '@footprint/shared';
 import { MinuteLimiter } from './limits.js';
 
+/** After turnComplete, transcript pieces (the answer's tail and the user's own words) may still arrive: collect this long. */
+const QUESTION_GRACE_MS = 700;
+
 /** The parts of a Live session we use. */
 export interface LiveSessionLike {
   sendRealtimeInput(input: Record<string, unknown>): void;
@@ -26,6 +29,8 @@ export interface LiveSessionLike {
 /** A Live server message, reduced to what we use. */
 export interface LiveEvent {
   transcript?: string;
+  /** The user's own words (input transcription). */
+  question?: string;
   turnComplete?: boolean;
   resumeHandle?: string;
   goAway?: boolean;
@@ -52,6 +57,7 @@ export function vertexLiveConnector(env: NodeJS.ProcessEnv = process.env): LiveC
       config: {
         responseModalities: [Modality.AUDIO],
         outputAudioTranscription: {},
+        inputAudioTranscription: {}, // the user's words, for voice commands (Q14)
         systemInstruction: LIVE_SYSTEM_INSTRUCTION,
         realtimeInputConfig: { automaticActivityDetection: { disabled: true } }, // push-to-talk
         contextWindowCompression: { slidingWindow: {} },
@@ -62,6 +68,7 @@ export function vertexLiveConnector(env: NodeJS.ProcessEnv = process.env): LiveC
           if (m.setupComplete) ready();
           const sc = m.serverContent;
           if (sc?.outputTranscription?.text) onEvent({ transcript: sc.outputTranscription.text });
+          if (sc?.inputTranscription?.text) onEvent({ question: sc.inputTranscription.text });
           if (sc?.turnComplete) onEvent({ turnComplete: true });
           if (m.sessionResumptionUpdate?.resumable && m.sessionResumptionUpdate.newHandle) {
             onEvent({ resumeHandle: m.sessionResumptionUpdate.newHandle });
@@ -108,6 +115,9 @@ export class LiveBridge {
   private waiting = false;
   private audioBytes = 0;
   private answer = '';
+  private question = '';
+  /** Answer complete, briefly waiting for the user's words to be transcribed (they can arrive after the answer). */
+  private finishing: NodeJS.Timeout | undefined;
   private endedAt = 0;
   private timer: NodeJS.Timeout | undefined;
 
@@ -124,12 +134,13 @@ export class LiveBridge {
     if (!msg) return this.send({ type: 'error', code: 'bad_message' });
     switch (msg.type) {
       case 'ask': {
-        if (this.asking || this.waiting) return this.send({ type: 'error', code: 'busy' });
+        if (this.asking || this.waiting || this.finishing) return this.send({ type: 'error', code: 'busy' });
         const refused = this.allowQuestion();
         if (refused) return this.send(refused);
         this.asking = true;
         this.audioBytes = 0;
         this.answer = '';
+        this.question = '';
         try {
           const s = await this.ensureSession();
           s.sendRealtimeInput({ activityStart: {} });
@@ -143,10 +154,11 @@ export class LiveBridge {
       }
       case 'describe': {
         // "What's around me": photo + a fixed question as one complete turn — no microphone involved.
-        if (this.asking || this.waiting) return this.send({ type: 'error', code: 'busy' });
+        if (this.asking || this.waiting || this.finishing) return this.send({ type: 'error', code: 'busy' });
         const refused = this.allowQuestion();
         if (refused) return this.send(refused);
         this.answer = '';
+        this.question = '';
         try {
           const s = await this.ensureSession();
           s.sendClientContent({
@@ -180,6 +192,17 @@ export class LiveBridge {
       case 'cancel':
         this.cancel();
     }
+  }
+
+  private deliver(): void {
+    clearTimeout(this.finishing);
+    this.finishing = undefined;
+    const text = this.answer.replace(/\s+/g, ' ').trim();
+    const question = this.question.replace(/\s+/g, ' ').trim();
+    this.answer = '';
+    this.question = '';
+    if (!text) return this.send({ type: 'error', code: 'model_error' });
+    this.send({ type: 'answer', text, ms: this.now() - this.endedAt, ...(question ? { question } : {}) });
   }
 
   private startWaiting(): void {
@@ -226,14 +249,14 @@ export class LiveBridge {
   private onEvent(e: LiveEvent): void {
     if (e.resumeHandle) this.resumeHandle = e.resumeHandle;
     if (e.goAway) this.stale = true;
-    if (e.transcript && this.waiting) this.answer += e.transcript;
+    // Transcript pieces can trail the turnComplete signal (live test: an answer's tail leaked into the next one), so
+    // pieces are collected until the grace window closes; anything later is discarded.
+    if (e.transcript && (this.waiting || this.finishing)) this.answer += e.transcript;
+    if (e.question && (this.asking || this.waiting || this.finishing)) this.question += e.question;
     if (e.turnComplete && this.waiting) {
       this.waiting = false;
       clearTimeout(this.timer);
-      const text = this.answer.replace(/\s+/g, ' ').trim();
-      this.answer = '';
-      if (text) this.send({ type: 'answer', text, ms: this.now() - this.endedAt });
-      else this.send({ type: 'error', code: 'model_error' });
+      this.finishing = setTimeout(() => this.deliver(), QUESTION_GRACE_MS);
     }
     if (e.closed || e.error) {
       if (e.error) this.log('live_session_error');

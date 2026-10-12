@@ -11,8 +11,8 @@ export type AskState = 'idle' | 'listening' | 'thinking';
 export interface LiveAskOptions {
   /** Blurred JPEG of the current view (FaceBlurrer.getUploadJpeg), or null (then the question is sent without a frame). */
   frame: () => Promise<Blob | null>;
-  /** Model answer text — route to sayModelText. */
-  onAnswer: (text: string) => void;
+  /** Model answer text — route to sayModelText. `question` = the user's own words (for voice commands). */
+  onAnswer: (text: string, question?: string) => void;
   /** Fixed-wording problems (fail loud). */
   onProblem: (text: string) => void;
   onState: (s: AskState) => void;
@@ -188,7 +188,7 @@ export class LiveAsk {
   private onServer(m: LiveServerMessage): void {
     if (m.type === 'answer') {
       this.setState('idle');
-      this.opts.onAnswer(m.text);
+      this.opts.onAnswer(m.text, m.question);
     } else if (m.type === 'error') {
       if (this.state === 'listening') this.releaseMic();
       this.setState('idle');

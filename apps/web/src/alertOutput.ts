@@ -69,6 +69,15 @@ export class AlertOutput {
     return result;
   }
 
+  /** Alert level (Q14). P0 and SYS stay on in every preset. */
+  setPreset(preset: AlertPreset): void {
+    this.manager.setPreset(preset);
+  }
+
+  get preset(): AlertPreset {
+    return this.manager.preset;
+  }
+
   /** "Repeat": say the last spoken message again. */
   repeat(): boolean {
     const ok = this.manager.repeat();

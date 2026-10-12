@@ -25,7 +25,7 @@ export type LiveClientMessage =
 
 export type LiveServerMessage =
   | { type: 'ready' }
-  | { type: 'answer'; text: string; ms: number }
+  | { type: 'answer'; text: string; ms: number; /** What the user said (Live input transcription) — for voice commands. */ question?: string }
   | { type: 'error'; code: 'busy' | 'too_long' | 'rate_limited' | 'daily_cap' | 'timeout' | 'model_error' | 'bad_message' };
 
 const B64 = /^[A-Za-z0-9+/]*={0,2}$/;
@@ -82,4 +82,22 @@ export const LIVE_SYSTEM_INSTRUCTION = [
 /** Base64 length → bytes (approximate, for limits). */
 export function base64Bytes(b64: string): number {
   return Math.floor((b64.length * 3) / 4);
+}
+
+// ---------- Voice commands for alert levels (Q14, ADR-026) ----------
+
+export type VoiceCommand = 'fewer' | 'more' | 'level' | null;
+
+/**
+ * "Fewer alerts" / "more alerts" / "what level?" spoken as a question. Matched on the user's own words (input
+ * transcription), so the app changes its level itself; Gemini's reply to such a question is not spoken.
+ */
+export function parseVoiceCommand(question: string | undefined): VoiceCommand {
+  if (!question) return null;
+  const q = question.toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (q.split(' ').length > 8) return null; // a real question that merely mentions alerts
+  if (/\b(fewer|less|quieter|quiet|reduce|essential|minimum)\b.*\b(alerts?|warnings?|talking|messages?)\b|\b(be quiet(er)?|talk less|essential only)\b/.test(q)) return 'fewer';
+  if (/\b(more|louder|detailed|everything|increase)\b.*\b(alerts?|warnings?|details?|messages?|information)\b|\b(more detail|tell me more|detailed mode)\b/.test(q)) return 'more';
+  if (/\b(what|which)\b.*\b(level|mode|setting)\b|\balert level\b/.test(q)) return 'level';
+  return null;
 }

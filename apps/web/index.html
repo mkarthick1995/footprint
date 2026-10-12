@@ -23,6 +23,13 @@
         <input id="clip-file" type="file" accept="video/*" aria-label="Choose a recorded street clip" hidden />
       </fieldset>
 
+      <fieldset id="preset">
+        <legend>How much should Footprint say?</legend>
+        <label><input type="radio" name="preset" value="essential" /> Essential — only urgent and close warnings</label>
+        <label><input type="radio" name="preset" value="standard" /> Standard — close and ahead warnings</label>
+        <label><input type="radio" name="preset" value="detailed" /> Detailed — everything, including surface and map notes</label>
+      </fieldset>
+
       <button id="start" type="button">Start walking</button>
       <div id="ask-controls" hidden>
         <button id="ask" type="button" aria-pressed="false">Ask a question</button>

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseLiveClientMessage, type LiveServerMessage } from '@footprint/shared';
 import { LiveBridge, type LiveConnector, type LiveEvent } from './live.js';
 
@@ -22,18 +22,47 @@ function setup(allow: () => LiveServerMessage | null = () => null) {
 const AUDIO = Buffer.alloc(3200).toString('base64'); // 0.1 s of PCM16 at 16 kHz
 
 describe('Live bridge (push-to-talk, transcript only)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
   it('ask → frame + audio → end → transcript pieces → one answer with latency', async () => {
     const { sent, inputs, emit, msg, tick } = setup();
     await msg({ type: 'ask', frame: Buffer.from([0xff, 0xd8]).toString('base64') });
     await msg({ type: 'audio', data: AUDIO });
     await msg({ type: 'end' });
     tick(1200);
+    emit({ question: 'What is ahead?' });
     emit({ transcript: 'There is a kerb ' });
     emit({ transcript: 'on your left.' });
     emit({ turnComplete: true });
+    vi.advanceTimersByTime(800);
     expect(inputs.map((i) => Object.keys(i)[0])).toEqual(['activityStart', 'video', 'audio', 'activityEnd']);
     expect((inputs[2] as { audio: { mimeType: string } }).audio.mimeType).toBe('audio/pcm;rate=16000');
-    expect(sent).toEqual([{ type: 'answer', text: 'There is a kerb on your left.', ms: 1200 }]);
+    expect(sent).toEqual([{ type: 'answer', text: 'There is a kerb on your left.', ms: 1200, question: 'What is ahead?' }]);
+  });
+
+  it('the user\'s own words travel with the answer (for voice commands)', async () => {
+    const { sent, emit, msg } = setup();
+    await msg({ type: 'ask' });
+    emit({ question: 'Fewer ' });
+    await msg({ type: 'end' });
+    emit({ question: 'alerts.' });
+    emit({ transcript: 'Okay.' });
+    emit({ turnComplete: true });
+    vi.advanceTimersByTime(800);
+    expect(sent).toEqual([expect.objectContaining({ type: 'answer', text: 'Okay.', question: 'Fewer alerts.' })]);
+  });
+
+  it("the user's words may arrive just after the answer: briefly waited for", async () => {
+    const { sent, emit, msg } = setup();
+    await msg({ type: 'ask' });
+    await msg({ type: 'end' });
+    emit({ transcript: 'A street.' });
+    emit({ turnComplete: true });
+    expect(sent).toEqual([]);
+    emit({ question: 'Fewer alerts please.' });
+    vi.advanceTimersByTime(700);
+    expect(sent).toEqual([expect.objectContaining({ text: 'A street.', question: 'Fewer alerts please.' })]);
+    vi.useRealTimers();
   });
 
   it('only the transcript is forwarded — model audio never reaches the phone (SAF-21)', async () => {
@@ -42,6 +71,7 @@ describe('Live bridge (push-to-talk, transcript only)', () => {
     await msg({ type: 'end' });
     emit({ transcript: 'Shops on the right.' });
     emit({ turnComplete: true });
+    vi.advanceTimersByTime(800);
     expect(JSON.stringify(sent)).not.toMatch(/audio|inlineData/);
   });
 
@@ -53,6 +83,7 @@ describe('Live bridge (push-to-talk, transcript only)', () => {
     expect(turn.turns[0]!.parts).toHaveLength(2);
     emit({ transcript: 'A footpath with a bench on the left.' });
     emit({ turnComplete: true });
+    vi.advanceTimersByTime(800);
     expect(sent).toEqual([expect.objectContaining({ type: 'answer', text: 'A footpath with a bench on the left.' })]);
   });
 
@@ -84,8 +115,10 @@ describe('Live bridge (push-to-talk, transcript only)', () => {
     await msg({ type: 'ask' });
     await msg({ type: 'end' });
     emit({ resumeHandle: 'h-123' });
+    emit({ question: 'Hello?' });
     emit({ transcript: 'Ok.' });
     emit({ turnComplete: true });
+    vi.advanceTimersByTime(800);
     emit({ goAway: true });
     await msg({ type: 'ask' });
     expect(handles).toEqual([undefined, 'h-123']);
@@ -114,5 +147,23 @@ describe('Live bridge (push-to-talk, transcript only)', () => {
     const { sent, msg } = setup();
     await msg({ type: 'hello' });
     expect(sent).toEqual([{ type: 'error', code: 'bad_message' }]);
+  });
+});
+
+describe('transcript pieces trailing turnComplete (live test 10-13)', () => {
+  it("an answer's tail arriving after turnComplete stays with that answer, not the next one", async () => {
+    vi.useFakeTimers();
+    const sent: LiveServerMessage[] = [];
+    let emit: (e: LiveEvent) => void = () => {};
+    const bridge = new LiveBridge((m) => sent.push(m), async ({ onEvent }) => ((emit = onEvent), { sendRealtimeInput: () => {}, sendClientContent: () => {}, close: () => {} }), () => null, () => 0, () => {});
+    await bridge.onMessage(JSON.stringify({ type: 'ask' }));
+    await bridge.onMessage(JSON.stringify({ type: 'end' }));
+    emit({ transcript: 'A wide street with buildings' });
+    emit({ turnComplete: true });
+    emit({ transcript: ' on both sides.' }); // trails the signal
+    vi.advanceTimersByTime(800);
+    emit({ transcript: ' stray late piece' }); // after the window: discarded
+    expect(sent).toEqual([expect.objectContaining({ text: 'A wide street with buildings on both sides.' })]);
+    vi.useRealTimers();
   });
 });
