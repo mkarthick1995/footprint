@@ -25,7 +25,7 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
   filter, alert manager (the only thing that speaks), GPS. Reason: hazard alerts need < 300 ms, which a server round
   trip can't guarantee. The phone holds **no Google credentials** (ADR-030).
 - **Cloud Run (asia-southeast1, service account `footprint-api`):** Gemini on **Vertex AI** via the service account —
-  `POST /api/scan` (blurred low-res frame → `gemini-3.6-flash`, thinking off, global endpoint, JSON schema — ADR-034) and the **Live proxy**
+  `POST /api/scan` (blurred low-res frame → `gemini-3.6-flash`, thinking off, global endpoint, JSON schema — ADR-034) and the **Live proxy** (`/api/live`, Q10)
   WebSocket `/api/live` (browser ↔ Cloud Run ↔ Vertex Live `gemini-live-2.5-flash-native-audio`, us-central1, AUDIO +
   output transcription; the proxy forwards transcript text only and drops model audio). Plus hazard ingest + segment
   scores (Firestore), the web app, the public map, rate limits and session caps.
@@ -101,6 +101,15 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   `announce()` (SYS). At L2/L3 the main loop withholds on-device and scan candidates (community reports still flow).
   One-off warnings: battery 20/10/5 %, detector < 5 fps for 10 s, Compute Pressure "critical", GPS lost 30 s. Paused
   while hidden; `resume()` resets timing so a pause isn't read as a frozen camera.
+- **Gemini Live Q&A (Q10, ADR-030):** "Ask a question" button (toggle: tap to listen — tone, no speech so the mic doesn't
+  hear us — tap or 10 s to send). `LiveAsk` (`apps/web/src/liveAsk.ts`) opens `wss://…/api/live`, sends
+  `{type:'ask', frame}` (blurred JPEG from `FaceBlurrer.getUploadJpeg`), then 16 kHz PCM16 chunks from an inline
+  AudioWorklet, then `{type:'end'}`. `LiveBridge` (`services/api/src/live.ts`, @fastify/websocket) keeps one Vertex Live
+  session per connection (opened on the first question, handed out only after `setupComplete`), push-to-talk via
+  `activityStart`/`activityEnd` (automatic activity detection off), context-window compression, session resumption
+  (handle kept; GoAway → reconnect with it). Model audio is discarded; the output transcript is collected until
+  `turnComplete` and sent as `{type:'answer', text, ms}` → `output.sayModelText(text, {kind:'answer'})`. Limits: 8
+  questions/min per connection, `LIVE_DAILY_CAP` (1000/instance/day), 12 s audio, 300 KB frame, 15 s answer timeout.
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
   Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
   `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,

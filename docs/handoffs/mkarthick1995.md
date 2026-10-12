@@ -2,13 +2,14 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r1.2-detector-tracker
 
 ## Now
-- Q1–Q9 done. Q9: fail-loud ladder L0–L3 + quality gate + orientation + battery/heat + GPS-lost warnings.
-- Outdoor phone test (open check) should now also try: cover the lens, point at the ground, airplane mode.
+- Q1–Q10 done. Q10: "Ask a question" → Gemini Live (voice + blurred frame) → filtered spoken answer, ~3 s.
+- PR #30 (teammate, blurred on-screen view) reviewed + fixed (500 ms refresh) — waiting for owner approval.
 
 ## Next
-1. Next unclaimed: Q10 Gemini Live Q&A proxy (voice question → filtered answer) — the big Gemini/UX demo moment.
-2. FOLLOWUPS #1 (detector on camera frames); scan model benchmark before judging; Cloud Run IP log exclusion (Q12).
-3. Feature freeze 10-16: Q10 must land first; Q11–Q14 get triaged (cut list) on 10-14.
+1. 10-14 triage of Q11 route / Q12 privacy / Q13 abuse+headers / Q14 presets before the 10-16 freeze. Recommendation:
+   Q13 + Q12 (small, judge-visible security/privacy), Q14 lite, cut or simplify Q11.
+2. Outdoor phone test (open): detector, scan, map, fail-loud checks, and now asking questions outdoors.
+3. Demo assets (R4.x): two real walks for the map, video script, deck.
 
 ## Blockers
 - None.
