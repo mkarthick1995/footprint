@@ -28,8 +28,10 @@ every walk improves a shared street-accessibility map.
    next person: "Pothole reported ahead, 3 walkers". A hazard needs two separate walks to be confirmed; nothing is
    shared within 200 m of where a walk starts or ends.
 
-One alert manager decides what is said and when (most urgent first, merged, rate-limited); a safety filter blocks any
-"all clear", crossing instruction or description of people.
+One alert manager decides what is said and when (most urgent first, merged, rate-limited, quieter on busy streets); a
+safety filter blocks any "all clear", crossing instruction or description of people. Choose how much it says
+(Essential / Standard / Detailed) on screen or by saying "fewer alerts" / "more alerts"; urgent warnings can never be
+turned off.
 
 Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Vision: [`docs/VISION.md`](docs/VISION.md)
 

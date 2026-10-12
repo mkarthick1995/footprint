@@ -6,6 +6,8 @@ import { FaceBlurrer } from './faceBlur';
 import { HealthMonitor } from './health';
 import { LiveAsk } from './liveAsk';
 import { MediaButtons } from './mediaButtons';
+import { loadPreset, PRESET_SPOKEN, savePreset, stepPreset } from './presets';
+import { parseVoiceCommand, type AlertPreset } from '@footprint/shared';
 import { playEarcon } from './earcon';
 import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
@@ -44,7 +46,20 @@ let perfText = '';
 /** Face blur (R1.8). Null until loaded, or when it failed — then nothing may be uploaded (fail closed). */
 let blurrer: FaceBlurrer | null = null;
 
-const output = new AlertOutput(statusEl);
+const output = new AlertOutput(statusEl, loadPreset());
+
+/** Q14: alert level — chosen on screen or by voice ("fewer alerts" / "more alerts"), remembered on this phone. */
+function applyPreset(p: AlertPreset, speakIt: boolean): void {
+  output.setPreset(p);
+  savePreset(p);
+  const radio = document.querySelector<HTMLInputElement>(`input[name="preset"][value="${p}"]`);
+  if (radio) radio.checked = true;
+  if (speakIt) announce(PRESET_SPOKEN[p]);
+}
+applyPreset(output.preset, false);
+document.querySelectorAll<HTMLInputElement>('input[name="preset"]').forEach((r) =>
+  r.addEventListener('change', () => applyPreset(r.value as AlertPreset, source !== null)),
+);
 
 /** Q6: Gemini scene scan — static ground hazards (potholes, drains, kerbs, footpath, crossings). */
 const SCAN_MESSAGES: Record<ScanStatus, string> = {
@@ -55,7 +70,13 @@ const SCAN_MESSAGES: Record<ScanStatus, string> = {
 /** Q10: ask Gemini Live about the view — blurred frame + voice; the text answer goes through the safety filter. */
 const ask = new LiveAsk({
   frame: async () => (blurrer && source ? (await blurrer.getUploadJpeg(source.video))?.blob ?? null : null),
-  onAnswer: (text) => output.sayModelText(text, { kind: 'answer' }),
+  onAnswer: (text, question) => {
+    // "Fewer alerts" / "more alerts" / "what level?" are commands to the app, not questions for Gemini.
+    const cmd = parseVoiceCommand(question);
+    if (cmd === 'level') return announce(PRESET_SPOKEN[output.preset]);
+    if (cmd) return applyPreset(stepPreset(output.preset, cmd), true);
+    output.sayModelText(text, { kind: 'answer' });
+  },
   onProblem: announce,
   onState: (s) => {
     askBtn.setAttribute('aria-pressed', String(s === 'listening'));
@@ -69,6 +90,16 @@ describeBtn.addEventListener('click', () => void ask.describe());
 repeatBtn.addEventListener('click', () => {
   if (!output.repeat()) announce(MESSAGES.nothingToRepeat);
 });
+/** The earbud tip is said on the first walk only (fewer words at every later Start). */
+function seenEarbudHelp(): boolean {
+  try {
+    if (localStorage.getItem('footprint.earbudHelp')) return true;
+    localStorage.setItem('footprint.earbudHelp', '1');
+  } catch {
+    /* storage blocked: say it each time */
+  }
+  return false;
+}
 /** Earbud button: 1 press ask · 2 describe · 3 repeat (most used = fewest presses). */
 const mediaButtons = new MediaButtons();
 
@@ -164,7 +195,8 @@ async function start(): Promise<void> {
   if (source?.kind === 'camera') community.start(); // recorded clips have no location
   health.start();
   askControls.hidden = false;
-  if (MediaButtons.supported) announce(MESSAGES.earbudHelp);
+  announce(PRESET_SPOKEN[output.preset]); // ADR-026: current level said at walk start
+  if (MediaButtons.supported && !seenEarbudHelp()) announce(MESSAGES.earbudHelp); // first walk on this phone only
   // Development readout (no frame is grabbed for it).
   previewTimer = window.setInterval(drawPreview, PREVIEW_INTERVAL_MS);
   frameTimer = window.setInterval(() => {

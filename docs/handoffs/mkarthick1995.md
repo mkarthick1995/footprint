@@ -2,14 +2,14 @@
 Updated: 2026-10-10 · Tool: Claude Code · Branch: r1.2-detector-tracker
 
 ## Now
-- Q1–Q10 done. Q10: "Ask a question" → Gemini Live (voice + blurred frame) → filtered spoken answer, ~3 s.
-- PR #30 (teammate, blurred on-screen view) reviewed + fixed (500 ms refresh) — waiting for owner approval.
+- Q1–Q10, Q12–Q14 done; Q11 held to 10-14 (owner) as Q11 lite (voice destination → Routes API → hazards along the
+  route → spoken summary; no turn-by-turn).
+- Owner to test earbud presses (1 ask / 2 describe / 3 repeat), presets and voice commands on the phone on 10-14.
 
 ## Next
-1. 10-14 triage of Q11 route / Q12 privacy / Q13 abuse+headers / Q14 presets before the 10-16 freeze. Recommendation:
-   Q13 + Q12 (small, judge-visible security/privacy), Q14 lite, cut or simplify Q11.
-2. Outdoor phone test (open): detector, scan, map, fail-loud checks, and now asking questions outdoors.
-3. Demo assets (R4.x): two real walks for the map, video script, deck.
+1. 10-14: Q11 lite; owner phone test with earbuds; two real walks on one street (map data for the demo).
+2. 10-15/16: field test (R4.1) + full ST matrix (R4.7); demo video script; deck; judges' README; teammates on Phase 4.
+3. 10-17: final deploy with min instances 1, link checks, submit. Re-run scan model benchmark before judging.
 
 ## Blockers
 - None.

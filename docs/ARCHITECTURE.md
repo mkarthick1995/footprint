@@ -120,6 +120,11 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   (health exempt) on top of each endpoint's per-walk limits and daily caps; `onSend` sets CSP, nosniff,
   strict-origin-when-cross-origin, Permissions-Policy, HSTS and COOP on every response. Billing budget ₹10,000 with
   alerts at 25/50/100 % (verified 10-13); the app's daily caps (scan 5000, Live 1000 per instance) are the hard stop.
+- **Alert levels (Q14, ADR-023/026):** presets (radio buttons; `presets.ts`, localStorage) → `AlertOutput.setPreset`;
+  voice commands via Live input transcription (`parseVoiceCommand`) step the level and suppress Gemini's reply; current
+  level announced at Start. Street demand in `AlertManager` (≥ 4 close-hazard messages in 10 s → heads-up once, P2/P3
+  not worded, P1 ≥ 3 s apart; normal after 15 s quiet). SYS messages queue behind each other; P0 may cut a SYS message,
+  which is replayed. Live bridge collects transcript pieces for 700 ms after `turnComplete` (pieces trailed the signal).
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
   Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
   `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,

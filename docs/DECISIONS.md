@@ -199,6 +199,10 @@ street furniture. In-path = centre of frame / along heading; edge-of-frame objec
 7. Distances are spoken in buckets ("very close", "2 steps", "ahead"), not false-precision metres (SAF-23).
 8. A user question to Gemini is P3: answered when no P0/P1 is pending; a P0 interrupts the answer mid-sentence.
    *Change 2026-10-13 (ADR-035):* a P1 no longer interrupts an answer being spoken (it waits); a P0-interrupted answer resumes.
+   *Change 2026-10-13 (Q14):* SYS messages queue behind each other instead of cutting each other off (Start's three
+   messages were truncated); an imminent P0 may interrupt a SYS message, which is replayed right after (an imminent
+   hazard should not wait ~15 s of start-up messages). Street demand (ADR-023) implemented: ≥ 4 close-hazard messages in
+   10 s → "Busy street. Only close warnings for now." once, P2/P3 not worded, P1 ≥ 3 s apart; normal again after 15 s quiet.
 
 *Implementation (Q3, 2026-10-11):* pure `AlertManager` (`packages/shared/src/alerts.ts`), clock-injected and unit-tested;
 the browser `AlertOutput` only renders. Concrete values (tune on clips): stale after 1 s; same object not repeated for
@@ -294,6 +298,11 @@ Accepted · 2026-10-10 (owner's proposal, refined; confirmed) · extends ADR-022
 - **Category toggles:** community reports, route summary, landmarks, scene descriptions, Gemini answers read aloud.
 - **Channel choice** per tier (speech / earcon / haptic) and speech rate. Voice commands: "fewer alerts", "more alerts".
 - Stored **locally on the device** (no account); fully screen-reader operable; current preset announced at walk start.
+
+*Implementation (Q14, 2026-10-13):* three presets as radio buttons (Essential / Standard / Detailed) stored in
+localStorage, applied live, announced at walk start and on change; voice commands via the Live input transcription
+("fewer alerts", "more alerts", "what level?") change the level one step and Gemini's reply is not spoken. Category
+toggles, per-tier channel choice and speech rate are not built (presets cover the demo; noted as future work).
 
 ## ADR-027 Don't rebuild turn-by-turn navigation; use the route only for hazards and the summary
 Accepted · 2026-10-10 (confirmed by owner) — R2.1 rewritten
