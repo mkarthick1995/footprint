@@ -21,8 +21,12 @@ const overlay = document.querySelector<HTMLCanvasElement>('#overlay')!;
 /** The on-screen camera view. It shows the blurred upload frame only; the raw `<video>` stays invisible (ST-10). */
 const blurView = document.querySelector<HTMLCanvasElement>('#blur-view')!;
 const blurInfo = document.querySelector<HTMLParagraphElement>('#blur-info');
-/** How often the on-screen view is refreshed. Each refresh is one face-detection + blur pass (~12–30 ms). */
-const PREVIEW_INTERVAL_MS = 200;
+/**
+ * How often the on-screen view is refreshed. Each refresh is a full face-detection + blur pass (frame + 4 tiles) on the
+ * same thread as the obstacle detector. Owner review (CPU throttled 4× ≈ mid-range phone): every 200 ms cost the
+ * detector ~1–2 fps (≈ 10 %); every 500 ms was within noise. The detector is the safety layer, so it wins.
+ */
+const PREVIEW_INTERVAL_MS = 500;
 
 let source: FrameSource | null = null;
 let frameTimer: number | undefined;
@@ -153,6 +157,7 @@ function hidePreview(): void {
  * pass fails, nothing is shown rather than the raw video.
  */
 function drawPreview(): void {
+  if (document.hidden) return; // nobody can see it; don't spend detector time
   const v = source?.video;
   if (!v || v.videoWidth === 0 || !blurrer) {
     hidePreview();
