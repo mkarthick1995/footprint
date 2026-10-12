@@ -57,6 +57,8 @@ export interface SpeakOptions {
   onDone?: () => void;
   /** Called when audio actually starts (lets the caller detect a silent speech engine). */
   onStart?: () => void;
+  /** Word-boundary progress (character index), so an interrupted answer can resume from the right sentence. */
+  onBoundary?: (charIndex: number) => void;
 }
 
 /**
@@ -77,7 +79,7 @@ export function primeSpeech(text: string): void {
 
 /** Speak through the on-device voice. Only the alert output (alertOutput.ts) should call this. */
 export function speak(text: string, opts: SpeakOptions = {}): void {
-  const { interrupt = true, onDone, onStart } = opts;
+  const { interrupt = true, onDone, onStart, onBoundary } = opts;
   if (!('speechSynthesis' in window)) {
     onDone?.();
     return;
@@ -98,6 +100,7 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
     onDone?.();
   };
   u.onstart = () => onStart?.();
+  u.onboundary = (e) => onBoundary?.(e.charIndex);
   u.onend = finish;
   u.onerror = finish;
   window.speechSynthesis.speak(u);

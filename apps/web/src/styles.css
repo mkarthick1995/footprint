@@ -40,7 +40,21 @@ button {
 
 #ask {
   margin-top: 0.75rem;
+  min-height: 6rem; /* the most used action gets the biggest target */
   background: #2563eb;
+  color: #fff;
+}
+
+.ask-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.ask-row button {
+  flex: 1;
+  font-size: 1.15rem;
+  background: #374151;
   color: #fff;
 }
 

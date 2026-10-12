@@ -5,6 +5,7 @@ import { createDetector, type OnDeviceDetector } from './detector';
 import { FaceBlurrer } from './faceBlur';
 import { HealthMonitor } from './health';
 import { LiveAsk } from './liveAsk';
+import { MediaButtons } from './mediaButtons';
 import { playEarcon } from './earcon';
 import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
@@ -16,6 +17,9 @@ import { ScreenWakeLock } from './wakeLock';
 
 const startBtn = document.querySelector<HTMLButtonElement>('#start')!;
 const askBtn = document.querySelector<HTMLButtonElement>('#ask')!;
+const askControls = document.querySelector<HTMLDivElement>('#ask-controls')!;
+const describeBtn = document.querySelector<HTMLButtonElement>('#describe')!;
+const repeatBtn = document.querySelector<HTMLButtonElement>('#repeat')!;
 const statusEl = document.querySelector<HTMLDivElement>('#status')!;
 const video = document.querySelector<HTMLVideoElement>('#preview')!;
 const clipInput = document.querySelector<HTMLInputElement>('#clip-file')!;
@@ -55,12 +59,18 @@ const ask = new LiveAsk({
   onProblem: announce,
   onState: (s) => {
     askBtn.setAttribute('aria-pressed', String(s === 'listening'));
-    askBtn.textContent = s === 'listening' ? 'Send question' : s === 'thinking' ? 'Thinking…' : 'Ask a question';
+    askBtn.textContent = s === 'listening' ? 'Listening… tap to send now' : s === 'thinking' ? 'Thinking…' : 'Ask a question';
     if (s === 'listening') playEarcon('near'); // a tone, not words — speech would be picked up by the microphone
     if (s === 'thinking') playEarcon('system');
   },
 });
 askBtn.addEventListener('click', () => void ask.toggle());
+describeBtn.addEventListener('click', () => void ask.describe());
+repeatBtn.addEventListener('click', () => {
+  if (!output.repeat()) announce(MESSAGES.nothingToRepeat);
+});
+/** Earbud button: 1 press ask · 2 describe · 3 repeat (most used = fewest presses). */
+const mediaButtons = new MediaButtons();
 
 /** Q9: fail-loud monitor — camera quality, angle, detector heartbeat, scan, battery, heat, location (ladder L0–L3). */
 let detectorBeat = 0;
@@ -107,7 +117,8 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   community.stop();
   health.stop();
   ask.stop();
-  askBtn.hidden = true;
+  mediaButtons.disarm();
+  askControls.hidden = true;
   detectorBeat = 0;
   blurrer?.clearPersons();
   output.reset();
@@ -152,7 +163,8 @@ async function start(): Promise<void> {
   scanner.start();
   if (source?.kind === 'camera') community.start(); // recorded clips have no location
   health.start();
-  askBtn.hidden = false;
+  askControls.hidden = false;
+  if (MediaButtons.supported) announce(MESSAGES.earbudHelp);
   // Development readout (no frame is grabbed for it).
   previewTimer = window.setInterval(drawPreview, PREVIEW_INTERVAL_MS);
   frameTimer = window.setInterval(() => {
@@ -262,6 +274,7 @@ startBtn.addEventListener('click', () => {
   if (!source) {
     output.unlock();
     HealthMonitor.requestMotionPermission(); // iOS: motion sensors need the tap too
+    mediaButtons.arm({ ask: () => void ask.toggle(), describe: () => void ask.describe(), repeat: () => repeatBtn.click() });
   }
   void (source ? stop() : start());
 });

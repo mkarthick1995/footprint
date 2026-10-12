@@ -101,8 +101,10 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   `announce()` (SYS). At L2/L3 the main loop withholds on-device and scan candidates (community reports still flow).
   One-off warnings: battery 20/10/5 %, detector < 5 fps for 10 s, Compute Pressure "critical", GPS lost 30 s. Paused
   while hidden; `resume()` resets timing so a pause isn't read as a frozen camera.
-- **Gemini Live Q&A (Q10, ADR-030):** "Ask a question" button (toggle: tap to listen — tone, no speech so the mic doesn't
-  hear us — tap or 10 s to send). `LiveAsk` (`apps/web/src/liveAsk.ts`) opens `wss://…/api/live`, sends
+- **Gemini Live Q&A (Q10, ADR-030/035):** "Ask a question" (one tap or one earbud press → tone → speak → `EndOfSpeech`
+  sends after a 1.1 s pause; tap again = send now; 10 s cap), "What's around me" (frame + fixed question via
+  `sendClientContent`; earbud double press) and "Repeat" (last spoken words; earbud triple press) — `mediaButtons.ts`
+  keeps a silent looping clip so the Media Session receives earbud presses. `LiveAsk` (`apps/web/src/liveAsk.ts`) opens `wss://…/api/live`, sends
   `{type:'ask', frame}` (blurred JPEG from `FaceBlurrer.getUploadJpeg`), then 16 kHz PCM16 chunks from an inline
   AudioWorklet, then `{type:'end'}`. `LiveBridge` (`services/api/src/live.ts`, @fastify/websocket) keeps one Vertex Live
   session per connection (opened on the first question, handed out only after `setupComplete`), push-to-talk via

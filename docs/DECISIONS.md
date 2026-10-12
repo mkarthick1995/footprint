@@ -198,6 +198,7 @@ street furniture. In-path = centre of frame / along heading; edge-of-frame objec
 6. Low confidence + close → still alert, worded "possible obstacle"; low confidence + far → dropped (cautious wins).
 7. Distances are spoken in buckets ("very close", "2 steps", "ahead"), not false-precision metres (SAF-23).
 8. A user question to Gemini is P3: answered when no P0/P1 is pending; a P0 interrupts the answer mid-sentence.
+   *Change 2026-10-13 (ADR-035):* a P1 no longer interrupts an answer being spoken (it waits); a P0-interrupted answer resumes.
 
 *Implementation (Q3, 2026-10-11):* pure `AlertManager` (`packages/shared/src/alerts.ts`), clock-injected and unit-tested;
 the browser `AlertOutput` only renders. Concrete values (tune on clips): stale after 1 s; same object not repeated for
@@ -374,6 +375,26 @@ re-run the benchmark before judging.
 Measured end to end from Cloud Run (preview q06, Shanghai clip): round trip 1.5–2.0 s, 76 % of scans fresh (< 2 s),
 **$1.49 per walking hour** (upper bound: the clip never stands still). JPEG encoding moved from `canvas.toBlob` (waited
 ~1 s behind the detector's GPU work) to synchronous `toDataURL` (~25 ms).
+
+## ADR-035 Hands-free asking: one tap + auto-send, earbud presses, three big buttons; no always-on mic or wake word
+Accepted · 2026-10-13 (owner phone test: "Ask → confirm" is unusable for a blind person; owner chose C + D) · R1.4
+- **One action to ask:** one tap (or one earbud press) opens the mic; on-device end-of-speech detection (`EndOfSpeech`:
+  noise learned for 300 ms, speech = louder than noise × 2.5 for ≥ 200 ms, ends after 1.1 s quiet, gives up after 6 s
+  with "I didn't hear a question") sends automatically; tapping again sends at once; 10 s cap.
+- **Earbud / headset button** via the Media Session API (a silent looping clip keeps the session active):
+  1 press = Ask · 2 presses (next track) = "What's around me" · 3 presses (previous track) = Repeat — most used,
+  fewest presses. Works with the phone in a pocket and with TalkBack/VoiceOver.
+- **On screen:** three large labelled buttons (Ask biggest, then "What's around me" and "Repeat"). **Rejected: multi-tap
+  gestures on the screen** — TalkBack/VoiceOver use single tap to focus, double tap to activate, triple tap to zoom, so a
+  screen gesture scheme breaks for most blind users.
+- **Rejected: always-on listening** (Gemini VAD) — streams bystanders' conversations to the cloud all walk (contradicts
+  PRI-05), answers street noise and our own TTS, higher cost/battery. **Rejected: wake word** — browsers have no wake-word
+  support; Google's on-device browser model knows ~18 fixed words, custom words need a third-party licensed engine and
+  street tuning; not feasible before the 10-16 freeze. Native "Hey Google" (Android app + Assistant) is future work.
+- **"What's around me"** sends the blurred frame + a fixed question as one Live turn (`sendClientContent`), no mic.
+- **Answers are protected from "near" alerts** (ADR-022 change): while an answer to the user's question is being spoken,
+  only P0 and SYS interrupt it; a P1 waits (if it becomes imminent it is P0 and cuts in). An answer cut by a P0 resumes
+  from the sentence it was in, if still fresh (≤ 10 s). Owner test: a P1 repeating the same obstacle cut an answer off.
 
 ## ADR-031 Pull-based build queue with a strict Definition of Done
 Accepted · 2026-10-10 (owner's process) · refines ADR-028 (order) and ADR-008 (workflow)

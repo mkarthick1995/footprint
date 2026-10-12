@@ -31,6 +31,8 @@ export const MESSAGES = {
   chooseClip: 'Choose a recorded clip first.',
   detectorFailed: 'Obstacle detection could not start. Alerts are off.',
   detectorStopped: 'Obstacle detection stopped. Alerts are off.',
+  earbudHelp: 'Earbud button: press once to ask, twice to describe, three times to repeat.',
+  nothingToRepeat: 'Nothing to repeat yet.',
   locationOff: 'Location is off. Community reports are off. Obstacle alerts still work.',
   scanDown: 'Scene descriptions are unavailable. Obstacle alerts still work.',
   scanUp: 'Scene descriptions are back.',

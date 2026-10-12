@@ -1,8 +1,10 @@
-// Ask a question (Q10, R1.4): tap once to start listening, tap again (or 10 s) to send. Sends the current blurred frame
+// Ask a question (Q10, R1.4): one tap (or one earbud press) and just ask aloud — it sends when you pause (EndOfSpeech);
+// tapping again sends at once; 10 s is the cap. "What's around me" sends the frame with a fixed question. Sends the current blurred frame
 // and 16 kHz PCM from the microphone over /api/live; the text answer goes to the caller, which must pass it to
 // AlertOutput.sayModelText (safety filter, P3, preemptible). The microphone is on only while asking (PRI-05); nothing is
 // recorded or stored.
 import { LIVE_SAMPLE_RATE, MAX_QUESTION_MS, type LiveServerMessage } from '@footprint/shared';
+import { EndOfSpeech, rms } from './endOfSpeech';
 
 export type AskState = 'idle' | 'listening' | 'thinking';
 
@@ -21,6 +23,8 @@ export const ASK_MESSAGES = {
   unavailable: 'Questions are unavailable right now. Obstacle alerts still work.',
   busy: 'Still answering the last question.',
   tooMany: 'Too many questions. Try again in a minute.',
+  didntHear: "I didn't hear a question.",
+  noView: 'No camera view to describe yet.',
 } as const;
 
 /** AudioWorklet that forwards mono Float32 frames to the main thread. Inline so no extra file is served. */
@@ -62,6 +66,21 @@ export class LiveAsk {
     if (this.state === 'listening') return this.finish();
     if (this.state === 'thinking') return this.opts.onProblem(ASK_MESSAGES.busy);
     await this.startListening();
+  }
+
+  /** "What's around me": describe the current view, no speaking needed. */
+  async describe(): Promise<void> {
+    if (this.state !== 'idle') return this.opts.onProblem(ASK_MESSAGES.busy);
+    const blob = await this.opts.frame().catch(() => null);
+    if (!blob) return this.opts.onProblem(ASK_MESSAGES.noView);
+    let ws: WebSocket;
+    try {
+      ws = await this.connect();
+    } catch {
+      return this.opts.onProblem(ASK_MESSAGES.unavailable);
+    }
+    ws.send(JSON.stringify({ type: 'describe', frame: toBase64(new Uint8Array(await blob.arrayBuffer())) }));
+    this.setState('thinking');
   }
 
   /** Walk stopped. */
@@ -116,7 +135,12 @@ export class LiveAsk {
     this.ctx = new AudioContext({ sampleRate: LIVE_SAMPLE_RATE }); // browser resamples the mic to 16 kHz
     await this.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' })));
     const node = new AudioWorkletNode(this.ctx, 'fp-mic');
+    const eos = new EndOfSpeech();
     node.port.onmessage = (e: MessageEvent<Float32Array>) => {
+      if (this.state !== 'listening') return;
+      const s = eos.feed(rms(e.data), (e.data.length / LIVE_SAMPLE_RATE) * 1000);
+      if (s === 'done') return void this.finish(); // the user paused: send without a second tap
+      if (s === 'no_speech') return this.cancelListening();
       this.pending.push(floatToPcm16(e.data));
       const size = this.pending.reduce((n, b) => n + b.length, 0);
       if (size >= 3200 && this.ws?.readyState === WebSocket.OPEN) {
@@ -133,6 +157,7 @@ export class LiveAsk {
   }
 
   private async finish(): Promise<void> {
+    if (this.state !== 'listening') return;
     window.clearTimeout(this.stopTimer);
     this.releaseMic();
     if (this.ws?.readyState !== WebSocket.OPEN) {
@@ -141,6 +166,14 @@ export class LiveAsk {
     }
     this.ws.send(JSON.stringify({ type: 'end' }));
     this.setState('thinking');
+  }
+
+  /** Nothing was said: drop the question quietly on the server, tell the user. */
+  private cancelListening(): void {
+    this.releaseMic();
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify({ type: 'cancel' }));
+    this.setState('idle');
+    this.opts.onProblem(ASK_MESSAGES.didntHear);
   }
 
   private releaseMic(): void {

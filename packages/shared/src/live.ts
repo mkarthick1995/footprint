@@ -13,8 +13,12 @@ export const MAX_FRAME_BYTES = 300 * 1024;
 /** No answer within this long after the question ends → error (fail loud). */
 export const ANSWER_TIMEOUT_MS = 15_000;
 
+/** "What's around me" (no speaking needed): the blurred frame plus this fixed question. */
+export const DESCRIBE_PROMPT = 'Describe what is in front of me in two short sentences, most important for walking first.';
+
 export type LiveClientMessage =
   | { type: 'ask'; frame?: string }
+  | { type: 'describe'; frame: string }
   | { type: 'audio'; data: string }
   | { type: 'end' }
   | { type: 'cancel' };
@@ -45,6 +49,9 @@ export function parseLiveClientMessage(raw: unknown): LiveClientMessage | null {
       if (typeof o.frame !== 'string' || !B64.test(o.frame) || (o.frame.length * 3) / 4 > MAX_FRAME_BYTES) return null;
       return { type: 'ask', frame: o.frame };
     }
+    case 'describe':
+      if (typeof o.frame !== 'string' || o.frame.length === 0 || !B64.test(o.frame) || (o.frame.length * 3) / 4 > MAX_FRAME_BYTES) return null;
+      return { type: 'describe', frame: o.frame };
     case 'audio':
       if (typeof o.data !== 'string' || o.data.length === 0 || o.data.length > 64_000 || !B64.test(o.data)) return null;
       return { type: 'audio', data: o.data };
