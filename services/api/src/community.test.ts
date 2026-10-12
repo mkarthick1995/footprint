@@ -84,3 +84,23 @@ describe('POST /api/observations + GET /api/hazards', () => {
     await app.close();
   });
 });
+
+describe('ST-17: what is stored after a walk (Q12)', () => {
+  it('raw observations hold only these fields — no walk ID, no image, no device data, coordinates rounded', async () => {
+    const { app, store, post } = await setup();
+    await post({ ...body({ lat: 1.2800123, lng: 103.8500456 }), userAgent: 'x', photo: 'AAAA', name: 'n' });
+    const o = store.observations[0]! as unknown as Record<string, unknown>;
+    expect(Object.keys(o).sort()).toEqual(['accuracyM', 'confidence', 'expireAt', 'hazardId', 'lat', 'lng', 'notSeen', 'source', 'ts', 'type']);
+    expect((o.lat as number) * 2e4).toBeCloseTo(Math.round((o.lat as number) * 2e4), 6); // on the ~5 m grid
+    await app.close();
+  });
+
+  it('hazards hold evidence and per-hazard walk hashes only', async () => {
+    const { app, store, post } = await setup();
+    await post(body());
+    const h = [...store.hazards.values()][0]! as unknown as Record<string, unknown>;
+    expect(Object.keys(h).sort()).toEqual(['alpha', 'beta', 'firstSeen', 'geohash', 'id', 'lastSeen', 'lat', 'lng', 'notSeen', 'seen', 'status', 'type', 'updatedAt']);
+    expect(JSON.stringify(h)).not.toContain('walk-session-1');
+    await app.close();
+  });
+});

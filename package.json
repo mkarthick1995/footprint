@@ -2,7 +2,7 @@
   "name": "footprint",
   "private": true,
   "type": "module",
-  "description": "Voice-first street co-pilot for blind and low-vision pedestrians — Google Cloud AI Builder Cup 2026",
+  "description": "Voice-first street co-pilot for blind and low-vision pedestrians \u2014 Google Cloud AI Builder Cup 2026",
   "engines": {
     "node": ">=20"
   },
@@ -21,7 +21,8 @@
     "dev:web": "npm run dev -w apps/web",
     "dev:api": "npm run dev -w services/api",
     "start": "npm start -w services/api",
-    "deploy": "node infra/deploy.mjs"
+    "deploy": "node infra/deploy.mjs",
+    "audit:privacy": "node tools/audit-privacy.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
