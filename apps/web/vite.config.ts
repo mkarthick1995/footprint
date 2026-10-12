@@ -9,7 +9,7 @@ export default defineConfig({
   },
   server: {
     // Dev: forward API calls to the local Cloud Run service (npm run dev:api).
-    proxy: { '/api': 'http://localhost:8080' },
+    proxy: { '/api': { target: 'http://localhost:8080', ws: true } },
   },
   build: {
     outDir: 'dist',

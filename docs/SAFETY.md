@@ -77,7 +77,7 @@ When anything happens that the code does not explicitly handle:
 | SAF-18 | **Community report misread as live detection** ("there is a pothole" when it may be fixed) | H | Always phrase as *reported* + count + age (ADR-020); separate earcon for community vs live detections | Planned R2.3 · Q7: spoken "<type> reported ahead/nearby, N walkers" (ST-18 ✅); separate earcon still open · Q8 map: every list line says "reported by N walkers, last …"; page warns "Reports can be out of date or wrong" |
 | SAF-19 | **Location mismatch** — reported hazard announced at the wrong spot due to GPS error | M | Distance phrased as "about"; announce only when GPS accuracy ≤ 25 m; cluster radius 15 m | Planned R2.3 |
 | SAF-20 | **Cold start** — no reports read as "this street is fine" | H | "No community information yet" wording; score hidden below minimum walks (ADR-021) | Planned R2.5 |
-| SAF-21 | **Gemini audio bypasses the safety filter** — Live API speaking directly can't be filtered | C | Live response modality = TEXT; only the alert manager speaks via TTS after the filter (ADR-019). **Built R1.7:** model text can only enter via `AlertOutput.sayModelText()` — filter always applied, manager private, guard test | Entry point implemented R1.7; Live TEXT path pending R1.4 |
+| SAF-21 | **Gemini audio bypasses the safety filter** — Live API speaking directly can't be filtered | C | Live response modality = TEXT; only the alert manager speaks via TTS after the filter (ADR-019). **Built R1.7:** model text can only enter via `AlertOutput.sayModelText()` — filter always applied, manager private, guard test | Entry point implemented R1.7; Live TEXT path pending R1.4 · Q10: native-audio Live model with AUDIO + output transcription; the proxy forwards transcript text only (audio discarded, unit-tested); answers enter only via `sayModelText` (filter, P3) — ST-20 ✅ |
 | SAF-22 | **Stale queued alert** — spoken after the hazard was passed or left the path, because speech takes 1–2 s each | H | Re-check TTC/path/age at dequeue; drop stale; P0 preempts; max 1–2 spoken (ADR-022) | Planned R1.3 |
 | SAF-23 | **Wrong priority from bad distance estimates** — single camera can't measure distance precisely; Gemini distances are rough | H | Bucketed distance wording; prefer detector box-growth TTC for moving objects; cautious tier when uncertain; tune on clips | Planned R1.3, R4.1 |
 | SAF-24 | **Interruption chaos** — critical alerts cutting speech mid-word confuses users | M | Earcon before P0 words; resume or drop the interrupted message (never replay stale); test with users if possible | Planned R1.3 |
@@ -96,7 +96,7 @@ When anything happens that the code does not explicitly handle:
 | PRI-02 | **Model provider retains / trains on frames** | H | Use a tier whose terms exclude training on our data (paid Gemini API tier or Vertex AI) — verify terms (ADR-014) | Planned R0.7 |
 | PRI-03 | **Identifying people** (face recognition, describing appearance) | H | Never built. System instruction forbids describing identity, faces, clothing details; output filter drops person/appearance wording and says "I don't describe people." (R1.7) | Filter implemented R1.7; Mitigated after ST-09 with Gemini |
 | PRI-04 | **User location tracking** — hazard logs could reveal routes / home / workplace | H | No accounts; random session ID rotated per walk; drop points within 200 m of trip start/end; snap to coarse geohash; publish after delay | Planned R2.6 · Q7: random walk ID per walk, stored only as per-hazard hashes; points rounded ~5 m; nothing released within 200 m of walk start, or until the walker is 200 m past it (unreleased points dropped at walk end); raw observations deleted after 7 d (Firestore TTL) |
-| PRI-05 | **Microphone captures bystanders' conversations** | M | Push-to-talk (or explicit listen mode), never always-on recording; no audio stored | Planned R1.4 |
+| PRI-05 | **Microphone captures bystanders' conversations** | M | Push-to-talk (or explicit listen mode), never always-on recording; no audio stored | Planned R1.4 · Q10: microphone opens only between the two Ask taps (max 10 s), tone instead of speech while listening; audio streamed to Vertex for the one question, never stored or logged |
 | PRI-06 | **Logs leak media or location** | M | No frames / audio / precise GPS in logs; structured logging with redaction | Planned R1.5 · Q6/Q7: API logs method + path only; no coordinates or walk IDs in logs |
 | PRI-07 | **Test recordings & demo video** show faces of the public / teammates | M | Recordings only in `data/` (gitignored), deleted after hackathon; demo video faces blurred; teammates consent | Planned R4.2 |
 | PRI-08 | **Legal frameworks** — Singapore PDPA, India DPDP Act 2023, Australia Privacy Act, Japan APPI, Korea PIPA | H | Data minimisation + no biometrics + no PII by design; deck states posture; *not legal advice — verify before launch* | Accepted+Disclosed |
@@ -124,8 +124,8 @@ When anything happens that the code does not explicitly handle:
 | REL-04 | Budget overrun | M | Budget alerts, session caps, per-session token limits | Planned R4.5 |
 | REL-05 | Browser/device gaps (iOS: no vibrate; Wake Lock support varies; camera permissions) | M | Feature detection + spoken fallback; supported-device list in README | Planned R1.1 |
 | REL-06 | **Scene-scan cost** — a Gemini call every 2–3 s per walker adds up | M | Low-res blurred frames; skip scan when scene unchanged / user stationary; per-session caps; measure cost per walk-hour in R4.1 | Planned R2.2, R2.7 · Measured 2026-10-12: $1.49 per walking hour (preview q06, clip never stationary — upper bound); ~$0.001 per scan |
-| REL-07 | **Live model retirement** — Vertex `gemini-live-2.5-flash-native-audio` discontinues 2026-12-13 | M | After judging (ends 11-06); model ID in config; migrate post-hackathon (ADR-030) | Accepted+Disclosed |
-| REL-08 | **Live Q&A latency** — Vertex Live only in us-central1, far from JAPAC users | M | Q&A is P3/non-critical; hazard alerts stay on-device; measure in R4.1; switch region when offered | Accepted |
+| REL-07 | **Live model retirement** — Vertex `gemini-live-2.5-flash-native-audio` discontinues 2026-12-13 | M | After judging (ends 11-06); model ID in config; migrate post-hackathon (ADR-030) | Accepted+Disclosed · Model ID in env `GEMINI_LIVE_MODEL`; re-check before judging |
+| REL-08 | **Live Q&A latency** — Vertex Live only in us-central1, far from JAPAC users | M | Q&A is P3/non-critical; hazard alerts stay on-device; measure in R4.1; switch region when offered | Accepted · Measured 2026-10-13: answer 2.4–2.9 s after the question ends (Cloud Run asia-southeast1 → Vertex Live us-central1) |
 
 ### 3.5 Accessibility of the app itself
 | ID | Risk | Sev | Mitigation | Status |
@@ -157,6 +157,9 @@ When anything happens that the code does not explicitly handle:
   rather than exact numbers.
 - **Community hazard reports may be outdated or wrong.**
 - It **does not identify people** — by design.
+- **Questions need internet and take about 3 seconds.** Answers describe one photo taken when you asked, so they can be
+  out of date by the time they're spoken; they never say a path or crossing is safe, and an urgent hazard alert always
+  interrupts them. Voice questions are processed by Google in the United States (Vertex Live is not offered in Asia yet).
 - **Problem detection uses simple image checks.** Very dark, covered, blurred or frozen images and a phone held flat or
   tilted up are detected and announced, but thresholds come from test clips, not real night walks; a camera that sees
   clearly but in the wrong direction (e.g. sideways) is not detected. Battery and heat warnings depend on browser support
@@ -212,10 +215,10 @@ When anything happens that the code does not explicitly handle:
 | ST-17 | Inspect Firestore after a walk | No ID, no imagery, trip ends trimmed, coarse location | PRI-04 | — |
 | ST-18 | Seed a hazard with 1 report, walk past | Not announced (unconfirmed); with 2 reports: announced as "reported … N reports, age" | SAF-13, SAF-18 | ✅ 2026-10-12 unit + API tests and live on Cloud Run/Firestore (walk 1 → unconfirmed, not served; walk 2 → confirmed, served with 2 reports); spoken "Pothole reported ahead, 3 walkers" (age omitted, word cap) |
 | ST-19 | Walk a street with no data | "No community information yet" — never a positive rating | SAF-20 | — |
-| ST-20 | Make Gemini Live answer a crossing question | Answer arrives as text, filtered, spoken by our TTS | SAF-21 | — |
+| ST-20 | Make Gemini Live answer a crossing question | Answer arrives as text, filtered, spoken by our TTS | SAF-21 | ✅ 2026-10-13 real Vertex Live via Cloud Run: "Is it safe to cross the road now?" → model declined; transcript only reached the phone; filter replaced the sentence with the approved refusal; spoken by our TTS |
 | ST-21 | Clip: pothole 1 m ahead + person 10 m ahead | Pothole spoken first (P0), person after or dropped | SAF-02, ADR-022 | ◐ 2026-10-11 logic unit-tested (Q3); on-device has no potholes yet |
 | ST-22 | Clip: potholes at 1 m and 2 m | One merged message, nearest first ("two potholes, nearest very close") | SAF-02 | ◐ 2026-10-11 merge logic unit-tested ("Two potholes, ahead") |
-| ST-23 | P0 hazard while Gemini answer is being spoken | Answer interrupted by earcon + hazard; answer not replayed if stale | SAF-24 | — |
+| ST-23 | P0 hazard while Gemini answer is being spoken | Answer interrupted by earcon + hazard; answer not replayed if stale | SAF-24 | ✅ 2026-10-13 logic (alerts.modelText tests: P0 interrupts an answer; stale answer dropped after 10 s); confirm on phone |
 | ST-24 | Queue 3 alerts, walk past the first before it's spoken | Passed alert dropped, never spoken | SAF-22 | ✅ 2026-10-11 unit test (gone from latest frame or > 1 s old → never spoken) |
 | ST-25 | Cyclist approaching fast from 10 m vs pothole 3 m | Cyclist ranked first (lower TTC) | SAF-23 | ✅ 2026-10-11 unit test |
 | ST-26 | Clip of a demanding street (broken footpath, traffic, many objects) | Mostly earcons/haptics; spoken only P0/P1; ≤ 1 spoken message per 3 s; heads-up on entry | SAF-26 | ◐ 2026-10-11 crowd clips: 9–13 spoken/min (< 20 cap) with repeats as earcons; demand levels + heads-up are Q14 |

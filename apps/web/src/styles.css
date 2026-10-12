@@ -38,6 +38,16 @@ button {
   color: #111;
 }
 
+#ask {
+  margin-top: 0.75rem;
+  background: #2563eb;
+  color: #fff;
+}
+
+#ask[aria-pressed='true'] {
+  background: #dc2626;
+}
+
 button:focus-visible {
   outline: 4px solid #fff;
   outline-offset: 3px;

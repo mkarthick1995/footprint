@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerCommunity, type CommunityOptions } from './community.js';
+import { registerLive, type LiveOptions } from './live.js';
 import { registerScan, type ScanOptions } from './scan.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -15,6 +16,7 @@ export interface ServerOptions {
   logger?: boolean;
   scan?: ScanOptions;
   community?: CommunityOptions;
+  live?: LiveOptions;
 }
 
 export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInstance> {
@@ -28,10 +30,8 @@ export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInst
 
   app.get('/api/healthz', async () => ({ ok: true }));
 
-  // R1.4: mint a Gemini Live ephemeral token (ADR-029). Not implemented yet — fail loudly, never fake success.
-  app.post('/api/session-token', async (_req, reply) =>
-    reply.code(501).send({ error: 'not_implemented', item: 'R1.4' }),
-  );
+  // R1.4: Gemini Live Q&A — WebSocket proxy, transcript text only (ADR-030, SAF-21).
+  await registerLive(app, opts.live);
 
   // R2.2: Gemini scene scan (blurred frame → validated JSON).
   await registerScan(app, opts.scan);
