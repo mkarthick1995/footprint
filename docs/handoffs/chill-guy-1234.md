@@ -1,7 +1,9 @@
 # Handoff — @chill-guy-1234
-Updated: 2026-10-11 · Tool: Claude Code · Branch: r1.8-face-blur
+Updated: 2026-10-12 · Tool: Claude Code · Branch: r1.8-blurred-default-view
 
 ## Now
+- 2026-10-12: Q4 follow-up in PR — on-screen camera view is the blurred upload frame by default (`#blur-view`, raw
+  `<video>` invisible, fail closed, 200 ms refresh). Needs a phone check of detector fps; `?debug=blur` is gone.
 - Q4 (R1.8 face blur) done and in PR: `privacy.ts` (+15 tests), `faceBlur.ts`, `uploadGuard.test.ts`, `?debug=blur` view.
   77 tests + build green. Phone test (preview q04, Android, Brave): blur 30 ms, no measurable fps cost, head-area
   backstop caught a person the face model missed.
