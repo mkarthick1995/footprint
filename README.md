@@ -21,8 +21,9 @@ every walk improves a shared street-accessibility map.
 2. **Gemini scene scan** (Vertex AI, `gemini-3.6-flash`): every ~2.5 s one face-blurred photo → structured JSON of
    ground hazards the phone model can't see — potholes, open drains, kerbs and steps, missing footpath, crossings.
    Answers older than 2 s are dropped; nothing is stored.
-3. **Gemini Live on demand**: tap "Ask a question" and ask by voice ("what's in front of me?"); the current blurred
-   photo goes with it, Gemini answers in about 3 seconds, and the answer is filtered for safety and spoken by the app.
+3. **Gemini Live on demand, hands-free**: press your earbud button once (or tap "Ask a question") and just ask — it
+   sends when you pause. Press twice for "What's around me", three times to repeat. The current blurred photo goes with
+   the question, Gemini answers in about 3 seconds, and the answer is filtered for safety and spoken by the app.
 4. **Hazards are logged with GPS (no images)** to Firestore → a shared accessibility map, so every walk warns the
    next person: "Pothole reported ahead, 3 walkers". A hazard needs two separate walks to be confirmed; nothing is
    shared within 200 m of where a walk starts or ends.

@@ -18,6 +18,19 @@ export interface Utterance {
   interrupt: boolean;
   /** Candidate IDs this message covers (for cool-downs). */
   ids: string[];
+  /** Set for model text: an interrupted answer can be resumed (owner phone test 2026-10-13). */
+  kind?: ModelTextKind;
+}
+
+/**
+ * The part of `text` not yet heard when speech was cut after `spokenChars` characters: from the start of the sentence
+ * being spoken. Unknown progress (0) → the whole text.
+ */
+export function remainingAfter(text: string, spokenChars: number): string {
+  if (!(spokenChars > 0)) return text.trim();
+  const before = text.slice(0, Math.min(spokenChars, text.length));
+  const cut = Math.max(before.lastIndexOf('. '), before.lastIndexOf('! '), before.lastIndexOf('? '));
+  return (cut >= 0 ? text.slice(cut + 2) : text).trim();
 }
 
 export interface AlertManagerOptions {
@@ -165,6 +178,10 @@ export class AlertManager {
   private wordedGroup = new Map<string, number>();
   private lastSpokenAt = -Infinity;
   private current: Tier | null = null;
+  /** The answer being spoken now (for "only P0 interrupts an answer" and resume). */
+  private currentAnswer: { text: string; expiresAt: number } | null = null;
+  /** Last words actually spoken (for "Repeat"). */
+  private lastWords = '';
   private readonly opts: Required<AlertManagerOptions>;
 
   constructor(opts: AlertManagerOptions = {}) {
@@ -208,6 +225,7 @@ export class AlertManager {
   /** Tell the manager the output finished (or was cut) so lower tiers may speak again. */
   finished(): void {
     this.current = null;
+    this.currentAnswer = null;
   }
 
   /** Drop all hazard state (walk stopped). System messages stay queued. */
@@ -218,6 +236,7 @@ export class AlertManager {
     this.wordedGroup.clear();
     this.contextQueue = [];
     this.current = null;
+    this.currentAnswer = null;
   }
 
   /** Decide what to say at `now` (ms, same clock as `observedAt`). `speaking` = the output is busy. */
@@ -232,9 +251,13 @@ export class AlertManager {
     }
     const group = this.pick(now);
     if (!group) return this.nextModelText(now, speaking);
-    // Interrupt rules: P0 cuts anything below P0; P1 cuts P2/P3; otherwise wait for the output to be idle.
+    // Interrupt rules: P0 cuts anything below P0; P1 cuts P2/P3 — except an answer the user asked for, which only P0
+    // cuts (a "near" alert waits; if it becomes imminent it is P0 and does cut). Owner phone test 2026-10-13: a P1
+    // repeating what the answer was saying cut it off mid-sentence.
     if (speaking && this.current !== null) {
-      const canCut = (group.tier === 'P0' && RANK[this.current] > RANK.P0) || (group.tier === 'P1' && RANK[this.current] > RANK.P1);
+      const canCut =
+        (group.tier === 'P0' && RANK[this.current] > RANK.P0) ||
+        (group.tier === 'P1' && RANK[this.current] > RANK.P1 && this.currentAnswer === null);
       if (!canCut) return null;
     }
     if (now - this.lastSpokenAt < MIN_GAP_MS[group.tier]) return null;
@@ -268,12 +291,32 @@ export class AlertManager {
     const gap = item.kind === 'answer' ? ANSWER_GAP_MS : MIN_GAP_MS.P3;
     if (now - this.lastSpokenAt < gap) return null;
     this.contextQueue.shift();
-    return this.emit({ text: item.text, tier: 'P3', earcon: null, vibrate: null, interrupt: false, ids: [] }, now);
+    if (item.kind === 'answer') this.currentAnswer = { text: item.text, expiresAt: item.expiresAt };
+    return this.emit({ text: item.text, tier: 'P3', earcon: null, vibrate: null, interrupt: false, ids: [], kind: item.kind }, now);
+  }
+
+  /**
+   * An answer was cut by an imminent alert after `spokenChars` characters: queue the unheard part first, if it is still
+   * fresh (SAF-22). Already filtered when it was queued, so it isn't filtered again.
+   */
+  resumeAnswer(text: string, spokenChars: number, now: number): void {
+    const answer = this.currentAnswer;
+    const rest = remainingAfter(text, spokenChars);
+    if (!rest || !answer || answer.expiresAt <= now) return;
+    this.contextQueue.unshift({ text: rest, kind: 'answer', expiresAt: answer.expiresAt });
+  }
+
+  /** Say the last spoken words again ("Repeat"). False when there is nothing to repeat. */
+  repeat(): boolean {
+    if (!this.lastWords) return false;
+    this.systemQueue.push(this.lastWords);
+    return true;
   }
 
   private emit(u: Utterance, now: number): Utterance {
     this.lastSpokenAt = now;
     this.current = u.tier;
+    if (u.text) this.lastWords = u.text;
     return u;
   }
 

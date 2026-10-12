@@ -30,6 +30,8 @@ export class AlertOutput {
   private startTimer: number | undefined;
   private silentTimer: number | undefined;
   private voiceFailed = false;
+  /** The utterance being spoken and how far it got (for resuming an interrupted answer). */
+  private speaking: { text: string; kind?: string; chars: number } | null = null;
 
   constructor(
     private readonly mirror: HTMLElement,
@@ -67,6 +69,13 @@ export class AlertOutput {
     return result;
   }
 
+  /** "Repeat": say the last spoken message again. */
+  repeat(): boolean {
+    const ok = this.manager.repeat();
+    this.pump();
+    return ok;
+  }
+
   /** Latest frame's hazard candidates. */
   update(candidates: readonly AlertCandidate[], now = performance.now()): void {
     this.manager.update(candidates);
@@ -87,7 +96,13 @@ export class AlertOutput {
     const token = ++this.token;
     window.clearTimeout(this.watchdog);
     window.clearTimeout(this.startTimer);
-    if (u.interrupt) cancelSpeech();
+    if (u.interrupt) {
+      // An answer cut by an imminent alert resumes afterwards from the sentence it was in (owner phone test).
+      const cut = this.speaking;
+      if (cut?.kind === 'answer') this.manager.resumeAnswer(cut.text, cut.chars, performance.now());
+      cancelSpeech();
+    }
+    this.speaking = u.text ? { text: u.text, kind: u.kind, chars: 0 } : null;
     this.busy = true;
     if (u.text) this.mirror.textContent = u.text; // cue-only repeats keep the last words on screen
     if (u.vibrate && 'vibrate' in navigator) navigator.vibrate(u.vibrate);
@@ -95,6 +110,7 @@ export class AlertOutput {
       if (token !== this.token) return; // superseded by a newer message
       window.clearTimeout(this.watchdog);
       this.busy = false;
+      this.speaking = null;
       this.manager.finished();
       this.pump();
     };
@@ -109,6 +125,9 @@ export class AlertOutput {
         onStart: () => {
           window.clearTimeout(this.silentTimer);
           this.voiceFailed = false; // recovered
+        },
+        onBoundary: (chars) => {
+          if (token === this.token && this.speaking) this.speaking.chars = chars;
         },
         onDone: done,
       });

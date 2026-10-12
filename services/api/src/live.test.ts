@@ -11,7 +11,7 @@ function setup(allow: () => LiveServerMessage | null = () => null) {
   const connector: LiveConnector = async ({ resumeHandle, onEvent }) => {
     handles.push(resumeHandle);
     emit = onEvent;
-    return { sendRealtimeInput: (i) => inputs.push(i), close: closed };
+    return { sendRealtimeInput: (i) => inputs.push(i), sendClientContent: (c) => inputs.push({ clientContent: c }), close: closed };
   };
   let clock = 1000;
   const bridge = new LiveBridge((m) => sent.push(m), connector, allow, () => clock, () => {});
@@ -43,6 +43,17 @@ describe('Live bridge (push-to-talk, transcript only)', () => {
     emit({ transcript: 'Shops on the right.' });
     emit({ turnComplete: true });
     expect(JSON.stringify(sent)).not.toMatch(/audio|inlineData/);
+  });
+
+  it('"What\'s around me": photo + fixed question as one turn, answered like a question', async () => {
+    const { sent, inputs, emit, msg } = setup();
+    await msg({ type: 'describe', frame: Buffer.from([0xff, 0xd8]).toString('base64') });
+    const turn = (inputs[0] as { clientContent: { turns: { parts: object[] }[]; turnComplete: boolean } }).clientContent;
+    expect(turn.turnComplete).toBe(true);
+    expect(turn.turns[0]!.parts).toHaveLength(2);
+    emit({ transcript: 'A footpath with a bench on the left.' });
+    emit({ turnComplete: true });
+    expect(sent).toEqual([expect.objectContaining({ type: 'answer', text: 'A footpath with a bench on the left.' })]);
   });
 
   it('a second question while one is pending is refused ("busy")', async () => {

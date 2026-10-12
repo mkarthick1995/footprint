@@ -7,6 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   ANSWER_TIMEOUT_MS,
   base64Bytes,
+  DESCRIBE_PROMPT,
   LIVE_SAMPLE_RATE,
   LIVE_SYSTEM_INSTRUCTION,
   MAX_QUESTION_AUDIO_BYTES,
@@ -18,6 +19,7 @@ import { MinuteLimiter } from './limits.js';
 /** The parts of a Live session we use. */
 export interface LiveSessionLike {
   sendRealtimeInput(input: Record<string, unknown>): void;
+  sendClientContent(content: Record<string, unknown>): void;
   close(): void;
 }
 
@@ -137,6 +139,25 @@ export class LiveBridge {
         }
         return;
       }
+      case 'describe': {
+        // "What's around me": photo + a fixed question as one complete turn — no microphone involved.
+        if (this.asking || this.waiting) return this.send({ type: 'error', code: 'busy' });
+        const refused = this.allowQuestion();
+        if (refused) return this.send(refused);
+        this.answer = '';
+        try {
+          const s = await this.ensureSession();
+          s.sendClientContent({
+            turns: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: msg.frame } }, { text: DESCRIBE_PROMPT }] }],
+            turnComplete: true,
+          });
+          this.startWaiting();
+        } catch {
+          this.log('live_connect_error');
+          this.send({ type: 'error', code: 'model_error' });
+        }
+        return;
+      }
       case 'audio': {
         if (!this.asking || !this.session) return;
         this.audioBytes += base64Bytes(msg.data);
@@ -150,20 +171,25 @@ export class LiveBridge {
       case 'end': {
         if (!this.asking || !this.session) return;
         this.asking = false;
-        this.waiting = true;
-        this.endedAt = this.now();
         this.session.sendRealtimeInput({ activityEnd: {} });
-        this.timer = setTimeout(() => {
-          if (!this.waiting) return;
-          this.waiting = false;
-          this.log('live_timeout');
-          this.send({ type: 'error', code: 'timeout' });
-        }, ANSWER_TIMEOUT_MS);
+        this.startWaiting();
         return;
       }
       case 'cancel':
         this.cancel();
     }
+  }
+
+  private startWaiting(): void {
+    this.waiting = true;
+    this.endedAt = this.now();
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      if (!this.waiting) return;
+      this.waiting = false;
+      this.log('live_timeout');
+      this.send({ type: 'error', code: 'timeout' });
+    }, ANSWER_TIMEOUT_MS);
   }
 
   close(): void {
