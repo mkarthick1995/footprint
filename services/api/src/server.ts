@@ -7,6 +7,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { registerCommunity, type CommunityOptions } from './community.js';
 import { registerLive, type LiveOptions } from './live.js';
 import { registerScan, type ScanOptions } from './scan.js';
+import { registerSecurity } from './security.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_WEB_DIST = resolve(here, '../../../apps/web/dist');
@@ -17,6 +18,8 @@ export interface ServerOptions {
   scan?: ScanOptions;
   community?: CommunityOptions;
   live?: LiveOptions;
+  /** Override per-client limits (tests). */
+  limits?: ReadonlyArray<[string, number]>;
 }
 
 export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInstance> {
@@ -27,6 +30,9 @@ export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInst
     bodyLimit: 64 * 1024,
     trustProxy: true,
   });
+
+  // R2.7: security headers on every response + per-client request budgets (SEC-02/03/07).
+  registerSecurity(app, { limits: opts.limits });
 
   app.get('/api/healthz', async () => ({ ok: true }));
 
