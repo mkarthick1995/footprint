@@ -4,6 +4,8 @@ import { CommunityClient } from './community';
 import { createDetector, type OnDeviceDetector } from './detector';
 import { FaceBlurrer } from './faceBlur';
 import { HealthMonitor } from './health';
+import { LiveAsk } from './liveAsk';
+import { playEarcon } from './earcon';
 import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
 import { PerceptionLoop } from './perception';
@@ -13,6 +15,7 @@ import { currentVoiceName } from './speech';
 import { ScreenWakeLock } from './wakeLock';
 
 const startBtn = document.querySelector<HTMLButtonElement>('#start')!;
+const askBtn = document.querySelector<HTMLButtonElement>('#ask')!;
 const statusEl = document.querySelector<HTMLDivElement>('#status')!;
 const video = document.querySelector<HTMLVideoElement>('#preview')!;
 const clipInput = document.querySelector<HTMLInputElement>('#clip-file')!;
@@ -39,6 +42,20 @@ const SCAN_MESSAGES: Record<ScanStatus, string> = {
   up: MESSAGES.scanUp,
   capped: MESSAGES.scanCapped,
 };
+/** Q10: ask Gemini Live about the view — blurred frame + voice; the text answer goes through the safety filter. */
+const ask = new LiveAsk({
+  frame: async () => (blurrer && source ? (await blurrer.getUploadJpeg(source.video))?.blob ?? null : null),
+  onAnswer: (text) => output.sayModelText(text, { kind: 'answer' }),
+  onProblem: announce,
+  onState: (s) => {
+    askBtn.setAttribute('aria-pressed', String(s === 'listening'));
+    askBtn.textContent = s === 'listening' ? 'Send question' : s === 'thinking' ? 'Thinking…' : 'Ask a question';
+    if (s === 'listening') playEarcon('near'); // a tone, not words — speech would be picked up by the microphone
+    if (s === 'thinking') playEarcon('system');
+  },
+});
+askBtn.addEventListener('click', () => void ask.toggle());
+
 /** Q9: fail-loud monitor — camera quality, angle, detector heartbeat, scan, battery, heat, location (ladder L0–L3). */
 let detectorBeat = 0;
 let detectorFps = 0;
@@ -82,6 +99,8 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   scanner.stop();
   community.stop();
   health.stop();
+  ask.stop();
+  askBtn.hidden = true;
   detectorBeat = 0;
   blurrer?.clearPersons();
   output.reset();
@@ -126,6 +145,7 @@ async function start(): Promise<void> {
   scanner.start();
   if (source?.kind === 'camera') community.start(); // recorded clips have no location
   health.start();
+  askBtn.hidden = false;
   // Development readout (no frame is grabbed for it). With ?debug=blur it also shows the blurred upload frame (ST-10).
   frameTimer = window.setInterval(() => {
     const v = source?.video;

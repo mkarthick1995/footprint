@@ -11,9 +11,9 @@ describe('api skeleton', () => {
     expect(res.json()).toEqual({ ok: true });
   });
 
-  it('fails loudly on endpoints that are not built yet', async () => {
+  it('the old token endpoint is gone (Live goes through the /api/live proxy, ADR-030)', async () => {
     const res = await app.inject({ method: 'POST', url: '/api/session-token' });
-    expect(res.statusCode).toBe(501);
+    expect(res.statusCode).toBe(404);
   });
 });
 
