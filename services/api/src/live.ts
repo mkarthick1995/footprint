@@ -85,6 +85,8 @@ export function vertexLiveConnector(env: NodeJS.ProcessEnv = process.env): LiveC
 export interface LiveOptions {
   connector?: LiveConnector;
   questionsPerMinute?: number;
+  /** Max questions over one walk (one WebSocket) — session cap (SEC-02). */
+  questionsPerWalk?: number;
   dailyCap?: number;
   now?: () => number;
 }
@@ -254,6 +256,8 @@ export async function registerLive(app: FastifyInstance, opts: LiveOptions = {})
   await app.register((await import('@fastify/websocket')).default, { options: { maxPayload: 600_000 } });
   app.get('/api/live', { websocket: true }, (socket: Socket, req) => {
     const perMinute = new MinuteLimiter(opts.questionsPerMinute ?? 8);
+    let asked = 0;
+    const perWalk = opts.questionsPerWalk ?? 120;
     connector ??= vertexLiveConnector();
     const bridge = new LiveBridge(
       (m) => socket.send(JSON.stringify(m)),
@@ -263,7 +267,8 @@ export async function registerLive(app: FastifyInstance, opts: LiveOptions = {})
         const d = new Date(t).toISOString().slice(0, 10);
         if (d !== day) ((day = d), (today = 0));
         if (today >= dailyCap) return { type: 'error', code: 'daily_cap' };
-        if (!perMinute.allow('q', t)) return { type: 'error', code: 'rate_limited' };
+        if (!perMinute.allow('q', t) || asked >= perWalk) return { type: 'error', code: 'rate_limited' };
+        asked++;
         today++;
         return null;
       },

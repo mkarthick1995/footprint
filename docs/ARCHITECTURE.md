@@ -116,6 +116,10 @@ Watchdog: heartbeats from camera, detector, Gemini, GPS, TTS → degradation lad
   ≥ 200 m from both trip ends, ~5 m rounding, 7-day raw TTL, per-hazard walk hashes, evidence decay + not-seen votes
   (Q7). Cloud Run's request log (client IPs) is excluded at the `_Default` log sink; app logs carry method/path/codes only.
   `npm run audit:privacy` lists stored collections and field names and fails on anything outside the whitelist.
+- **Abuse, cost & headers (Q13):** `services/api/src/security.ts` — `onRequest` per-client budgets for every `/api/*` route
+  (health exempt) on top of each endpoint's per-walk limits and daily caps; `onSend` sets CSP, nosniff,
+  strict-origin-when-cross-origin, Permissions-Policy, HSTS and COOP on every response. Billing budget ₹10,000 with
+  alerts at 25/50/100 % (verified 10-13); the app's daily caps (scan 5000, Live 1000 per instance) are the hard stop.
 - The **alert manager is the only component allowed to speak.** Every source goes through it (priority + filter).
   Model-derived text (Gemini answers, scene descriptions) has exactly one door: `AlertOutput.sayModelText()` →
   `AlertManager.modelText()` → `filterModelText()` (`packages/shared/src/safetyFilter.ts`) → a P3 queue (≤ 2 sentences,
