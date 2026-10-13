@@ -526,3 +526,16 @@ restarting; Essential still too many alerts) — amends ADR-022/023 ("P0 always 
 - Evidence: 253 shared tests incl. "staring at one object for 20 s → words once, ≤ 4 cues". Clip simulation (same
   detector, 10 fps, speech time simulated), old → new: Singapore night 5 min 10.8 → 6.4 spoken/min ("Stop!" 28 → 15),
   Shanghai crowd 8.1 → 4.5 spoken/min ("Stop!" 10 → 7); tones 26 → 27 and 24 → 20.
+
+## ADR-040 UX redesign of the walking page (deviation, confirmed by owner)
+Accepted · 2026-10-14 (owner: "Revamp it to look really good and stable… move the video to the top"; "go") — R4.8
+- **Before a walk:** promise line, safety line, alert level as a 3-way segmented control, one big yellow "Start walking";
+  camera-source / clip picker and dev readouts moved into a collapsed "Developer options" panel.
+- **While walking (page scrolls to top):** blurred camera view first, the last spoken message as a large caption under
+  it, then one big Ask button with a visible state (blue idle · amber starting · red pulsing listening · violet
+  thinking), "What's around me" and "Repeat" tiles, "Check a walking route" collapsed, alert level, then "Stop walking".
+  The level fieldset is moved in the DOM so screen-reader order = visual order. Level badge in the top bar.
+- Dark high-contrast theme (yellow accent), targets ≥ 56 px, focus rings, `prefers-reduced-motion` respected, no web
+  fonts or external assets (CSP unchanged). All element IDs kept, so behaviour and tests are unchanged.
+- Score: UX 10 + the demo video. Cost ≈ 3 h, before the 10-16 freeze. Risk: layout regressions on small phones →
+  owner checks the preview on the phone + glasses before merge.

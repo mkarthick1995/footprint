@@ -37,6 +37,9 @@ safety filter blocks any "all clear", crossing instruction or description of peo
 (Essential / Standard / Detailed) on screen or by saying "fewer alerts" / "more alerts"; urgent warnings can never be
 turned off.
 
+While walking, the screen shows the face-blurred camera view on top with the last spoken message under it, then a
+big Ask button, "What's around me" and "Repeat".
+
 Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Vision: [`docs/VISION.md`](docs/VISION.md)
 
 ## Safety, privacy & limitations

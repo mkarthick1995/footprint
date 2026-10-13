@@ -20,6 +20,10 @@ import { ScreenWakeLock } from './wakeLock';
 const startBtn = document.querySelector<HTMLButtonElement>('#start')!;
 const askBtn = document.querySelector<HTMLButtonElement>('#ask')!;
 const askControls = document.querySelector<HTMLDivElement>('#ask-controls')!;
+const askLabel = askBtn.querySelector<HTMLSpanElement>('.ask-label') ?? askBtn;
+const presetBox = document.querySelector<HTMLFieldSetElement>('#preset')!;
+const controlsBox = document.querySelector<HTMLDivElement>('#controls')!;
+const levelBadge = document.querySelector<HTMLSpanElement>('#level-badge');
 const describeBtn = document.querySelector<HTMLButtonElement>('#describe')!;
 const repeatBtn = document.querySelector<HTMLButtonElement>('#repeat')!;
 const statusEl = document.querySelector<HTMLDivElement>('#status')!;
@@ -74,12 +78,25 @@ async function checkRoute(destinationRaw: string): Promise<void> {
   }
 }
 
+// DEVIATION(ADR-040): walking / not-walking layout for the redesigned page (owner request 2026-10-14, R4.8).
+/**
+ * Walking vs. not (ADR-040): the page shows the camera view and the walking controls on top; the alert level moves
+ * below Ask so the screen-reader order matches what is on screen.
+ */
+function setWalking(on: boolean): void {
+  document.body.dataset.walking = String(on);
+  if (on) askControls.after(presetBox);
+  else controlsBox.prepend(presetBox);
+  window.scrollTo({ top: 0 });
+}
+
 /** Q14: alert level — chosen on screen or by voice ("fewer alerts" / "more alerts"), remembered on this phone. */
 function applyPreset(p: AlertPreset, speakIt: boolean): void {
   output.setPreset(p);
   savePreset(p);
   const radio = document.querySelector<HTMLInputElement>(`input[name="preset"][value="${p}"]`);
   if (radio) radio.checked = true;
+  if (levelBadge) levelBadge.textContent = p[0]!.toUpperCase() + p.slice(1);
   if (speakIt) announce(PRESET_SPOKEN[p]);
 }
 applyPreset(output.preset, false);
@@ -113,7 +130,7 @@ const ask = new LiveAsk({
   onState: (s) => {
     askBtn.setAttribute('aria-pressed', String(s === 'listening' || s === 'starting'));
     askBtn.dataset.state = s;
-    askBtn.textContent =
+    askLabel.textContent =
       s === 'starting' ? 'Starting microphone…' : s === 'listening' ? 'Listening… tap to send now' : s === 'thinking' ? 'Thinking…' : 'Ask a question';
     if (s === 'starting' && 'vibrate' in navigator) navigator.vibrate(30); // instant: got your tap
     if (s === 'listening') playEarcon('near'); // a tone, not words — speech would be picked up by the microphone
@@ -190,6 +207,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   ask.stop();
   mediaButtons.disarm();
   askControls.hidden = true;
+  setWalking(false);
   detectorBeat = 0;
   blurrer?.clearPersons();
   output.reset();
@@ -227,7 +245,8 @@ async function start(): Promise<void> {
     announce(cameraErrorMessage(err, window.isSecureContext));
     return;
   }
-  startBtn.textContent = 'Stop';
+  startBtn.textContent = 'Stop walking';
+  setWalking(true);
   announce(MESSAGES.started);
   await wakeLock.acquire();
   await startPerception();

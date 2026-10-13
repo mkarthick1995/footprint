@@ -57,6 +57,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [ ] R4.4 README for judges
 - [ ] R4.5 Final deploy + link check + cost alerts + min instances 1
 - [ ] R4.6 Submit on Hack2skill
+- [~] R4.8 UX redesign (ADR-040, deviation confirmed) — @mkarthick1995 2026-10-14 · camera view on top while walking, big stateful Ask, segmented level, collapsible route/dev panels; preview `ux` for owner review
 - [ ] R4.7 Safety & limitations disclosure + full ST matrix run
 
 ## Open questions
