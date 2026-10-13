@@ -31,7 +31,7 @@ export class AlertOutput {
   private silentTimer: number | undefined;
   private voiceFailed = false;
   /** The utterance being spoken and how far it got (for resuming an interrupted answer). */
-  private speaking: { text: string; kind?: string; chars: number } | null = null;
+  private speaking: { text: string; kind?: string; tier: string; chars: number } | null = null;
 
   constructor(
     private readonly mirror: HTMLElement,
@@ -109,9 +109,11 @@ export class AlertOutput {
       // An answer cut by an imminent alert resumes afterwards from the sentence it was in (owner phone test).
       const cut = this.speaking;
       if (cut?.kind === 'answer') this.manager.resumeAnswer(cut.text, cut.chars, performance.now());
+      // A system message (e.g. the start disclaimer) cut by "Stop!": the rest is said once afterwards, not from the top.
+      if (cut?.tier === 'SYS') this.manager.resumeSystem(cut.text, cut.chars);
       cancelSpeech();
     }
-    this.speaking = u.text ? { text: u.text, kind: u.kind, chars: 0 } : null;
+    this.speaking = u.text ? { text: u.text, kind: u.kind, tier: u.tier, chars: 0 } : null;
     this.busy = true;
     if (u.text) this.mirror.textContent = u.text; // cue-only repeats keep the last words on screen
     if (u.vibrate && 'vibrate' in navigator) navigator.vibrate(u.vibrate);

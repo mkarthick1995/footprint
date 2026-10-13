@@ -6,7 +6,8 @@
 import { LIVE_SAMPLE_RATE, MAX_QUESTION_MS, type LiveServerMessage } from '@footprint/shared';
 import { EndOfSpeech, rms } from './endOfSpeech';
 
-export type AskState = 'idle' | 'listening' | 'thinking';
+/** `starting`: tapped, microphone and connection being prepared (shown at once — owner test: "can't tell if I pressed it"). */
+export type AskState = 'idle' | 'starting' | 'listening' | 'thinking';
 
 export interface LiveAskOptions {
   /** Blurred JPEG of the current view (FaceBlurrer.getUploadJpeg), or null (then the question is sent without a frame). */
@@ -53,6 +54,8 @@ export class LiveAsk {
   private state: AskState = 'idle';
   private stream: MediaStream | null = null;
   private ctx: AudioContext | null = null;
+  private source: MediaStreamAudioSourceNode | null = null;
+  private node: AudioWorkletNode | null = null;
   private pending: Uint8Array[] = [];
   private stopTimer: number | undefined;
   /** The question in flight was spoken (Ask), not "What's around me". */
@@ -66,6 +69,7 @@ export class LiveAsk {
 
   /** The Ask button: idle → listening → (send) thinking → idle. */
   async toggle(): Promise<void> {
+    if (this.state === 'starting') return; // a second tap while the mic opens must not start a second question
     if (this.state === 'listening') return this.finish();
     if (this.state === 'thinking') return this.opts.onProblem(ASK_MESSAGES.busy);
     await this.startListening();
@@ -95,6 +99,8 @@ export class LiveAsk {
   /** Walk stopped. */
   stop(): void {
     this.releaseMic();
+    void this.ctx?.close(); // walk over: free the audio engine too
+    this.ctx = null;
     this.ws?.close();
     this.ws = null;
     this.setState('idle');
@@ -126,25 +132,33 @@ export class LiveAsk {
   }
 
   private async startListening(): Promise<void> {
-    let ws: WebSocket;
     this.spoken = true;
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
-    } catch {
+    this.setState('starting');
+    // Mic, connection, photo and audio engine in parallel (they used to run one after another — a slow, silent start).
+    const [mic, conn, blob] = await Promise.allSettled([
+      navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } }),
+      this.connect(),
+      this.opts.frame().catch(() => null),
+      this.audioEngine(),
+    ]);
+    if (mic.status === 'rejected') {
+      this.setState('idle');
       return this.opts.onProblem(ASK_MESSAGES.micDenied);
     }
-    try {
-      ws = await this.connect();
-    } catch {
+    this.stream = mic.value;
+    if (conn.status === 'rejected' || !this.ctx || this.state !== 'starting') {
       this.releaseMic();
-      return this.opts.onProblem(ASK_MESSAGES.unavailable);
+      this.setState('idle');
+      if (conn.status === 'rejected' || !this.ctx) this.opts.onProblem(ASK_MESSAGES.unavailable);
+      return;
     }
-    const blob = await this.opts.frame().catch(() => null);
-    const frame = blob ? toBase64(new Uint8Array(await blob.arrayBuffer())) : undefined;
+    const ws = conn.value;
+    const photo = blob.status === 'fulfilled' ? blob.value : null;
+    const frame = photo ? toBase64(new Uint8Array(await photo.arrayBuffer())) : undefined;
     ws.send(JSON.stringify({ type: 'ask', ...(frame ? { frame } : {}) }));
-    this.ctx = new AudioContext({ sampleRate: LIVE_SAMPLE_RATE }); // browser resamples the mic to 16 kHz
-    await this.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' })));
+    void this.ctx.resume();
     const node = new AudioWorkletNode(this.ctx, 'fp-mic');
+    this.node = node;
     const eos = new EndOfSpeech();
     node.port.onmessage = (e: MessageEvent<Float32Array>) => {
       if (this.state !== 'listening') return;
@@ -161,7 +175,8 @@ export class LiveAsk {
         this.ws.send(JSON.stringify({ type: 'audio', data: toBase64(chunk) }));
       }
     };
-    this.ctx.createMediaStreamSource(this.stream).connect(node);
+    this.source = this.ctx.createMediaStreamSource(this.stream);
+    this.source.connect(node);
     this.setState('listening');
     this.stopTimer = window.setTimeout(() => void this.finish(), MAX_QUESTION_MS);
   }
@@ -188,11 +203,23 @@ export class LiveAsk {
 
   private releaseMic(): void {
     window.clearTimeout(this.stopTimer);
-    this.stream?.getTracks().forEach((t) => t.stop());
+    this.stream?.getTracks().forEach((t) => t.stop()); // the microphone is off between questions (PRI-05)
     this.stream = null;
-    void this.ctx?.close();
-    this.ctx = null;
+    this.source?.disconnect();
+    this.source = null;
+    if (this.node) this.node.port.onmessage = null;
+    this.node?.disconnect();
+    this.node = null;
+    void this.ctx?.suspend(); // kept (not closed): the next question starts faster
     this.pending = [];
+  }
+
+  /** One 16 kHz AudioContext with the capture worklet loaded, reused for every question. */
+  private async audioEngine(): Promise<void> {
+    if (this.ctx && this.ctx.state !== 'closed') return;
+    const ctx = new AudioContext({ sampleRate: LIVE_SAMPLE_RATE }); // browser resamples the mic to 16 kHz
+    await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' })));
+    this.ctx = ctx;
   }
 
   private onServer(m: LiveServerMessage): void {

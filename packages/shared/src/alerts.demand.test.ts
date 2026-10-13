@@ -105,14 +105,19 @@ describe('system messages queue instead of cutting each other off (found 10-13)'
     m.system('Camera stopped.');
     expect(m.next(100, true)).toMatchObject({ tier: 'SYS', interrupt: true });
   });
-  it('an imminent (P0) alert interrupts a system message, which is replayed right after', () => {
+  it('an imminent alert interrupts a system message; the rest is said once, from the sentence it was in', () => {
     const m = new AlertManager();
-    m.system('Footprint started.');
+    const msg = 'Footprint started. It can miss things. Keep using your cane.';
+    m.system(msg);
     expect(m.next(0)!.tier).toBe('SYS');
     m.update([cand('P0', 500, 'vehicle')]);
     expect(m.next(500, true)).toMatchObject({ tier: 'P0', interrupt: true });
+    m.resumeSystem(msg, 25); // cut inside "It can miss things."
     m.finished();
     m.update([]);
-    expect(m.next(2000)!.text).toBe('Footprint started.');
+    expect(m.next(2000)!.text).toBe('It can miss things. Keep using your cane.');
+    m.resumeSystem('It can miss things. Keep using your cane.', 3); // cut again → dropped, not replayed forever
+    m.finished();
+    expect(m.next(4000)).toBeNull();
   });
 });

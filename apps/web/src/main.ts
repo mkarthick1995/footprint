@@ -111,8 +111,11 @@ const ask = new LiveAsk({
   },
   onProblem: announce,
   onState: (s) => {
-    askBtn.setAttribute('aria-pressed', String(s === 'listening'));
-    askBtn.textContent = s === 'listening' ? 'Listening… tap to send now' : s === 'thinking' ? 'Thinking…' : 'Ask a question';
+    askBtn.setAttribute('aria-pressed', String(s === 'listening' || s === 'starting'));
+    askBtn.dataset.state = s;
+    askBtn.textContent =
+      s === 'starting' ? 'Starting microphone…' : s === 'listening' ? 'Listening… tap to send now' : s === 'thinking' ? 'Thinking…' : 'Ask a question';
+    if (s === 'starting' && 'vibrate' in navigator) navigator.vibrate(30); // instant: got your tap
     if (s === 'listening') playEarcon('near'); // a tone, not words — speech would be picked up by the microphone
     if (s === 'thinking') playEarcon('system');
   },
