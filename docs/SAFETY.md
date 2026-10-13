@@ -90,6 +90,7 @@ When anything happens that the code does not explicitly handle:
 | SAF-29 | **One wrong scan deletes a real hazard** from the community map | H | Asymmetric evidence: removal needs ≥ 2 "not seen" walks or decay (ADR-025) | Planned R2.3 · Implemented Q7 (ST-30 ✅) |
 | SAF-32 | **Wrong destination** — Google resolves a spoken/typed name to a different place (same-name station, mis-heard word), so the summary describes the wrong route | M | The name is resolved near the user first (Places text search, 3 km bias, nearest of the best match's kind) and the summary says the place it chose ("Satyam Theatre bus stop") plus distance and minutes; routes > 5 km refused; no turn-by-turn, so it never guides the user there; the user's navigation app does the guiding | Mitigated+Disclosed |
 | SAF-33 | **A repeated imminent hazard is only a tone** — the user may not recognise a cue as "Stop" for the same thing, or the same type/side is actually a different object | M | First encounter always worded; any escalation (near → imminent) or a 15 s absence is worded again; the imminent cue is distinct (earcon + strong vibration) and explained at start/README; ADR-039 | Mitigated+Disclosed |
+| SAF-34 | **Natural voice late or down** — an urgent alert waits for network audio | H | Urgent phrases are fetched at walk start; any phrase not ready within 250 ms (P0) / 400 ms (P1) is spoken by the on-device voice; 3 failures → device voice for 60 s; device voice is primed in the Start tap (ADR-041) | Mitigated |
 
 ### 3.2 Privacy
 | ID | Risk | Sev | Mitigation | Status |

@@ -16,6 +16,12 @@ const START_TIMEOUT_MS = 4000; // generous: a network voice can take a few secon
 
 export const VOICE_FAILED = 'Voice is not working. Tap Stop, then Start again.';
 
+/**
+ * Longest wait for the natural voice when a phrase isn't pre-fetched (ADR-041): urgent alerts barely wait — the device
+ * voice speaks instead — while answers can wait for the nicer voice.
+ */
+const NATURAL_WAIT_MS: Record<string, number> = { P0: 250, P1: 400, P2: 700, SYS: 1200, P3: 2500 };
+
 /** If the speech engine never reports "ended" (seen on some Android builds), free the output after this. */
 function watchdogMs(text: string): number {
   return 1500 + text.length * 90;
@@ -133,6 +139,7 @@ export class AlertOutput {
       this.silentTimer = window.setTimeout(() => this.reportSilentVoice(), START_TIMEOUT_MS);
       speak(u.text, {
         interrupt: false,
+        naturalWaitMs: NATURAL_WAIT_MS[u.tier] ?? 0,
         onStart: () => {
           window.clearTimeout(this.silentTimer);
           this.voiceFailed = false; // recovered
@@ -143,7 +150,7 @@ export class AlertOutput {
         onDone: done,
       });
     }, lead);
-    this.watchdog = window.setTimeout(done, lead + watchdogMs(u.text));
+    this.watchdog = window.setTimeout(done, lead + (NATURAL_WAIT_MS[u.tier] ?? 0) + watchdogMs(u.text));
   }
 
   /** The speech engine accepted text but never started: say so on screen, with a tone and vibration (SAF-05). */
