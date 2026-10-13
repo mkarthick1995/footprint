@@ -172,7 +172,7 @@ const health = new HealthMonitor({
 });
 
 /** Q7: community hazard map — scan findings shared anonymously; confirmed reports spoken as "reported". */
-const community = new CommunityClient({ onLocationOff: () => announce(MESSAGES.locationOff) });
+const community = new CommunityClient({ onLocationOff: () => announce(MESSAGES.locationOff), onNoFix: () => announce(MESSAGES.noLocationYet) });
 const scanner = new SceneScanner({
   video,
   blurrer: () => blurrer,
@@ -366,6 +366,8 @@ startBtn.addEventListener('click', () => {
   if (!source) {
     output.unlock();
     HealthMonitor.requestMotionPermission(); // iOS: motion sensors need the tap too
+    const kind = document.querySelector<HTMLInputElement>('input[name="source"]:checked')?.value;
+    if (kind !== 'clip') CommunityClient.requestPermission(); // location prompt inside the tap (some browsers need it)
     mediaButtons.arm({ ask: () => void ask.toggle(), describe: () => void ask.describe(), repeat: () => repeatBtn.click() });
   }
   void (source ? stop() : start());

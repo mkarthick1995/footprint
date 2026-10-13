@@ -45,6 +45,8 @@ interface PendingObservation {
 export interface CommunityOptions {
   /** Fixed-wording problems (location denied) — the caller announces them. */
   onLocationOff: () => void;
+  /** No position at all within the watch timeout (prompt dismissed or ignored, GPS indoors) — said once per walk. */
+  onNoFix?: () => void;
   fetchImpl?: typeof fetch;
   geolocation?: Geolocation;
   now?: () => number;
@@ -59,6 +61,7 @@ interface PassState {
 
 export class CommunityClient {
   private watchId: number | null = null;
+  private noFixSaid = false;
   private fix: Fix | null = null;
   private walkStart: LatLng | null = null;
   private heading: number | null = null;
@@ -79,6 +82,15 @@ export class CommunityClient {
   }
 
   /** Start a walk: ask for location (must follow a user gesture), new random walk ID. Clips have no location. */
+  /**
+   * Call synchronously inside the Start tap: asks for location permission while the tap still counts as a user
+   * gesture. The walk's own watch starts later (after the camera and detector load); some browsers (Brave, owner
+   * test 2026-10-14) never showed the prompt for that delayed request, so community reports silently stayed off.
+   */
+  static requestPermission(geolocation: Geolocation | undefined = typeof navigator !== 'undefined' ? navigator.geolocation : undefined): void {
+    geolocation?.getCurrentPosition(() => undefined, () => undefined, { maximumAge: 60_000, timeout: 30_000 });
+  }
+
   start(): void {
     this.stop();
     const geo = this.opts.geolocation ?? (typeof navigator !== 'undefined' ? navigator.geolocation : undefined);
@@ -87,6 +99,7 @@ export class CommunityClient {
       return;
     }
     this.active = true;
+    this.noFixSaid = false;
     this.session = crypto.randomUUID();
     Object.assign(this.stats, { queued: 0, sent: 0, failed: 0, notSeen: 0, hazardsNearby: 0 });
     this.watchId = geo.watchPosition(
@@ -95,6 +108,9 @@ export class CommunityClient {
         if (err.code === err.PERMISSION_DENIED) {
           this.stop();
           this.opts.onLocationOff();
+        } else if (err.code === err.TIMEOUT && this.lastGoodFixAt === 0 && !this.noFixSaid) {
+          this.noFixSaid = true; // fail loud: never silently without location
+          this.opts.onNoFix?.();
         }
       },
       { enableHighAccuracy: true, maximumAge: 2000, timeout: 20_000 },

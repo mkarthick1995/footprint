@@ -39,6 +39,7 @@ export const MESSAGES = {
   routeUnavailable: 'Route information is unavailable right now. Obstacle alerts still work.',
   earbudHelp: 'Earbud button: press once to ask, twice to describe, three times to repeat.',
   nothingToRepeat: 'Nothing to repeat yet.',
+  noLocationYet: 'No location yet. Community reports and routes wait for it. Obstacle alerts still work.',
   locationOff: 'Location is off. Community reports are off. Obstacle alerts still work.',
   scanDown: 'Scene descriptions are unavailable. Obstacle alerts still work.',
   scanUp: 'Scene descriptions are back.',
