@@ -508,7 +508,8 @@ Proposed · 2026-10-14 (owner asked: native Android app, or browser integration;
 ## ADR-039 Each situation is worded once; repeats are cues; cut system messages resume once; Essential "near" = tone
 Accepted · 2026-10-14 (owner glasses test: "Stop – object ahead" again and again for one object; start disclaimer
 restarting; Essential still too many alerts) — amends ADR-022/023 ("P0 always speaks") and ADR-026 (Essential)
-- **Situation = tier + type + side** (people: any side). Put into words once. While it stays in view — or comes back
+- **Situation = tier + type + side** (any side for people, and for imminent alerts — "Stop!" names no side, so an object
+  drifting from ahead to left as the user turns sounded like a repeat). Put into words once. While it stays in view — or comes back
   within 15 s, e.g. under a new tracker ID after a glance away (the cause: P0 only waited 2 s per group and always
   spoke) — it repeats as a cue only: imminent earcon + vibration at most every 5 s (P0), near earcon every 10 s (P1);
   P2/P3 not at all. Out of view ≥ 15 s → a new encounter → words again. Escalation (P1 → P0) is a new situation → words.
@@ -520,4 +521,6 @@ restarting; Essential still too many alerts) — amends ADR-022/023 ("P0 always 
   used to start a second question); mic, connection, photo and audio engine prepared in parallel; audio engine reused.
 - **Not changed — wake word ("Hey Footprint"):** owner expected it; ADR-035 rejected it (always-on mic, PRI-05; no
   browser wake-word API; battery). Hands-free = one tap on the glasses touchpad / earbud button. Revisit only natively.
-- Evidence: 252 shared tests incl. "staring at one object for 20 s → words once, ≤ 4 cues"; clip simulation below.
+- Evidence: 253 shared tests incl. "staring at one object for 20 s → words once, ≤ 4 cues". Clip simulation (same
+  detector, 10 fps, speech time simulated), old → new: Singapore night 5 min 10.8 → 6.4 spoken/min ("Stop!" 28 → 15),
+  Shanghai crowd 8.1 → 4.5 spoken/min ("Stop!" 10 → 7); tones 26 → 27 and 24 → 20.

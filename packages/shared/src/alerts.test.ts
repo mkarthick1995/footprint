@@ -240,3 +240,14 @@ describe('cues never cut speech (owner glasses test 2026-10-14)', () => {
     expect(m.next(7100)).toMatchObject({ text: '', earcon: 'imminent' });
   });
 });
+
+describe('imminent situations ignore the side', () => {
+  it('"Stop! Obstacle" drifting from ahead to left as the user turns is one situation', () => {
+    const m = new AlertManager();
+    m.update([cand({ tier: 'P0', type: 'unknown', bearingDeg: 0 }, 1000)]);
+    expect(m.next(1000)!.text).toBe('Stop! Obstacle');
+    m.finished();
+    m.update([cand({ tier: 'P0', type: 'unknown', bearingDeg: -30 }, 3000)]);
+    expect(m.next(3000)).toBeNull(); // not worded again; a cue only after 5 s
+  });
+});

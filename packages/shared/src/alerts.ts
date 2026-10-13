@@ -484,9 +484,14 @@ export class AlertManager {
   }
 }
 
-/** Situation = tier + type + side (people: any side — a crowd is one situation); community reports kept apart. */
+/**
+ * Situation = tier + type + side. Any side for people (a crowd is one situation) and for imminent alerts: "Stop!"
+ * names no side, so an object drifting from ahead to left as the user turns sounded like a repeat (clip simulation).
+ * Community reports are kept apart.
+ */
 function situationKey(c: AlertCandidate): string {
   const type = c.type as HazardType;
   const side: GroupSide = Number.isNaN(c.bearingDeg) ? 'around' : sideOf(c.bearingDeg);
-  return `${c.tier}|${type}|${type === 'person' ? '*' : side}${c.source === 'community' ? '|community' : ''}`;
+  const anySide = type === 'person' || c.tier === 'P0';
+  return `${c.tier}|${type}|${anySide ? '*' : side}${c.source === 'community' ? '|community' : ''}`;
 }
