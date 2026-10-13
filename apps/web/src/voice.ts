@@ -18,6 +18,10 @@ let failures = 0;
 /** After repeated failures the natural voice rests for a while (no waiting on a dead network for every alert). */
 let downUntil = 0;
 let playing: { src: AudioBufferSourceNode; timer: number } | null = null;
+/** Bumped on each new prefetch: an older one (e.g. the previous language's) stops taking requests. */
+let prefetchRun = 0;
+/** Rate-limited by the server: background fetching pauses until then (on-demand phrases still try). */
+let backoffUntil = 0;
 
 /** Default language of new clips (R3.2). Clips are cached per language, so switching back is instant. */
 export function setVoiceLanguage(code: string): void {
@@ -37,7 +41,7 @@ function key(text: string, language: string): string {
 }
 
 /** Fetch + decode one phrase (shared by concurrent callers). Null on any failure. */
-export function loadClip(text: string, language = lang): Promise<AudioBuffer | null> {
+export function loadClip(text: string, language = lang, background = false): Promise<AudioBuffer | null> {
   const k = key(text, language);
   const hit = buffers.get(k);
   if (hit) return Promise.resolve(hit);
@@ -53,13 +57,19 @@ export function loadClip(text: string, language = lang): Promise<AudioBuffer | n
         body: JSON.stringify({ text, lang: language }),
         signal: AbortSignal.timeout(8000),
       });
+      if (res.status === 429) {
+        // Too many requests is not "voice down": pause background fetching, keep the natural voice.
+        backoffUntil = performance.now() + 20_000;
+        return null;
+      }
       if (!res.ok) throw new Error(`tts ${res.status}`);
       const buf = await ctx.decodeAudioData(await res.arrayBuffer());
       buffers.set(k, buf);
       failures = 0;
       return buf;
     } catch {
-      if (++failures >= 3) downUntil = performance.now() + 60_000;
+      // Only phrases being spoken now count towards "voice down"; a failed background fetch just stays uncached.
+      if (!background && ++failures >= 3) downUntil = performance.now() + 60_000;
       return null;
     } finally {
       inflight.delete(k);
@@ -71,10 +81,18 @@ export function loadClip(text: string, language = lang): Promise<AudioBuffer | n
 
 /** Fetch phrases in the background, a few at a time (walk start). */
 export async function prefetchClips(texts: readonly string[], concurrency = 4, language = lang): Promise<number> {
+  const run = ++prefetchRun;
   const queue = [...new Set(texts)].filter((t) => !buffers.has(key(t, language)));
   let ok = 0;
   const worker = async () => {
-    for (let t = queue.shift(); t !== undefined; t = queue.shift()) if (await loadClip(t, language)) ok++;
+    for (let t = queue.shift(); t !== undefined; t = queue.shift()) {
+      if (run !== prefetchRun) return; // superseded (language switched)
+      if (performance.now() < backoffUntil) {
+        await new Promise((r) => setTimeout(r, backoffUntil - performance.now()));
+        if (run !== prefetchRun) return;
+      }
+      if (await loadClip(t, language, true)) ok++;
+    }
   };
   await Promise.all(Array.from({ length: concurrency }, worker));
   return ok;

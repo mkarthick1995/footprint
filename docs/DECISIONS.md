@@ -576,3 +576,17 @@ support"; teammates review Hindi / Tamil / Telugu)
   via `docs/i18n-review.md`. A language counts as *checked* only after review (STATUS).
 - **Bug found end-to-end and fixed:** the phone's English filter kept only sentences with Latin letters, so every
   non-English answer was silently dropped; it now accepts any script and splits on । and 。.
+
+## ADR-043 Voice stays up across language switches; Gemini Live audio output is unavoidable on Vertex
+Accepted · 2026-10-14 (owner: "audio suddenly drops after changing from one language to another")
+- **Cause (reproduced on production):** each switch fetches ~80 phrases; two switches in < 1 min hit the 120/min
+  per-walk limit → HTTP 429 → 3 failures tripped the "natural voice down" breaker → device voice for 60 s (often no
+  Hindi/Tamil device voice → English or silence-like).
+- **Fix:** limits 400/min per walk, 600/min per client (cost still capped by `TTS_DAILY_CHARS` + shared cache);
+  background (prefetch) failures and 429s never trip the breaker; 429 pauses prefetching 20 s; a language switch
+  cancels the previous language's prefetch. Re-test en → ta → hi → te within 30 s: 0 × 429, natural voice kept.
+- **Why Gemini Live still returns audio we discard:** re-tested 10-14 — every Live model available to us on Vertex
+  refuses text-only output (`gemini-live-2.5-flash-native-audio`: "Text output is not supported";
+  `gemini-3.8-live`: "Unsupported modality"; others not available). The extra cost is small (~25 audio tokens per
+  second of answer ≈ fractions of a cent per question). Future option: answer questions with a non-Live
+  `generateContent` call (recorded question audio + photo → text only) — not before the freeze.

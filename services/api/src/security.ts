@@ -38,7 +38,7 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
 export const CLIENT_LIMITS: ReadonlyArray<[prefix: string, perMinute: number]> = [
   ['/api/hazards', 60],
   ['/api/route', 12],
-  ['/api/tts', 240],
+  ['/api/tts', 600],
   ['/api/map-config', 30],
   ['/api/live', 10], // WebSocket connections opened
   ['/api/', 240], // everything else under /api
