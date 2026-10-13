@@ -526,3 +526,20 @@ restarting; Essential still too many alerts) — amends ADR-022/023 ("P0 always 
 - Evidence: 253 shared tests incl. "staring at one object for 20 s → words once, ≤ 4 cues". Clip simulation (same
   detector, 10 fps, speech time simulated), old → new: Singapore night 5 min 10.8 → 6.4 spoken/min ("Stop!" 28 → 15),
   Shanghai crowd 8.1 → 4.5 spoken/min ("Stop!" 10 → 7); tones 26 → 27 and 24 → 20.
+
+## ADR-041 Natural voice: Google Chirp 3 HD "Aoede" for all speech, device voice as fallback (implements ADR-033, R3.4)
+Accepted · 2026-10-14 (owner: "the current audio looks robotic… a human friendly soothing voice"; picked from 8 samples)
+- **Chirp 3 HD, not Gemini Live's own audio:** Live audio is heard as it is generated, before our filter can check
+  its words (SAF-21); Chirp 3 HD speaks only text the phone already chose and filtered, in the same voice family
+  (same names: Aoede, Kore, Puck, Charon) and for all alerts and system messages too — one voice for everything.
+- **`POST /api/tts`** (Cloud Run → Cloud Text-to-Speech, service account): MP3, ≤ 400 chars, language allowlist
+  (en-IN, hi-IN, ta-IN, te-IN, ja-JP prepared for R3.2), in-memory LRU cache (fixed phrases are synthesised once for
+  all users), 120 new phrases/min per walk, 240/min per client, daily cap `TTS_DAILY_CHARS` (300 000 ≈ $9). POST so the
+  text never reaches the request log (PRI-06). Text is sent to Google's TTS (same provider as Gemini) and not stored.
+- **Phone:** at Start, ~85 phrases are fetched (most urgent first: start message, every "Stop!", fail-loud warnings,
+  then messages and near/ahead phrases) and decoded into Web Audio buffers → urgent alerts play with no network wait.
+  Anything else waits at most P0 250 ms · P1 400 · P2 700 · SYS 1200 · answers 2500 ms, then the **device voice speaks
+  it** (never silent); 3 failures → natural voice rests 60 s. Interrupt/resume unchanged (progress estimated from
+  playback time).
+- Measured: Chirp 3 HD 0.45–0.5 s for a short phrase, 1.0–1.2 s for two sentences (en-IN, ta-IN, ja-JP); local walk
+  start: 84 clips fetched, 0 failures, median 0.64 s cold.

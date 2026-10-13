@@ -251,3 +251,16 @@ describe('imminent situations ignore the side', () => {
     expect(m.next(3000)).toBeNull(); // not worded again; a cue only after 5 s
   });
 });
+
+describe('phrases fetched at walk start (R3.4)', () => {
+  it('covers every "Stop!" and the common near/ahead phrases, each once', async () => {
+    const { commonAlertPhrases } = await import('./alerts.js');
+    const p = commonAlertPhrases();
+    expect(p).toContain('Stop! Bike');
+    expect(p).toContain('Stop! Obstacle');
+    expect(p).toContain('Person close, left');
+    expect(p).toContain('Possible obstacle close ahead');
+    expect(new Set(p).size).toBe(p.length);
+    expect(p.length).toBeLessThan(60);
+  });
+});

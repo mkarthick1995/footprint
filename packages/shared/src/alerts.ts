@@ -1,7 +1,7 @@
 // Alert manager core (ADR-022, Q3): decides WHAT to say and WHEN. Pure and clock-injected so every queue rule is
 // unit-tested; the browser layer (apps/web/src/alertOutput.ts) only renders the result as speech, earcon and vibration.
 // Never produces an "all clear": silence means "nothing to report", never "safe" (ADR-012).
-import type { AlertCandidate, AlertPreset, HazardType, Tier } from './types.js';
+import { HAZARD_TYPES, type AlertCandidate, type AlertPreset, type HazardType, type Tier } from './types.js';
 import { SEVERITY_ORDER, tierAllowed } from './tiers.js';
 import { filterModelText, type FilterResult } from './safetyFilter.js';
 
@@ -181,6 +181,25 @@ export function phraseFor(g: Pick<Group, 'tier' | 'type' | 'side' | 'items' | 'l
   const spaced = g.side === 'ahead' || g.side === 'around';
   if (g.tier === 'P1') return spaced ? `${subject} close ${where}` : `${subject} close, ${where}`;
   return spaced && g.side === 'around' ? `${subject} ${where}` : `${subject}, ${where}`;
+}
+
+/**
+ * The fixed alert phrases most likely to be needed, so the natural voice can be fetched once at walk start and played
+ * without a network wait (R3.4, ADR-041): every "Stop!", and near / ahead phrases for the common moving types.
+ */
+export function commonAlertPhrases(): string[] {
+  const out = new Set<string>();
+  const one = [{ reports: 1 } as AlertCandidate];
+  for (const type of HAZARD_TYPES) out.add(phraseFor({ tier: 'P0', type, side: 'ahead', items: one, lowConfidence: false }));
+  out.add(phraseFor({ tier: 'P0', type: 'unknown', side: 'ahead', items: one, lowConfidence: true }));
+  for (const type of ['person', 'cyclist', 'vehicle', 'unknown'] as const) {
+    for (const side of ['left', 'ahead', 'right'] as const) {
+      out.add(phraseFor({ tier: 'P1', type, side, items: one, lowConfidence: false }));
+      out.add(phraseFor({ tier: 'P1', type, side, items: one, lowConfidence: true }));
+      out.add(phraseFor({ tier: 'P2', type, side, items: one, lowConfidence: false }));
+    }
+  }
+  return [...out];
 }
 
 function cap(s: string): string {
