@@ -10,6 +10,8 @@ import { EndOfSpeech, rms } from './endOfSpeech';
 export type AskState = 'idle' | 'starting' | 'listening' | 'thinking';
 
 export interface LiveAskOptions {
+  /** The user's language (R3.2): the Gemini session is opened in it. */
+  language?: () => string;
   /** Blurred JPEG of the current view (FaceBlurrer.getUploadJpeg), or null (then the question is sent without a frame). */
   frame: () => Promise<Blob | null>;
   /** Model answer text — route to sayModelText. `question` = the user's own words (for voice commands). */
@@ -60,6 +62,7 @@ export class LiveAsk {
   private stopTimer: number | undefined;
   /** The question in flight was spoken (Ask), not "What's around me". */
   private spoken = false;
+  private reconnectWhenIdle = false;
 
   constructor(private readonly opts: LiveAskOptions) {}
 
@@ -96,6 +99,19 @@ export class LiveAsk {
     this.connect().catch(() => undefined); // a failure is reported when the user actually asks
   }
 
+  /** Language changed: open a new Gemini session in it (now if idle, else after the current question). */
+  relanguage(): void {
+    const ws = this.ws;
+    if (!ws) return;
+    if (this.state !== 'idle') {
+      this.reconnectWhenIdle = true;
+      return;
+    }
+    this.ws = null;
+    ws.close();
+    this.warm();
+  }
+
   /** Walk stopped. */
   stop(): void {
     this.releaseMic();
@@ -109,11 +125,16 @@ export class LiveAsk {
   private setState(s: AskState): void {
     this.state = s;
     this.opts.onState(s);
+    if (s === 'idle' && this.reconnectWhenIdle) {
+      this.reconnectWhenIdle = false;
+      queueMicrotask(() => this.relanguage());
+    }
   }
 
   private async connect(): Promise<WebSocket> {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) return this.ws;
-    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/live`);
+    const lang = encodeURIComponent(this.opts.language?.() ?? 'en-IN');
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/live?lang=${lang}`);
     await new Promise<void>((resolve, reject) => {
       ws.addEventListener('open', () => resolve(), { once: true });
       ws.addEventListener('error', () => reject(new Error('live socket')), { once: true });

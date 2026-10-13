@@ -172,12 +172,16 @@ function clean(raw: string): string {
     .trim();
 }
 
-/** Sentences, keeping their punctuation. A newline or ; also ends a sentence. */
+/**
+ * Sentences, keeping their punctuation. A newline or ; also ends a sentence; so do the Hindi danda (।) and the Japanese
+ * full stops (。！？). Any script counts as text — the first version kept only Latin letters, which silently dropped
+ * every Tamil, Hindi, Telugu and Japanese answer (R3.2 end-to-end test).
+ */
 function sentences(text: string): string[] {
   return text
-    .split(/(?<=[.!?…;])\s+|\n+/u)
+    .split(/(?<=[.!?…;])\s+|(?<=[।。！？])\s*|\n+/u)
     .map((s) => s.trim())
-    .filter((s) => /[a-z0-9]/i.test(s));
+    .filter((s) => /[\p{L}\p{N}]/u.test(s));
 }
 
 /**

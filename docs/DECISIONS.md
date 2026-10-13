@@ -555,3 +555,24 @@ Accepted · 2026-10-14 (owner: "the current audio looks robotic… a human frien
   playback time).
 - Measured: Chirp 3 HD 0.45–0.5 s for a short phrase, 1.0–1.2 s for two sentences (en-IN, ta-IN, ja-JP); local walk
   start: 84 clips fetched, 0 failures, median 0.64 s cold.
+
+## ADR-042 Languages: English, Hindi, Tamil, Telugu, Japanese — voice, text, page and Gemini answers (R3.2)
+Accepted · 2026-10-14 (owner: "user can ask to change language… only list languages that have both audio and text
+support"; teammates review Hindi / Tamil / Telugu)
+- **Offered:** languages with a Chirp 3 HD voice *and* Gemini Live support, limited to ones the team can review first:
+  en-IN, hi-IN, ta-IN, te-IN, ja-JP (19 have voices — FACTS; more can be added by running the translator).
+- **Switch:** the picker in the top bar, or by voice through Ask ("switch to Tamil", in any language) → Gemini replies
+  "Command: language Tamil." (command replies always English). Remembered on the phone.
+- **What follows the language:** alerts are built from parts (noun, side, pattern) in each language's word order —
+  never word-by-word; fixed messages are translated (keyed by their English text, numbers as {n}); the caption and the
+  page text; route summaries (server-side kit); Gemini Live answers (system instruction "Answer in <language>", the
+  session reconnects on a switch); the natural voice in that language; the device-voice fallback picks a voice for
+  that language or else speaks the **English original** (never mispronounced text). A missing translation → English.
+- **Safety for non-English answers:** our phrase filter only reads English, so the server asks Gemini Flash to flag
+  the same five rules (cross / signal / all clear / describing people / instructions on signs) before an answer is
+  sent; flagged → the safe sentence in that language; check fails → no answer (fail closed). Verified 7/7 on Tamil,
+  Hindi, Telugu, Japanese test sentences (~1 s each).
+- **Translations:** Gemini-generated (`tools/i18n/translate.ts`, placeholders validated), reviewed by native speakers
+  via `docs/i18n-review.md`. A language counts as *checked* only after review (STATUS).
+- **Bug found end-to-end and fixed:** the phone's English filter kept only sentences with Latin letters, so every
+  non-English answer was silently dropped; it now accepts any script and splits on । and 。.

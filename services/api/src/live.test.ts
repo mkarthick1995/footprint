@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseLiveClientMessage, type LiveServerMessage } from '@footprint/shared';
-import { LiveBridge, type LiveConnector, type LiveEvent } from './live.js';
+import { LiveBridge, type AnswerChecker, type LiveConnector, type LiveEvent } from './live.js';
 
 function setup(allow: () => LiveServerMessage | null = () => null) {
   const sent: LiveServerMessage[] = [];
@@ -198,5 +198,47 @@ describe('transcript pieces trailing turnComplete (live test 10-13)', () => {
     emit({ transcript: ' stray late piece' }); // after the window: discarded
     expect(sent).toEqual([expect.objectContaining({ text: 'A wide street with buildings on both sides.' })]);
     vi.useRealTimers();
+  });
+});
+
+describe('non-English answers are checked before they are spoken (R3.2, ADR-042)', () => {
+  const run = async (checker: AnswerChecker | undefined, answer: string) => {
+    const sent: LiveServerMessage[] = [];
+    let emit: (e: LiveEvent) => void = () => {};
+    const connector: LiveConnector = async ({ onEvent, systemInstruction }) => {
+      emit = onEvent;
+      expect(systemInstruction).toMatch(/Answer in Tamil/);
+      return { sendRealtimeInput: () => {}, sendClientContent: () => {}, close: () => {} };
+    };
+    const bridge = new LiveBridge((m) => sent.push(m), connector, () => null, () => 0, () => {}, 'ta-IN', checker);
+    await bridge.onMessage(JSON.stringify({ type: 'ask' }));
+    await bridge.onMessage(JSON.stringify({ type: 'end' }));
+    emit({ transcript: answer });
+    emit({ turnComplete: true });
+    await vi.advanceTimersByTimeAsync(800);
+    return sent;
+  };
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('a flagged answer is replaced by the safe sentence in Tamil', async () => {
+    const sent = await run(async () => ['crossing'], 'இப்போது கடக்கலாம்.');
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ type: 'answer' });
+    const text = (sent[0] as { text: string }).text;
+    expect(text).not.toContain('கடக்கலாம்');
+    expect(text).not.toBe("I can't tell you when to cross."); // translated, not English
+  });
+
+  it('a clean answer passes; a failed check means no answer (fail closed)', async () => {
+    expect((await run(async () => [], 'இடதுபுறம் ஒரு கடை உள்ளது.'))[0]).toMatchObject({ type: 'answer', text: 'இடதுபுறம் ஒரு கடை உள்ளது.' });
+    expect((await run(async () => { throw new Error('down'); }, 'ஏதோ ஒன்று.'))[0]).toMatchObject({ type: 'error', code: 'model_error' });
+    expect((await run(undefined, 'ஏதோ ஒன்று.'))[0]).toMatchObject({ type: 'error', code: 'model_error' });
+  });
+
+  it('command replies (always English) skip the check', async () => {
+    const checker = vi.fn<AnswerChecker>(async () => ['injection']);
+    expect((await run(checker, 'Command: language English.'))[0]).toMatchObject({ type: 'answer', text: 'Command: language English.' });
+    expect(checker).not.toHaveBeenCalled();
   });
 });

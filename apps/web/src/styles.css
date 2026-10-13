@@ -560,3 +560,43 @@ body[data-walking='true'] .start {
 body[data-walking='true'] .segmented {
   margin: 1.25rem 0 0;
 }
+
+/* Language picker in the top bar (R3.2). */
+.lang-pick select {
+  min-height: 2.5rem;
+  max-width: 7.5rem;
+  padding: 0 0.5rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Longer words in other languages (R3.2): the top bar wraps instead of scrolling sideways. */
+.topbar {
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+}
+
+.badge {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}

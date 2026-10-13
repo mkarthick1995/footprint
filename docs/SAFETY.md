@@ -91,6 +91,8 @@ When anything happens that the code does not explicitly handle:
 | SAF-32 | **Wrong destination** — Google resolves a spoken/typed name to a different place (same-name station, mis-heard word), so the summary describes the wrong route | M | The name is resolved near the user first (Places text search, 3 km bias, nearest of the best match's kind) and the summary says the place it chose ("Satyam Theatre bus stop") plus distance and minutes; routes > 5 km refused; no turn-by-turn, so it never guides the user there; the user's navigation app does the guiding | Mitigated+Disclosed |
 | SAF-33 | **A repeated imminent hazard is only a tone** — the user may not recognise a cue as "Stop" for the same thing, or the same type/side is actually a different object | M | First encounter always worded; any escalation (near → imminent) or a 15 s absence is worded again; the imminent cue is distinct (earcon + strong vibration) and explained at start/README; ADR-039 | Mitigated+Disclosed |
 | SAF-34 | **Natural voice late or down** — an urgent alert waits for network audio | H | Urgent phrases are fetched at walk start; any phrase not ready within 250 ms (P0) / 400 ms (P1) is spoken by the on-device voice; 3 failures → device voice for 60 s; device voice is primed in the Start tap (ADR-041) | Mitigated |
+| SAF-35 | **Wrong or unnatural translation** of an alert or safety line (e.g. a weak "Stop!") | H | Alerts built from reviewed parts, not free translation; native-speaker review of every line (docs/i18n-review.md) before a language is marked checked; English fallback for anything missing | Mitigation in progress (review) |
+| SAF-36 | **Unsafe non-English Gemini answer** passes because the phrase filter only reads English | H | Server-side Gemini check of the same five rules before sending; flagged → safe sentence in that language; check unavailable → no answer (fail closed); 7/7 on test sentences | Mitigated |
 
 ### 3.2 Privacy
 | ID | Risk | Sev | Mitigation | Status |
@@ -189,7 +191,9 @@ When anything happens that the code does not explicitly handle:
 - The **route summary** only lists hazards other walkers have reported along the route; it does not give turn-by-turn
   directions (use your navigation app), and it may pick a different place with the same name — it says the name of the
   place it chose and the distance, so check both.
-- It is an **English-first hackathon prototype**, tested by the team on a limited set of streets.
+- **Languages:** English, Hindi, Tamil, Telugu and Japanese. Translations are machine-made and checked by team members;
+  answers in other languages take about a second longer (an extra safety check).
+- It is a **hackathon prototype**, tested by the team on a limited set of streets.
 
 ## 5. Approved and forbidden wording
 | Never say | Say instead |

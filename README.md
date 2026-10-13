@@ -37,6 +37,9 @@ safety filter blocks any "all clear", crossing instruction or description of peo
 (Essential / Standard / Detailed) on screen or by saying "fewer alerts" / "more alerts"; urgent warnings can never be
 turned off.
 
+Footprint speaks **English, Hindi, Tamil, Telugu and Japanese**: choose in the top bar or say "switch to Tamil" —
+alerts, messages, the page and Gemini's answers follow, in a natural Google voice.
+
 While walking, the screen shows the face-blurred camera view on top with the last spoken message under it, then a
 big Ask button, "What's around me" and "Repeat".
 

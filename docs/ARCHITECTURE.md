@@ -32,6 +32,9 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
   destination + current position → Google Routes API (WALK, service-account OAuth) → confirmed hazards within 25 m of
   the polyline → spoken summary; nothing stored. `POST /api/tts` (R3.4, ADR-041): our own already-filtered words →
   Cloud Text-to-Speech Chirp 3 HD (MP3, cached); the phone pre-fetches urgent phrases and falls back to the device voice.
+  Languages (R3.2, ADR-042): `packages/shared/src/i18n.ts` (+ generated `i18nData.ts`) localizes alerts (from parts),
+  messages, page text and route summaries; `/api/live?lang=` opens Gemini in that language and checks non-English
+  answers with Gemini Flash before sending (fail closed).
 - **Frame source abstraction (ADR-016):** `camera | recorded clip`. Everything downstream is identical, so PC
   development and tests run on clips, phones run on the camera. `grabFrame(video, maxWidth)` gives later steps a
   downscaled canvas (detector, face blur, scan upload). Screen Wake Lock is held while running and re-acquired on

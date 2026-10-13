@@ -8,7 +8,14 @@ import { LiveAsk } from './liveAsk';
 import { MediaButtons } from './mediaButtons';
 import { loadPreset, PRESET_SPOKEN, savePreset, stepPreset } from './presets';
 import {
-  commonAlertPhrases,
+  commonAlertSpecs,
+  languageByName,
+  LANGUAGES,
+  phraseText,
+  switchedTo,
+  translate,
+  uiText,
+  type LangCode,
   ladderMessage,
   parseModelCommand,
   parseRouteRequest,
@@ -16,7 +23,8 @@ import {
   type AlertPreset,
   type PublicHazard,
 } from '@footprint/shared';
-import { prefetchClips } from './voice';
+import { prefetchClips, setVoiceLanguage } from './voice';
+import { applyPageLanguage, loadLanguage, saveLanguage } from './language';
 import { ASK_MESSAGES } from './liveAsk';
 import { playEarcon } from './earcon';
 import { openCamera, openClip, type FrameSource } from './frameSource';
@@ -74,7 +82,7 @@ async function checkRoute(destinationRaw: string): Promise<void> {
     const res = await fetch('/api/route', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-session-id': routeSession },
-      body: JSON.stringify({ destination, origin }),
+      body: JSON.stringify({ destination, origin, lang: language }),
       signal: AbortSignal.timeout(12_000),
     });
     if (res.status === 422) return announce(MESSAGES.routeTooFar);
@@ -100,13 +108,40 @@ function setWalking(on: boolean): void {
   window.scrollTo({ top: 0 });
 }
 
+/**
+ * Language (R3.2, ADR-042): chosen on screen or by voice ("switch to Tamil"), remembered on this phone. Alerts,
+ * messages, the caption, the page and Gemini's answers follow it.
+ */
+let language: LangCode = loadLanguage();
+const languageSelect = document.querySelector<HTMLSelectElement>('#language');
+if (languageSelect) {
+  for (const l of LANGUAGES) languageSelect.add(new Option(l.native, l.code));
+  languageSelect.addEventListener('change', () => setLanguage(languageSelect.value as LangCode, source !== null));
+}
+function setLanguage(lang: LangCode, speakIt: boolean): void {
+  language = lang;
+  saveLanguage(lang);
+  if (languageSelect) languageSelect.value = lang;
+  applyPageLanguage(lang);
+  output.setLanguage(lang);
+  setVoiceLanguage(lang);
+  startBtn.textContent = uiText(source ? 'stop' : 'start', lang);
+  askLabel.textContent = uiText('ask', lang);
+  if (levelBadge) levelBadge.textContent = uiText(output.preset, lang);
+  if (source) {
+    ask.relanguage(); // new Gemini session in this language
+    prefetchVoice();
+  }
+  if (speakIt) announce(switchedTo(lang));
+}
+
 /** Q14: alert level — chosen on screen or by voice ("fewer alerts" / "more alerts"), remembered on this phone. */
 function applyPreset(p: AlertPreset, speakIt: boolean): void {
   output.setPreset(p);
   savePreset(p);
   const radio = document.querySelector<HTMLInputElement>(`input[name="preset"][value="${p}"]`);
   if (radio) radio.checked = true;
-  if (levelBadge) levelBadge.textContent = p[0]!.toUpperCase() + p.slice(1);
+  if (levelBadge) levelBadge.textContent = uiText(p, language);
   if (speakIt) announce(PRESET_SPOKEN[p]);
 }
 applyPreset(output.preset, false);
@@ -122,6 +157,7 @@ const SCAN_MESSAGES: Record<ScanStatus, string> = {
 };
 /** Q10: ask Gemini Live about the view — blurred frame + voice; the text answer goes through the safety filter. */
 const ask = new LiveAsk({
+  language: () => language,
   frame: async () => (blurrer && source ? (await blurrer.getUploadJpeg(source.video))?.blob ?? null : null),
   onAnswer: (text, question, spoken) => {
     // "Fewer alerts" / "more alerts" / "what level?" / "route to …" are commands to the app, not questions for Gemini.
@@ -130,6 +166,10 @@ const ask = new LiveAsk({
     const model = spoken ? parseModelCommand(text) : null;
     const destination = model?.kind === 'route' ? model.destination : spoken ? parseRouteRequest(question) : null;
     if (destination) return void checkRoute(destination);
+    if (model?.kind === 'language') {
+      const code = languageByName(model.name);
+      return code ? setLanguage(code, true) : announce(MESSAGES.commandUnclear);
+    }
     const cmd = model && model.kind !== 'route' && model.kind !== 'unclear' ? model.kind : spoken ? parseVoiceCommand(question) : null;
     if (cmd === 'level') return announce(PRESET_SPOKEN[output.preset]);
     if (cmd) return applyPreset(stepPreset(output.preset, cmd), true);
@@ -140,8 +180,10 @@ const ask = new LiveAsk({
   onState: (s) => {
     askBtn.setAttribute('aria-pressed', String(s === 'listening' || s === 'starting'));
     askBtn.dataset.state = s;
-    askLabel.textContent =
-      s === 'starting' ? 'Starting microphone…' : s === 'listening' ? 'Listening… tap to send now' : s === 'thinking' ? 'Thinking…' : 'Ask a question';
+    askLabel.textContent = uiText(
+      s === 'starting' ? 'askStarting' : s === 'listening' ? 'askListening' : s === 'thinking' ? 'askThinking' : 'ask',
+      language,
+    );
     if (s === 'starting' && 'vibrate' in navigator) navigator.vibrate(30); // instant: got your tap
     if (s === 'listening') playEarcon('near'); // a tone, not words — speech would be picked up by the microphone
     if (s === 'thinking') playEarcon('system');
@@ -225,7 +267,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   source?.stop();
   source = null;
   await wakeLock.release();
-  startBtn.textContent = 'Start walking';
+  startBtn.textContent = uiText('start', language);
   if (frameInfo) frameInfo.textContent = '';
   if (blurInfo) blurInfo.textContent = '';
   hidePreview();
@@ -245,15 +287,21 @@ function prefetchVoice(): void {
     ladderMessage({ level: 'L0', reasons: [] }, 'L2'),
   );
   const strings = (o: Record<string, unknown>) => Object.values(o).filter((v): v is string => typeof v === 'string' && v.length <= 300);
-  void prefetchClips([
-    MESSAGES.started,
-    PRESET_SPOKEN[output.preset],
-    ...commonAlertPhrases().filter((p) => p.startsWith('Stop!')),
-    ...ladder,
-    ...strings(MESSAGES),
-    ...commonAlertPhrases(),
-    ...strings(ASK_MESSAGES),
-  ]);
+  const local = (t: string) => translate(t, language) ?? t; // missing translation → English (spoken in English)
+  const specs = commonAlertSpecs();
+  void prefetchClips(
+    [
+      local(MESSAGES.started),
+      local(PRESET_SPOKEN[output.preset]),
+      ...specs.filter((s) => s.tier === 'P0').map((s) => phraseText(s, language)),
+      ...ladder.map(local),
+      ...strings(MESSAGES).map(local),
+      ...specs.map((s) => phraseText(s, language)),
+      ...strings(ASK_MESSAGES).map(local),
+    ],
+    4,
+    language,
+  );
 }
 
 async function start(): Promise<void> {
@@ -280,7 +328,7 @@ async function start(): Promise<void> {
     announce(cameraErrorMessage(err, window.isSecureContext));
     return;
   }
-  startBtn.textContent = 'Stop walking';
+  startBtn.textContent = uiText('stop', language);
   setWalking(true);
   announce(MESSAGES.started);
   await wakeLock.acquire();
@@ -422,3 +470,6 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', () => {
   if (source) announce(MESSAGES.paused);
 });
+
+// Apply the remembered language to the page, the voice and the alerts (R3.2).
+setLanguage(language, false);

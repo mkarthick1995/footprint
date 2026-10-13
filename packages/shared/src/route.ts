@@ -2,6 +2,8 @@
 // community hazards along it and speak a short summary. No turn-by-turn (the user's navigation app does that). Absence
 // of reports is never presented as good (SAF-20, ST-19). Pure and tested.
 import { distanceM, type LatLng, type PublicHazard } from './community.js';
+import { routeKit, type LangCode } from './i18n.js';
+import { I18N_DATA } from './i18nData.js';
 
 /** Hazards within this distance of the route line count as "along the route". */
 export const ROUTE_CORRIDOR_M = 25;
@@ -102,7 +104,16 @@ export function cleanDestination(raw: string): string {
  * The spoken route summary (ADR-021): distance, time, reported hazards by type with the number of walkers, a cold-start
  * line when there are no reports — never "clear" or "safe" — and a pointer to the navigation app for turns (ADR-027).
  */
-export function routeSummary(destination: string, distanceMeters: number, durationS: number, along: readonly RouteHazard[]): string {
+export function routeSummary(
+  destination: string,
+  distanceMeters: number,
+  durationS: number,
+  along: readonly RouteHazard[],
+  lang: LangCode = 'en-IN',
+): string {
+  const kit = routeKit(lang);
+  const nouns = I18N_DATA[lang]?.phrase.noun;
+  if (kit && nouns) return localRouteSummary(destination, distanceMeters, durationS, along, kit, nouns);
   const minutes = Math.max(1, Math.round(durationS / 60));
   const head = `Walking route to ${cleanDestination(destination) || 'your destination'}: ${roundDistance(distanceMeters)}, ${minutes} minute${minutes === 1 ? '' : 's'}.`;
   if (along.length === 0) {
@@ -115,6 +126,32 @@ export function routeSummary(destination: string, distanceMeters: number, durati
   const first = along[0]!;
   const walkers = Math.max(...along.map((h) => h.reports));
   return `${head} Reported along it: ${list}. The first is ${roundDistance(first.alongM)} from the start. Reports from up to ${walkers} walkers. Use your navigation app for turns.`;
+}
+
+function localRouteSummary(
+  destination: string,
+  distanceMeters: number,
+  durationS: number,
+  along: readonly RouteHazard[],
+  k: NonNullable<ReturnType<typeof routeKit>>,
+  nouns: Record<PublicHazard['type'], [string, string]>,
+): string {
+  const fill = (t: string, v: Record<string, string>) => t.replace(/\{(\w+)\}/g, (_, x: string) => v[x] ?? '');
+  const dist = (m: number) =>
+    m < 1000 ? fill(k.metres, { n: String(Math.max(50, Math.round(m / 50) * 50)) }) : fill(k.km, { n: String(Math.round(m / 100) / 10) });
+  const minutes = Math.max(1, Math.round(durationS / 60));
+  const head = fill(k.head, {
+    dest: cleanDestination(destination) || k.yourDestination,
+    distance: dist(distanceMeters),
+    time: fill(k.minutes, { n: String(minutes) }),
+  });
+  if (along.length === 0) return `${head} ${k.noReports} ${k.turns}`;
+  const byType = new Map<PublicHazard['type'], number>();
+  for (const h of along) byType.set(h.type, (byType.get(h.type) ?? 0) + 1);
+  const parts = [...byType.entries()].map(([t, n]) => fill(k.count, { n: String(n), noun: n === 1 ? nouns[t][0] : nouns[t][1] }));
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')}${k.and}${parts.at(-1)}` : parts[0]!;
+  const walkers = Math.max(...along.map((h) => h.reports));
+  return [head, fill(k.reported, { list }), fill(k.first, { distance: dist(along[0]!.alongM) }), fill(k.walkers, { n: String(walkers) }), k.turns].join(' ');
 }
 
 /** "Route to Chinatown MRT" / "directions to …" / "take me to …" spoken as a question → destination, else null. */

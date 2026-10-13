@@ -20,7 +20,11 @@
         <span>Footprint</span>
       </div>
       <span id="level-badge" class="badge" aria-hidden="true">Standard</span>
-      <a class="toplink" href="/map">Hazard map</a>
+      <label class="lang-pick">
+        <span class="sr-only" data-i18n="language">Language</span>
+        <select id="language"></select>
+      </label>
+      <a class="toplink" href="/map" data-i18n="hazardMap">Hazard map</a>
     </header>
 
     <main id="app">
@@ -32,30 +36,30 @@
           <canvas id="blur-view" hidden></canvas>
           <video id="preview" playsinline muted></video>
           <canvas id="overlay"></canvas>
-          <p class="stage-wait">The camera view appears once faces can be blurred.</p>
+          <p class="stage-wait" data-i18n="cameraWait">The camera view appears once faces can be blurred.</p>
         </div>
         <!-- Every spoken message is mirrored here so screen readers and sighted helpers can follow along. -->
         <div id="status" class="caption" role="status" aria-live="polite"></div>
       </section>
 
       <section class="intro">
-        <h1>An extra pair of eyes for the street.</h1>
-        <p class="lead">
+        <h1 data-i18n="headline">An extra pair of eyes for the street.</h1>
+        <p class="lead" data-i18n="lead">
           Spoken warnings about people, bikes, vehicles and hazards ahead, and answers when you ask about what is
           around you.
         </p>
-        <p class="safety">
+        <p class="safety" data-i18n="safety">
           Footprint can miss things and never tells you when it is safe to cross. Keep using your cane or guide dog.
         </p>
       </section>
 
       <div id="controls" class="controls">
         <fieldset id="preset" class="segmented">
-          <legend>How much should it say?</legend>
+          <legend data-i18n="levelLegend">How much should it say?</legend>
           <div class="segments">
-            <label><input type="radio" name="preset" value="essential" /><span><b>Essential</b><small>Urgent only</small></span></label>
-            <label><input type="radio" name="preset" value="standard" /><span><b>Standard</b><small>Close and ahead</small></span></label>
-            <label><input type="radio" name="preset" value="detailed" /><span><b>Detailed</b><small>Everything</small></span></label>
+            <label><input type="radio" name="preset" value="essential" /><span><b data-i18n="essential">Essential</b><small data-i18n="essentialHint">Urgent only</small></span></label>
+            <label><input type="radio" name="preset" value="standard" /><span><b data-i18n="standard">Standard</b><small data-i18n="standardHint">Close and ahead</small></span></label>
+            <label><input type="radio" name="preset" value="detailed" /><span><b data-i18n="detailed">Detailed</b><small data-i18n="detailedHint">Everything</small></span></label>
           </div>
         </fieldset>
 
@@ -67,25 +71,25 @@
             </svg>
             <span class="ask-label">Ask a question</span>
           </button>
-          <p class="hint">Or tap your earbuds or glasses once.</p>
+          <p class="hint" data-i18n="askHint">Or tap your earbuds or glasses once.</p>
           <div class="ask-row">
             <button id="describe" class="tile" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
-              <span>What's around me</span>
+              <span data-i18n="describe">What's around me</span>
             </button>
             <button id="repeat" class="tile" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" /></svg>
-              <span>Repeat</span>
+              <span data-i18n="repeat">Repeat</span>
             </button>
           </div>
           <details class="panel">
-            <summary>Check a walking route</summary>
+            <summary data-i18n="routePanel">Check a walking route</summary>
             <form id="route-form" class="route-row">
-              <label for="destination">Destination</label>
-              <input id="destination" type="text" autocomplete="off" maxlength="80" placeholder="e.g. nearest bus stop" />
-              <button id="route" type="submit">Check route</button>
+              <label for="destination" data-i18n="destination">Destination</label>
+              <input id="destination" type="text" autocomplete="off" maxlength="80" placeholder="e.g. nearest bus stop" data-i18n-placeholder="destinationPlaceholder" />
+              <button id="route" type="submit" data-i18n="checkRoute">Check route</button>
             </form>
-            <p class="hint">Or ask: "route to …". Footprint lists hazards other walkers reported; your navigation app gives the turns.</p>
+            <p class="hint" data-i18n="routeHint">Or ask: "route to …". Footprint lists hazards other walkers reported; your navigation app gives the turns.</p>
           </details>
         </div>
 
@@ -93,7 +97,7 @@
       </div>
 
       <details class="panel dev-panel">
-        <summary>Developer options</summary>
+        <summary data-i18n="devOptions">Developer options</summary>
         <fieldset>
           <legend>Camera source</legend>
           <label><input type="radio" name="source" value="camera" checked /> Phone camera</label>
@@ -105,8 +109,8 @@
       </details>
 
       <footer class="foot">
-        <a href="/map">Community hazard map</a>
-        <p>Faces are blurred on the phone before any photo is sent. No images, video or audio are stored.</p>
+        <a href="/map" data-i18n="mapLink">Community hazard map</a>
+        <p data-i18n="privacy">Faces are blurred on the phone before any photo is sent. No images, video or audio are stored.</p>
       </footer>
     </main>
     <script type="module" src="/src/main.ts"></script>
