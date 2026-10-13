@@ -11,12 +11,16 @@ function run(levels: [level: number, ms: number][]): string[] {
 
 describe('end-of-speech detection (one-tap questions)', () => {
   it('street noise → speech → pause: the question ends by itself', () => {
-    expect(run([[0.01, 300], [0.012, 400], [0.08, 1500], [0.011, 1200]])).toEqual(['waiting', 'speaking', 'done']);
+    expect(run([[0.01, 300], [0.012, 400], [0.08, 1500], [0.011, 2100]])).toEqual(['waiting', 'speaking', 'done']);
   });
 
   it('short pauses between words do not end the question', () => {
     const s = run([[0.01, 300], [0.08, 600], [0.01, 500], [0.08, 600], [0.01, 600]]);
     expect(s).toEqual(['waiting', 'speaking']);
+  });
+
+  it('a natural 1.5 s pause mid-question does not end it (test round 1)', () => {
+    expect(run([[0.01, 300], [0.08, 800], [0.01, 1500], [0.08, 800], [0.01, 1000]])).toEqual(['waiting', 'speaking']);
   });
 
   it('a brief click or horn blip is not speech', () => {
@@ -29,7 +33,7 @@ describe('end-of-speech detection (one-tap questions)', () => {
 
   it('loud street: speech must stand out from the learned noise', () => {
     expect(run([[0.05, 300], [0.06, 800]])).toEqual(['waiting']); // just noise
-    expect(run([[0.05, 300], [0.2, 600], [0.05, 1200]])).toEqual(['waiting', 'speaking', 'done']);
+    expect(run([[0.05, 300], [0.2, 600], [0.05, 2100]])).toEqual(['waiting', 'speaking', 'done']);
   });
 
   it('rms of a block', () => {

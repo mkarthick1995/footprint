@@ -51,7 +51,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [ ] R3.4 Natural Google voice before submission: pre-rendered alert phrases (Chirp 3 HD / Gemini-TTS) + Gemini-TTS for dynamic P3 text, device voice fallback (ADR-033) — do near the end to save credits
 
 ## Phase 4 — Submission (10-16 → 10-17)
-- [ ] R4.1 Field test + metrics
+- [~] R4.1 Field test + metrics — @mkarthick1995 2026-10-14 · team phone test round 1 (42-item checklist, 3 testers): fixes in ADR-037 (first-question audio lost → commands and "route to …" failed; route names resolved near the user; earbud clip ≥ 5 s; 2 s end-of-speech pause; fail-loud reminders every 20 s; orientation 50°); sections 2, 8 and 9 not yet reported; round 2 after deploy
 - [ ] R4.2 Demo video < 3:00
 - [ ] R4.3 Deck PDF
 - [ ] R4.4 README for judges
@@ -65,6 +65,8 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - Submission time-of-day / timezone on 10-18 — ask on Discord.
 - Do participants get Google Cloud / Gemini credits? — ask on Discord.
 - Blind-user / org feedback before 10-16 (ETH-02) — outreach not started yet.
+
+- Round 1 test notes needing the tester: 4.7 (which alert interrupted the answer?), 7.6 (phone + browser — Battery API?), "medium light not detected immediately" (which test?), 3.5 side-face blur lag (re-run leak audit on a real walk) — @mkarthick1995 2026-10-14
 
 ## Blockers
 - (none)

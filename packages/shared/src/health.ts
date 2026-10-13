@@ -55,14 +55,15 @@ export function cameraProblem(s: FrameStats): CameraProblem {
 export type OrientationProblem = 'ground' | 'sky' | null;
 
 /**
- * From DeviceOrientation `beta` (front-back tilt, degrees): held upright facing forward ≈ 60–120. Below 30 the camera
- * looks at the ground (phone flat), above 150 at the sky. Null when unknown (no sensor / no permission).
+ * From DeviceOrientation `beta` (front-back tilt, degrees): held upright facing forward ≈ 90. Below 40 the camera
+ * looks steeply at the ground, above 140 at the sky (50° off level; the first build used 60° and testers tilting the
+ * phone didn't trigger it — test round 1). Null when unknown (no sensor / no permission).
  */
 export function orientationProblem(beta: number | null | undefined): OrientationProblem {
   if (beta === null || beta === undefined || !Number.isFinite(beta)) return null;
   const b = Math.abs(beta);
-  if (b < 30) return 'ground';
-  if (b > 150) return 'sky';
+  if (b < 40) return 'ground';
+  if (b > 140) return 'sky';
   return null;
 }
 
@@ -90,8 +91,10 @@ export function evaluateLadder(i: HealthInputs): LadderState {
   if (!i.detectorAlive) return { level: 'L3', reasons: ['detector'] };
   const cam: string[] = [];
   if (!i.cameraLive) cam.push('frozen');
-  if (i.camera) cam.push(i.camera);
+  // Orientation before picture quality: a phone aimed at the ground often also looks "blurred", and "hold the phone
+  // upright" is the instruction that fixes both (test round 1: tilting gave "Camera can't see" instead).
   if (i.orientation) cam.push(i.orientation);
+  if (i.camera) cam.push(i.camera);
   if (cam.length) return { level: 'L2', reasons: cam };
   if (i.sceneOk === false) return { level: 'L1', reasons: ['scene'] };
   return { level: 'L0', reasons: [] };
@@ -119,6 +122,11 @@ export function ladderMessage(s: LadderState, from: LadderLevel): string {
 
 /** How long a worse state must persist before it is announced, and a better one before recovery is announced. */
 export const LADDER_HOLD_MS = { worse: 1500, better: 3000 } as const;
+/**
+ * While alerts are off (L2/L3) the warning is repeated this often — said only once, a user who missed it would assume
+ * protection is on (test round 1: camera covered for a long time, warned once).
+ */
+export const LADDER_REMIND_MS = 20_000;
 
 const RANK: Record<LadderLevel, number> = { L0: 0, L1: 1, L2: 2, L3: 3 };
 
@@ -131,6 +139,7 @@ export class LadderTracker {
   private current: LadderState = { level: 'L0', reasons: [] };
   private candidate: LadderState | null = null;
   private since = 0;
+  private spokenAt = 0;
 
   get state(): LadderState {
     return this.current;
@@ -141,6 +150,10 @@ export class LadderTracker {
     const same = next.level === this.current.level && (next.level !== 'L2' || next.reasons[0] === this.current.reasons[0]);
     if (same) {
       this.candidate = null;
+      if (RANK[this.current.level] >= RANK.L2 && now - this.spokenAt >= LADDER_REMIND_MS) {
+        this.spokenAt = now;
+        return ladderMessage(this.current, this.current.level); // reminder: alerts are still off
+      }
       return null;
     }
     if (!this.candidate || this.candidate.level !== next.level || this.candidate.reasons[0] !== next.reasons[0]) {
@@ -156,12 +169,15 @@ export class LadderTracker {
     this.current = next;
     this.candidate = null;
     const msg = ladderMessage(next, from);
-    return msg === before ? null : msg;
+    if (msg === before) return null;
+    this.spokenAt = now;
+    return msg;
   }
 
   reset(): void {
     this.current = { level: 'L0', reasons: [] };
     this.candidate = null;
+    this.spokenAt = 0;
   }
 }
 

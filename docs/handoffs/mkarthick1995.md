@@ -1,8 +1,8 @@
 # Handoff — @mkarthick1995
-Updated: 2026-10-13 · Tool: Claude Code · Branch: r2.1-route-summary
+Updated: 2026-10-14 · Tool: Claude Code · Branch: hotfix-test-round-1
 
 ## Now
-- Build queue Q1–Q14 complete. Q11 lite (route summary, ADR-036) in its PR — owner merges, then `npm run deploy`.
+- Build queue Q1–Q14 complete. Team test round 1 done → fixes in ADR-037 (branch hotfix-test-round-1, preview `r1fix`); owner merges, then `npm run deploy`, then test round 2.
 - Owner to test earbud presses (1 ask / 2 describe / 3 repeat), presets and voice commands on the phone on 10-14.
 
 ## Next

@@ -122,3 +122,24 @@ describe('degradation ladder', () => {
     expect(batteryMessage(0.05)).toMatch(/shuts down/);
   });
 });
+
+describe('test round 1 fixes', () => {
+  it('a covered camera is reminded every 20 s while it stays covered; never while fine', () => {
+    const t = new LadderTracker();
+    const covered = { level: 'L2' as const, reasons: ['covered'] };
+    expect(t.update(covered, 0)).toBeNull();
+    expect(t.update(covered, 1500)).toBe("Camera can't see. No obstacle alerts. Use your cane.");
+    expect(t.update(covered, 10_000)).toBeNull();
+    expect(t.update(covered, 21_500)).toBe("Camera can't see. No obstacle alerts. Use your cane.");
+    expect(t.update(covered, 30_000)).toBeNull();
+    const fine = new LadderTracker();
+    for (let ms = 0; ms <= 60_000; ms += 500) expect(fine.update({ level: 'L0', reasons: [] }, ms)).toBeNull();
+  });
+  it('a tilt of 50° off level is caught; the instruction to hold upright wins over "blurred"', () => {
+    expect(orientationProblem(35)).toBe('ground');
+    expect(orientationProblem(145)).toBe('sky');
+    expect(orientationProblem(70)).toBeNull();
+    const s = evaluateLadder({ detectorAlive: true, cameraLive: true, camera: 'blurred', orientation: 'ground', sceneOk: true });
+    expect(s.reasons[0]).toBe('ground');
+  });
+});

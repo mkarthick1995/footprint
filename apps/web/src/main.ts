@@ -7,7 +7,7 @@ import { HealthMonitor } from './health';
 import { LiveAsk } from './liveAsk';
 import { MediaButtons } from './mediaButtons';
 import { loadPreset, PRESET_SPOKEN, savePreset, stepPreset } from './presets';
-import { parseRouteRequest, parseVoiceCommand, type AlertPreset, type PublicHazard } from '@footprint/shared';
+import { parseModelCommand, parseRouteRequest, parseVoiceCommand, type AlertPreset, type PublicHazard } from '@footprint/shared';
 import { playEarcon } from './earcon';
 import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
@@ -96,13 +96,17 @@ const SCAN_MESSAGES: Record<ScanStatus, string> = {
 /** Q10: ask Gemini Live about the view — blurred frame + voice; the text answer goes through the safety filter. */
 const ask = new LiveAsk({
   frame: async () => (blurrer && source ? (await blurrer.getUploadJpeg(source.video))?.blob ?? null : null),
-  onAnswer: (text, question) => {
-    // "Fewer alerts" / "more alerts" / "what level?" are commands to the app, not questions for Gemini.
-    const destination = parseRouteRequest(question); // "route to …" (Q11)
+  onAnswer: (text, question, spoken) => {
+    // "Fewer alerts" / "more alerts" / "what level?" / "route to …" are commands to the app, not questions for Gemini.
+    // Gemini answers them with a fixed "Command: …" reply (ADR-037); the user's own words are the fallback. Only a
+    // spoken question can be a command — never "What's around me" (a sign in the photo can't change settings).
+    const model = spoken ? parseModelCommand(text) : null;
+    const destination = model?.kind === 'route' ? model.destination : spoken ? parseRouteRequest(question) : null;
     if (destination) return void checkRoute(destination);
-    const cmd = parseVoiceCommand(question);
+    const cmd = model && model.kind !== 'route' && model.kind !== 'unclear' ? model.kind : spoken ? parseVoiceCommand(question) : null;
     if (cmd === 'level') return announce(PRESET_SPOKEN[output.preset]);
     if (cmd) return applyPreset(stepPreset(output.preset, cmd), true);
+    if (model || /^command\b/i.test(text.trim())) return announce(MESSAGES.commandUnclear); // never read "Command: …" aloud
     output.sayModelText(text, { kind: 'answer' });
   },
   onProblem: announce,
@@ -226,6 +230,7 @@ async function start(): Promise<void> {
   await startPerception();
   scanner.start();
   if (source?.kind === 'camera') community.start(); // recorded clips have no location
+  ask.warm();
   health.start();
   askControls.hidden = false;
   announce(PRESET_SPOKEN[output.preset]); // ADR-026: current level said at walk start

@@ -31,6 +31,7 @@ export const MESSAGES = {
   chooseClip: 'Choose a recorded clip first.',
   detectorFailed: 'Obstacle detection could not start. Alerts are off.',
   detectorStopped: 'Obstacle detection stopped. Alerts are off.',
+  commandUnclear: "Sorry, I didn't catch that. Please ask again.",
   routeNeedsDestination: 'Say or type a destination first.',
   routeNeedsLocation: 'Route needs your location. Start walking with the camera and allow location.',
   routeTooFar: 'That is more than 5 kilometres on foot. Footprint summarises walking routes up to 5 kilometres.',

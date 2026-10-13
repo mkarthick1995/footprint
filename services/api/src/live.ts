@@ -114,6 +114,12 @@ export class LiveBridge {
   private asking = false;
   private waiting = false;
   private audioBytes = 0;
+  /**
+   * Audio (and "end") that arrived while the Vertex session was still opening. The first question of a walk used to
+   * lose them — a short question like "Fewer alerts" fits entirely in that 1–2 s (test round 1, 2026-10-14).
+   */
+  private early: string[] = [];
+  private earlyEnd = false;
   private answer = '';
   private question = '';
   /** Answer complete, briefly waiting for the user's words to be transcribed (they can arrive after the answer). */
@@ -141,11 +147,24 @@ export class LiveBridge {
         this.audioBytes = 0;
         this.answer = '';
         this.question = '';
+        this.early = [];
+        this.earlyEnd = false;
         try {
           const s = await this.ensureSession();
+          if (!this.asking) return; // cancelled while the session was opening
           s.sendRealtimeInput({ activityStart: {} });
           if (msg.frame) s.sendRealtimeInput({ video: { data: msg.frame, mimeType: 'image/jpeg' } });
+          for (const data of this.early) s.sendRealtimeInput({ audio: { data, mimeType: `audio/pcm;rate=${LIVE_SAMPLE_RATE}` } });
+          this.early = [];
+          if (this.earlyEnd && this.asking) {
+            this.earlyEnd = false;
+            this.asking = false;
+            s.sendRealtimeInput({ activityEnd: {} });
+            this.startWaiting();
+          }
         } catch {
+          this.early = [];
+          this.earlyEnd = false;
           this.asking = false;
           this.log('live_connect_error');
           this.send({ type: 'error', code: 'model_error' });
@@ -173,17 +192,19 @@ export class LiveBridge {
         return;
       }
       case 'audio': {
-        if (!this.asking || !this.session) return;
+        if (!this.asking) return;
         this.audioBytes += base64Bytes(msg.data);
         if (this.audioBytes > MAX_QUESTION_AUDIO_BYTES) {
           this.cancel();
           return this.send({ type: 'error', code: 'too_long' });
         }
+        if (!this.session) return void this.early.push(msg.data); // session still opening: keep it for the flush
         this.session.sendRealtimeInput({ audio: { data: msg.data, mimeType: `audio/pcm;rate=${LIVE_SAMPLE_RATE}` } });
         return;
       }
       case 'end': {
-        if (!this.asking || !this.session) return;
+        if (!this.asking) return;
+        if (!this.session) return void (this.earlyEnd = true); // sent with the flush once the session is open
         this.asking = false;
         this.session.sendRealtimeInput({ activityEnd: {} });
         this.startWaiting();
@@ -217,6 +238,11 @@ export class LiveBridge {
     }, ANSWER_TIMEOUT_MS);
   }
 
+  /** Open the Vertex session ahead of the first question (it takes 1–2 s), so that question isn't slower. */
+  warm(): void {
+    this.ensureSession().catch(() => this.log('live_connect_error'));
+  }
+
   close(): void {
     clearTimeout(this.timer);
     this.session?.close();
@@ -224,6 +250,8 @@ export class LiveBridge {
   }
 
   private cancel(): void {
+    this.early = [];
+    this.earlyEnd = false;
     if (this.asking && this.session) this.session.sendRealtimeInput({ activityEnd: {} });
     this.asking = false;
     this.waiting = false;
@@ -301,5 +329,6 @@ export async function registerLive(app: FastifyInstance, opts: LiveOptions = {})
     socket.on('message', (data) => void bridge.onMessage(typeof data === 'string' ? data : data.toString('utf8')));
     socket.on('close', () => bridge.close());
     socket.send(JSON.stringify({ type: 'ready' } satisfies LiveServerMessage));
+    bridge.warm();
   });
 }
