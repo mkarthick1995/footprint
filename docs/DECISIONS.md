@@ -527,6 +527,18 @@ restarting; Essential still too many alerts) — amends ADR-022/023 ("P0 always 
   detector, 10 fps, speech time simulated), old → new: Singapore night 5 min 10.8 → 6.4 spoken/min ("Stop!" 28 → 15),
   Shanghai crowd 8.1 → 4.5 spoken/min ("Stop!" 10 → 7); tones 26 → 27 and 24 → 20.
 
+## ADR-040 UX redesign of the walking page (deviation, confirmed by owner)
+Accepted · 2026-10-14 (owner: "Revamp it to look really good and stable… move the video to the top"; "go") — R4.8
+- **Before a walk:** promise line, safety line, alert level as a 3-way segmented control, one big yellow "Start walking";
+  camera-source / clip picker and dev readouts moved into a collapsed "Developer options" panel.
+- **While walking (page scrolls to top):** blurred camera view first, the last spoken message as a large caption under
+  it, then one big Ask button with a visible state (blue idle · amber starting · red pulsing listening · violet
+  thinking), "What's around me" and "Repeat" tiles, "Check a walking route" collapsed, alert level, then "Stop walking".
+  The level fieldset is moved in the DOM so screen-reader order = visual order. Level badge in the top bar.
+- Dark high-contrast theme (yellow accent), targets ≥ 56 px, focus rings, `prefers-reduced-motion` respected, no web
+  fonts or external assets (CSP unchanged). All element IDs kept, so behaviour and tests are unchanged.
+- Score: UX 10 + the demo video. Cost ≈ 3 h, before the 10-16 freeze. Risk: layout regressions on small phones →
+  owner checks the preview on the phone + glasses before merge.
 ## ADR-041 Natural voice: Google Chirp 3 HD "Aoede" for all speech, device voice as fallback (implements ADR-033, R3.4)
 Accepted · 2026-10-14 (owner: "the current audio looks robotic… a human friendly soothing voice"; picked from 8 samples)
 - **Chirp 3 HD, not Gemini Live's own audio:** Live audio is heard as it is generated, before our filter can check
@@ -543,3 +555,24 @@ Accepted · 2026-10-14 (owner: "the current audio looks robotic… a human frien
   playback time).
 - Measured: Chirp 3 HD 0.45–0.5 s for a short phrase, 1.0–1.2 s for two sentences (en-IN, ta-IN, ja-JP); local walk
   start: 84 clips fetched, 0 failures, median 0.64 s cold.
+
+## ADR-042 Languages: English, Hindi, Tamil, Telugu, Japanese — voice, text, page and Gemini answers (R3.2)
+Accepted · 2026-10-14 (owner: "user can ask to change language… only list languages that have both audio and text
+support"; teammates review Hindi / Tamil / Telugu)
+- **Offered:** languages with a Chirp 3 HD voice *and* Gemini Live support, limited to ones the team can review first:
+  en-IN, hi-IN, ta-IN, te-IN, ja-JP (19 have voices — FACTS; more can be added by running the translator).
+- **Switch:** the picker in the top bar, or by voice through Ask ("switch to Tamil", in any language) → Gemini replies
+  "Command: language Tamil." (command replies always English). Remembered on the phone.
+- **What follows the language:** alerts are built from parts (noun, side, pattern) in each language's word order —
+  never word-by-word; fixed messages are translated (keyed by their English text, numbers as {n}); the caption and the
+  page text; route summaries (server-side kit); Gemini Live answers (system instruction "Answer in <language>", the
+  session reconnects on a switch); the natural voice in that language; the device-voice fallback picks a voice for
+  that language or else speaks the **English original** (never mispronounced text). A missing translation → English.
+- **Safety for non-English answers:** our phrase filter only reads English, so the server asks Gemini Flash to flag
+  the same five rules (cross / signal / all clear / describing people / instructions on signs) before an answer is
+  sent; flagged → the safe sentence in that language; check fails → no answer (fail closed). Verified 7/7 on Tamil,
+  Hindi, Telugu, Japanese test sentences (~1 s each).
+- **Translations:** Gemini-generated (`tools/i18n/translate.ts`, placeholders validated), reviewed by native speakers
+  via `docs/i18n-review.md`. A language counts as *checked* only after review (STATUS).
+- **Bug found end-to-end and fixed:** the phone's English filter kept only sentences with Latin letters, so every
+  non-English answer was silently dropped; it now accepts any script and splits on । and 。.

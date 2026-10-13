@@ -19,27 +19,26 @@ let failures = 0;
 let downUntil = 0;
 let playing: { src: AudioBufferSourceNode; timer: number } | null = null;
 
+/** Default language of new clips (R3.2). Clips are cached per language, so switching back is instant. */
 export function setVoiceLanguage(code: string): void {
-  if (code === lang) return;
   lang = code;
-  buffers.clear();
 }
 
 export function naturalVoiceReady(): boolean {
   return audioContext() !== null && performance.now() >= downUntil;
 }
 
-export function cachedClip(text: string): AudioBuffer | null {
-  return buffers.get(key(text)) ?? null;
+export function cachedClip(text: string, language = lang): AudioBuffer | null {
+  return buffers.get(key(text, language)) ?? null;
 }
 
-function key(text: string): string {
-  return `${lang}|${text.replace(/\s+/g, ' ').trim()}`;
+function key(text: string, language: string): string {
+  return `${language}|${text.replace(/\s+/g, ' ').trim()}`;
 }
 
 /** Fetch + decode one phrase (shared by concurrent callers). Null on any failure. */
-export function loadClip(text: string): Promise<AudioBuffer | null> {
-  const k = key(text);
+export function loadClip(text: string, language = lang): Promise<AudioBuffer | null> {
+  const k = key(text, language);
   const hit = buffers.get(k);
   if (hit) return Promise.resolve(hit);
   const pending = inflight.get(k);
@@ -51,7 +50,7 @@ export function loadClip(text: string): Promise<AudioBuffer | null> {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-session-id': session },
-        body: JSON.stringify({ text, lang }),
+        body: JSON.stringify({ text, lang: language }),
         signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) throw new Error(`tts ${res.status}`);
@@ -71,11 +70,11 @@ export function loadClip(text: string): Promise<AudioBuffer | null> {
 }
 
 /** Fetch phrases in the background, a few at a time (walk start). */
-export async function prefetchClips(texts: readonly string[], concurrency = 4): Promise<number> {
-  const queue = [...new Set(texts)].filter((t) => !buffers.has(key(t)));
+export async function prefetchClips(texts: readonly string[], concurrency = 4, language = lang): Promise<number> {
+  const queue = [...new Set(texts)].filter((t) => !buffers.has(key(t, language)));
   let ok = 0;
   const worker = async () => {
-    for (let t = queue.shift(); t !== undefined; t = queue.shift()) if (await loadClip(t)) ok++;
+    for (let t = queue.shift(); t !== undefined; t = queue.shift()) if (await loadClip(t, language)) ok++;
   };
   await Promise.all(Array.from({ length: concurrency }, worker));
   return ok;

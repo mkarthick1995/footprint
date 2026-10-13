@@ -1,124 +1,168 @@
+/* DEVIATION(ADR-040): full UI redesign requested by the owner on 2026-10-14 (not in the original roadmap; R4.8).
+   Footprint UI (ADR-040): dark, high-contrast, large targets, one obvious action at a time.
+   Before a walk: promise, safety line, alert level, Start. While walking: blurred camera view + caption on top,
+   then the big Ask button, the two tiles, the level, and Stop — in that reading order. */
 :root {
-  color-scheme: dark light;
-  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --surface: #151922;
+  --surface-2: #1d2330;
+  --line: #2b3242;
+  --text: #f5f7fa;
+  --muted: #b4bccb;
+  --accent: #ffd84d; /* primary action, links */
+  --accent-ink: #111318;
+  --ask: #2f6bff;
+  --listen: #ef4444;
+  --think: #8b5cf6;
+  --radius: 1rem;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 18px;
-  background: #111;
-  color: #f5f5f5;
+  line-height: 1.45;
+  background: var(--bg);
+  color: var(--text);
 }
 
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  background: rgb(11 13 18 / 92%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+}
+
+.brand-mark {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: var(--accent);
+}
+
+.badge {
+  display: none;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+body[data-walking='true'] .badge {
+  display: inline-block;
+}
+
+.toplink {
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+
+/* ---------- Layout ---------- */
 main {
-  max-width: 40rem;
+  max-width: 34rem;
   margin: 0 auto;
   padding: 1rem;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
 }
 
-.warning {
-  border-left: 4px solid #f5c400;
-  padding-left: 0.75rem;
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
 }
 
-fieldset {
-  border: 1px solid #555;
-  margin: 1rem 0;
-}
-
-label {
-  display: block;
-  padding: 0.5rem 0;
-}
-
-button {
-  width: 100%;
-  min-height: 4rem;
-  font-size: 1.4rem;
-  font-weight: 700;
-  border-radius: 0.5rem;
-  border: none;
-  background: #f5c400;
-  color: #111;
-}
-
-#ask {
-  margin-top: 0.75rem;
-  min-height: 6rem; /* the most used action gets the biggest target */
-  background: #2563eb;
-  color: #fff;
-}
-
-.ask-row {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.route-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  margin-top: 0.75rem;
-}
-
-.route-row label {
-  width: 100%;
-  padding: 0;
-}
-
-.route-row input {
-  flex: 1;
-  min-width: 10rem;
-  min-height: 3rem;
-  font-size: 1.1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #6b7280;
-  background: #1f2937;
-  color: #f5f5f5;
-  padding: 0 0.75rem;
-}
-
-.route-row button {
-  width: auto;
-  min-height: 3rem;
-  font-size: 1.1rem;
-  padding: 0 1rem;
-}
-
-.ask-row button {
-  flex: 1;
-  font-size: 1.15rem;
-  background: #374151;
-  color: #fff;
-}
-
-#ask[aria-pressed='true'] {
-  background: #dc2626;
-}
-
-button:focus-visible {
-  outline: 4px solid #fff;
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible {
+  outline: 3px solid #fff;
   outline-offset: 3px;
 }
 
-#status {
-  margin-top: 1rem;
-  font-size: 1.2rem;
-  min-height: 2em;
+/* ---------- Intro (before a walk) ---------- */
+.intro h1 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.lead {
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.safety {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: rgb(255 216 77 / 10%);
+  border: 1px solid rgb(255 216 77 / 35%);
+  font-size: 0.95rem;
+}
+
+body[data-walking='true'] .intro {
+  display: none;
+}
+
+/* ---------- Camera stage (while walking, on top) ---------- */
+.stage-wrap {
+  display: none;
+}
+
+body[data-walking='true'] .stage-wrap {
+  display: block;
+  margin: -0.25rem 0 1rem;
 }
 
 .stage {
   position: relative;
-  margin-top: 1rem;
+  min-height: 12rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 #blur-view,
 #overlay {
   width: 100%;
-  border-radius: 0.5rem;
   display: block;
 }
 
 #blur-view[hidden] {
   display: none;
+}
+
+#overlay {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  pointer-events: none;
 }
 
 /* The raw camera image is never visible. It still plays (the detector and the blur read it) but is invisible,
@@ -133,19 +177,426 @@ button:focus-visible {
   pointer-events: none;
 }
 
-#overlay {
+.stage-wait {
   position: absolute;
   inset: 0;
-  height: 100%;
-  pointer-events: none;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+#blur-view:not([hidden]) ~ .stage-wait {
+  display: none;
+}
+
+/* Caption: what Footprint last said. Always present for screen readers (aria-live). */
+.caption {
+  margin: 0.75rem 0 0;
+  padding: 0.85rem 1rem;
+  min-height: 3.2rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+body[data-walking='false'] .caption {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+body[data-walking='false'] .stage-wrap {
+  display: block;
+}
+
+body[data-walking='false'] .stage {
+  display: none;
+}
+
+/* ---------- Alert level (segmented control) ---------- */
+.segmented {
+  border: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+.segmented legend {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  padding: 0;
+}
+
+.segments {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.segments label {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.segments input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.segments span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 4rem;
+  padding: 0.5rem 0.25rem;
+  border-radius: 0.8rem;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.segments b {
+  font-size: 1rem;
+}
+
+.segments small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.segments input:checked + span {
+  background: rgb(255 216 77 / 14%);
+  border-color: var(--accent);
+}
+
+.segments input:focus-visible + span {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ---------- Buttons ---------- */
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  color: inherit;
+  touch-action: manipulation;
+  transition: transform 0.08s ease, filter 0.15s, background 0.2s;
+}
+
+button:active {
+  transform: scale(0.97);
+  filter: brightness(1.15);
+}
+
+.start {
+  width: 100%;
+  min-height: 4.5rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 1.4rem;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgb(255 216 77 / 20%);
+}
+
+body[data-walking='true'] .start {
+  min-height: 3.5rem;
+  margin-top: 1.25rem;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--listen);
+  box-shadow: none;
+  font-size: 1.15rem;
+}
+
+/* The most used action: one big, obvious button with a visible state. */
+.ask {
+  width: 100%;
+  min-height: 7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  border-radius: 1.5rem;
+  background: var(--ask);
+  color: #fff;
+  font-size: 1.45rem;
+  font-weight: 800;
+  box-shadow: 0 10px 30px rgb(47 107 255 / 30%);
+  position: relative;
+}
+
+.ask-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.ask-icon rect {
+  fill: currentColor;
+}
+
+.ask[data-state='starting'] {
+  background: #b45309;
+}
+
+.ask[data-state='listening'] {
+  background: var(--listen);
+  box-shadow: 0 0 0 0 rgb(239 68 68 / 60%);
+  animation: pulse 1.2s ease-out infinite;
+}
+
+.ask[data-state='thinking'] {
+  background: var(--think);
+}
+
+.ask[data-state='thinking'] .ask-icon {
+  animation: breathe 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    box-shadow: 0 0 0 18px rgb(239 68 68 / 0%);
+  }
+}
+
+@keyframes breathe {
+  to {
+    opacity: 0.35;
+  }
+}
+
+.hint {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.ask-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.tile {
+  min-height: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.tile svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Collapsible panels ---------- */
+.panel {
+  margin-top: 1rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.panel summary {
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 1.4rem;
+  color: var(--muted);
+}
+
+.panel[open] summary::after {
+  content: '–';
+}
+
+.panel > :not(summary) {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.panel > :last-child {
+  margin-bottom: 1rem;
+}
+
+.route-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.route-row label {
+  width: 100%;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.route-row input {
+  flex: 1;
+  min-width: 10rem;
+  min-height: 3.25rem;
+  font: inherit;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  padding: 0 0.85rem;
+}
+
+.route-row button {
+  min-height: 3.25rem;
+  padding: 0 1.1rem;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 800;
+}
+
+.panel .hint {
+  text-align: left;
+}
+
+.dev-panel {
+  margin-top: 2rem;
+  opacity: 0.85;
+}
+
+.dev-panel fieldset {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.dev-panel label {
+  display: block;
+  padding: 0.35rem 0;
 }
 
 .dev {
   font-size: 0.8rem;
-  color: #aaa;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
-/* Links readable on the dark background (contrast ≥ 4.5:1). */
-main a {
-  color: #ffd84d;
+/* ---------- Footer ---------- */
+.foot {
+  margin-top: 1.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.foot p {
+  margin: 0.5rem 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Before a walk the caption stays out of sight until there is something to say (an error, "stopped"); it remains in
+   the accessibility tree as the live region. */
+.caption:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+}
+
+body[data-walking='true'] .segmented {
+  margin: 1.25rem 0 0;
+}
+
+/* Language picker in the top bar (R3.2). */
+.lang-pick select {
+  min-height: 2.5rem;
+  max-width: 7.5rem;
+  padding: 0 0.5rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Longer words in other languages (R3.2): the top bar wraps instead of scrolling sideways. */
+.topbar {
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+}
+
+.badge {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html,
+body {
+  overflow-x: hidden;
 }

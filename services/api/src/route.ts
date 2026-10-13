@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   cleanDestination,
   decodePolyline,
+  isLang,
   distanceM,
   hazardsAlongRoute,
   MAX_ROUTE_M,
@@ -166,7 +167,8 @@ export function registerRoute(app: FastifyInstance, opts: RouteOptions): void {
   app.post('/api/route', async (req, reply) => {
     const session = req.headers['x-session-id'];
     if (typeof session !== 'string' || !SESSION_RE.test(session)) return reply.code(400).send({ error: 'session_id' });
-    const b = (req.body ?? {}) as { destination?: unknown; origin?: { lat?: unknown; lng?: unknown } };
+    const b = (req.body ?? {}) as { destination?: unknown; origin?: { lat?: unknown; lng?: unknown }; lang?: unknown };
+    const lang = isLang(b.lang) ? b.lang : 'en-IN';
     const destination = typeof b.destination === 'string' ? cleanDestination(b.destination) : '';
     const lat = Number(b.origin?.lat), lng = Number(b.origin?.lng);
     if (destination.length < 2 || !(Math.abs(lat) <= 90) || !(Math.abs(lng) <= 180) || (lat === 0 && lng === 0)) {
@@ -192,7 +194,7 @@ export function registerRoute(app: FastifyInstance, opts: RouteOptions): void {
         .map((h) => toPublic(h, t));
       const along = hazardsAlongRoute(hazards, line);
       return {
-        summary: routeSummary(route.placeName || destination, route.distanceMeters, route.durationS, along),
+        summary: routeSummary(route.placeName || destination, route.distanceMeters, route.durationS, along, lang),
         distanceMeters: route.distanceMeters,
         durationS: route.durationS,
         hazards: along,

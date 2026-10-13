@@ -9,3 +9,4 @@ export * from './community.js';
 export * from './health.js';
 export * from './live.js';
 export * from './route.js';
+export * from './i18n.js';

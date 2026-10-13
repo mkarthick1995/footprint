@@ -4,6 +4,7 @@
 import { HAZARD_TYPES, type AlertCandidate, type AlertPreset, type HazardType, type Tier } from './types.js';
 import { SEVERITY_ORDER, tierAllowed } from './tiers.js';
 import { filterModelText, type FilterResult } from './safetyFilter.js';
+import { localPhrase, type LangCode, type PhraseSpec } from './i18n.js';
 
 export type Earcon = 'imminent' | 'near' | 'system' | null;
 
@@ -20,6 +21,8 @@ export interface Utterance {
   ids: string[];
   /** Set for model text: an interrupted answer can be resumed (owner phone test 2026-10-13). */
   kind?: ModelTextKind;
+  /** Hazard alerts: the parts of the phrase, so the output can say it in the user's language (R3.2). */
+  phrase?: PhraseSpec;
 }
 
 /**
@@ -183,23 +186,35 @@ export function phraseFor(g: Pick<Group, 'tier' | 'type' | 'side' | 'items' | 'l
   return spaced && g.side === 'around' ? `${subject} ${where}` : `${subject}, ${where}`;
 }
 
+/** An alert in `lang`, from its parts: English uses phraseFor's wording, other languages their phrase kit (R3.2). */
+export function phraseText(p: PhraseSpec, lang: LangCode = 'en-IN'): string {
+  const local = localPhrase(p, lang);
+  if (local) return local;
+  const items = Array.from({ length: p.n }, () => ({ reports: p.reports ?? 1 }) as AlertCandidate);
+  return phraseFor({ tier: p.tier, type: p.type, side: p.side, items, lowConfidence: p.lowConfidence, community: p.community });
+}
+
 /**
- * The fixed alert phrases most likely to be needed, so the natural voice can be fetched once at walk start and played
- * without a network wait (R3.4, ADR-041): every "Stop!", and near / ahead phrases for the common moving types.
+ * The alerts most likely to be needed, as parts — fetched as natural-voice audio at walk start in the user's language
+ * so urgent alerts play without a network wait (R3.4, ADR-041): every "Stop!", near / ahead for the common moving types.
  */
-export function commonAlertPhrases(): string[] {
-  const out = new Set<string>();
-  const one = [{ reports: 1 } as AlertCandidate];
-  for (const type of HAZARD_TYPES) out.add(phraseFor({ tier: 'P0', type, side: 'ahead', items: one, lowConfidence: false }));
-  out.add(phraseFor({ tier: 'P0', type: 'unknown', side: 'ahead', items: one, lowConfidence: true }));
+export function commonAlertSpecs(): PhraseSpec[] {
+  const out: PhraseSpec[] = [];
+  for (const type of HAZARD_TYPES) out.push({ tier: 'P0', type, side: 'ahead', n: 1, lowConfidence: false });
+  out.push({ tier: 'P0', type: 'unknown', side: 'ahead', n: 1, lowConfidence: true });
   for (const type of ['person', 'cyclist', 'vehicle', 'unknown'] as const) {
     for (const side of ['left', 'ahead', 'right'] as const) {
-      out.add(phraseFor({ tier: 'P1', type, side, items: one, lowConfidence: false }));
-      out.add(phraseFor({ tier: 'P1', type, side, items: one, lowConfidence: true }));
-      out.add(phraseFor({ tier: 'P2', type, side, items: one, lowConfidence: false }));
+      out.push({ tier: 'P1', type, side, n: 1, lowConfidence: false });
+      out.push({ tier: 'P1', type, side, n: 1, lowConfidence: true });
+      out.push({ tier: 'P2', type, side, n: 1, lowConfidence: false });
     }
   }
-  return [...out];
+  return out;
+}
+
+/** commonAlertSpecs() as English text, without duplicates. */
+export function commonAlertPhrases(lang: LangCode = 'en-IN'): string[] {
+  return [...new Set(commonAlertSpecs().map((p) => phraseText(p, lang)))];
 }
 
 function cap(s: string): string {
@@ -359,6 +374,14 @@ export class AlertManager {
         vibrate: VIBRATE[group.tier],
         interrupt: speaking,
         ids,
+        phrase: {
+          tier: group.tier,
+          type: group.type,
+          side: group.side,
+          n: group.items.length,
+          lowConfidence: group.lowConfidence,
+          ...(group.community ? { community: true, reports: Math.max(...group.items.map((c) => c.reports ?? 1)) } : {}),
+        },
       },
       now,
     );

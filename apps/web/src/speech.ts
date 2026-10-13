@@ -65,6 +65,13 @@ export interface SpeakOptions {
    * instead (urgent alerts: short; answers: longer). 0 = device voice unless cached.
    */
   naturalWaitMs?: number;
+  /** Language of `text` (BCP-47, e.g. ta-IN). Default English. */
+  lang?: string;
+  /**
+   * The English original, spoken instead when neither the natural voice nor an on-device voice for `lang` is
+   * available — an English alert beats an unreadable one (R3.2).
+   */
+  englishFallback?: string;
 }
 
 /** Bumped by every speak() / cancelSpeech(): a natural clip that arrives late for a superseded message is dropped. */
@@ -91,8 +98,9 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
   const gen = ++generation;
   if (opts.interrupt ?? true) cancelDevice();
   stopClip();
+  const lang = opts.lang ?? 'en-IN';
   if (!naturalVoiceReady()) return deviceSpeak(text, opts);
-  const cached = cachedClip(text);
+  const cached = cachedClip(text, lang);
   if (cached) return playClip(cached, text, opts);
   let settled = false;
   const fallback = window.setTimeout(() => {
@@ -100,7 +108,7 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
     settled = true;
     deviceSpeak(text, opts); // late network: never leave an alert unsaid
   }, opts.naturalWaitMs ?? 0);
-  void loadClip(text).then((buf) => {
+  void loadClip(text, lang).then((buf) => {
     if (settled || gen !== generation) return; // superseded, or the device voice already took it (clip is cached now)
     settled = true;
     window.clearTimeout(fallback);
@@ -114,8 +122,13 @@ function cancelDevice(): void {
 }
 
 /** The on-device voice. */
-function deviceSpeak(text: string, opts: SpeakOptions): void {
+function deviceSpeak(textIn: string, opts: SpeakOptions): void {
   const { interrupt = true, onDone, onStart, onBoundary } = opts;
+  const want = (opts.lang ?? 'en-IN').toLowerCase();
+  const native = want.startsWith('en') ? null : voiceFor(want);
+  // No on-device voice for this language: say the English original rather than mispronounced text.
+  const text = native || want.startsWith('en') || !opts.englishFallback ? textIn : opts.englishFallback;
+  const voice = native ?? chosen;
   if (!('speechSynthesis' in window)) {
     onDone?.();
     return;
@@ -123,9 +136,9 @@ function deviceSpeak(text: string, opts: SpeakOptions): void {
   if (interrupt) window.speechSynthesis.cancel();
   window.speechSynthesis.resume(); // Chrome can leave the queue paused after backgrounding
   const u = new SpeechSynthesisUtterance(text);
-  if (chosen) {
-    u.voice = chosen;
-    u.lang = chosen.lang;
+  if (voice) {
+    u.voice = voice;
+    u.lang = voice.lang;
   }
   u.rate = 1.0; // natural pace; user-adjustable rate comes with presets (Q14, ACC-03)
   u.pitch = 1.0;
@@ -140,6 +153,18 @@ function deviceSpeak(text: string, opts: SpeakOptions): void {
   u.onend = finish;
   u.onerror = finish;
   window.speechSynthesis.speak(u);
+}
+
+/** An installed voice for a language (e.g. "ta-in" → a Tamil voice), or null. */
+function voiceFor(lang: string): SpeechSynthesisVoice | null {
+  if (!('speechSynthesis' in window)) return null;
+  const base = lang.split('-')[0]!;
+  const voices = window.speechSynthesis.getVoices();
+  return (
+    voices.find((v) => v.lang.toLowerCase().replace('_', '-') === lang) ??
+    voices.find((v) => v.lang.toLowerCase().startsWith(base)) ??
+    null
+  );
 }
 
 /** Stop any speech now (natural clip and device voice). */

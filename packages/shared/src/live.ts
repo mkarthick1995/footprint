@@ -82,8 +82,16 @@ export const LIVE_SYSTEM_INSTRUCTION = [
   'Some requests are commands for the app, not questions. Then reply with only the command, nothing else:',
   'fewer, less or quieter alerts → "Command: fewer alerts." · more alerts or more detail → "Command: more alerts." ·',
   'which alert level or mode is on → "Command: alert level." · a route, directions, or how to get or walk to a place →',
-  '"Command: route to " followed by the place exactly as the user said it.',
+  '"Command: route to " followed by the place exactly as the user said it. · to speak or switch to another language →',
+  '"Command: language " followed by the language name in English (for example "Command: language Tamil.").',
+  'Command replies are always in English, exactly in this form, whatever language the user speaks.',
 ].join(' ');
+
+/** The system instruction for one walk: the base rules, plus "answer in <language>" for a non-English user (R3.2). */
+export function liveInstruction(languageName: string): string {
+  if (languageName === 'English') return LIVE_SYSTEM_INSTRUCTION;
+  return `${LIVE_SYSTEM_INSTRUCTION} Answer in ${languageName}, in simple everyday words, whatever language the photo text is in.`;
+}
 
 /** Base64 length → bytes (approximate, for limits). */
 export function base64Bytes(b64: string): number {
@@ -95,6 +103,7 @@ export function base64Bytes(b64: string): number {
 export type ModelCommand =
   | { kind: 'fewer' | 'more' | 'level' }
   | { kind: 'route'; destination: string }
+  | { kind: 'language'; name: string }
   | { kind: 'unclear' }
   | null;
 
@@ -108,6 +117,8 @@ export function parseModelCommand(text: string | undefined): ModelCommand {
   const t = text.trim();
   if (!/^command\b/i.test(t)) return null;
   const body = t.replace(/^command\W*/i, '').trim();
+  const language = body.match(/^language\s+(.+?)[.!?\s]*$/i);
+  if (language) return { kind: 'language', name: language[1]!.trim() };
   const route = body.match(/^route\s+to\s+(.+?)[.!?\s]*$/i);
   if (route) {
     const destination = route[1]!.replace(/[^\p{L}\p{N}\s'&,.-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);

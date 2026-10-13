@@ -136,3 +136,39 @@ describe('"not seen" votes (ADR-025)', () => {
     expect(posted.filter((p) => p.notSeen)).toEqual([]);
   });
 });
+
+describe('location permission and "no fix" (owner test 2026-10-14)', () => {
+  const fakeGeo = () => {
+    const calls: string[] = [];
+    let fail: ((e: GeolocationPositionError) => void) | undefined;
+    const geo = {
+      getCurrentPosition: () => void calls.push('getCurrentPosition'),
+      watchPosition: (_ok: PositionCallback, err?: PositionErrorCallback | null) => {
+        fail = err ?? undefined;
+        calls.push('watchPosition');
+        return 1;
+      },
+      clearWatch: () => undefined,
+    } as unknown as Geolocation;
+    const error = (code: number) => fail?.({ code, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3, message: '' } as GeolocationPositionError);
+    return { geo, calls, error };
+  };
+
+  it('requestPermission asks for a position at once (inside the tap)', () => {
+    const { geo, calls } = fakeGeo();
+    CommunityClient.requestPermission(geo);
+    expect(calls).toEqual(['getCurrentPosition']);
+  });
+
+  it('no position within the timeout → said once; denied → location off', () => {
+    const { geo, error } = fakeGeo();
+    const said: string[] = [];
+    const c = new CommunityClient({ geolocation: geo, onLocationOff: () => said.push('off'), onNoFix: () => said.push('no fix') });
+    c.start();
+    error(3);
+    error(3);
+    expect(said).toEqual(['no fix']);
+    error(1);
+    expect(said).toEqual(['no fix', 'off']);
+  });
+});

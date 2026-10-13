@@ -46,7 +46,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 
 ## Phase 3 — Stretch (only if Q1–Q14 are done by 10-15)
 - [ ] R3.1 Meta glasses integration
-- [ ] R3.2 Multilingual voice
+- [~] R3.2 Languages — @mkarthick1995 2026-10-14 · en/hi/ta/te/ja: picker + "switch to Tamil", alerts from per-language parts, translated messages/page/route summary, Gemini answers in the language with a server-side Gemini safety check (fail closed), natural voice per language (ADR-042, SAF-35/36); **translations unreviewed** — teammates review hi/ta/te in docs/i18n-review.md; Japanese needs a reviewer
 - [ ] R3.3 Custom pothole detector
 - [~] R3.4 Natural Google voice — @mkarthick1995 2026-10-14 · Chirp 3 HD Aoede for all speech via `POST /api/tts` (cache, caps), ~85 phrases fetched at walk start, device voice fallback within 250–2500 ms by tier (ADR-041, SAF-34); owner picked the voice from samples; languages next (R3.2)
 
@@ -57,6 +57,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [ ] R4.4 README for judges
 - [ ] R4.5 Final deploy + link check + cost alerts + min instances 1
 - [ ] R4.6 Submit on Hack2skill
+- [~] R4.8 UX redesign (ADR-040, deviation confirmed) — @mkarthick1995 2026-10-14 · camera view on top while walking, big stateful Ask, segmented level, collapsible route/dev panels; preview `uxr` approved by owner · fix: location permission asked inside the Start tap (owner: no prompt during a walk, only on the map page) + "No location yet…" said once if no fix within 20 s
 - [ ] R4.7 Safety & limitations disclosure + full ST matrix run
 
 ## Open questions

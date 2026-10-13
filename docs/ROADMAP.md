@@ -54,6 +54,7 @@ Owners A/B/C are proposed — confirm in `docs/TEAM.md`.
 | R4.4 | README for judges (pitch, live link, architecture, how to try) | A | Reviewed by all |
 | R4.5 | Final deploy, keys rotated/locked, link tested logged-out, cost alerts set | A | Link live through 11-06 |
 | R4.6 | **Submit on Hack2skill** | A | Confirmation received by 10-17 |
+| R4.8 | **UX redesign** (ADR-040, deviation confirmed by owner 2026-10-14): camera view on top while walking, big stateful Ask button, segmented alert level, collapsible route + developer panels, dark high-contrast theme | A | Owner approves on preview; TalkBack order = visual order |
 | R4.7 | **Safety & limitations disclosure**: onboarding acknowledgement, in-app limitations, README + deck slide + video line; approved wording only; run full ST matrix and record results (ETH-01/04, SAF-14) | All | SAFETY.md §6 filled in; disclaimer in app, README, deck |
 
 ## Cut order if late (cut from the top)

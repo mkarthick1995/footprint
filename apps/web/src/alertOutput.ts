@@ -2,6 +2,9 @@
 // aria-live mirror. Everything that wants to say something goes through say() (system) or update() (hazards).
 import {
   AlertManager,
+  phraseText,
+  translate,
+  type LangCode,
   type AlertCandidate,
   type AlertPreset,
   type FilterResult,
@@ -36,6 +39,11 @@ export class AlertOutput {
   private startTimer: number | undefined;
   private silentTimer: number | undefined;
   private voiceFailed = false;
+  /** Spoken language (R3.2): alerts and system messages are localized at the last step, here. */
+  private lang: LangCode = 'en-IN';
+  /** Recently produced localized texts (a repeat or resume of one is already in the user's language). */
+  private localized = new Set<string>();
+  private lastSaid = '';
   /** The utterance being spoken and how far it got (for resuming an interrupted answer). */
   private speaking: { text: string; kind?: string; tier: string; chars: number } | null = null;
 
@@ -44,6 +52,26 @@ export class AlertOutput {
     preset: AlertPreset = 'standard',
   ) {
     this.manager = new AlertManager({ preset });
+  }
+
+  setLanguage(lang: LangCode): void {
+    this.lang = lang;
+  }
+
+  /**
+   * What to actually say for `u`, in which language: hazard alerts from their parts, system messages translated,
+   * model answers as they are (already in the user's language). No translation → the English text in the English voice.
+   */
+  private localize(u: Utterance): { text: string; lang: LangCode } {
+    if (!u.text) return { text: '', lang: this.lang };
+    if (this.lang === 'en-IN' || u.kind === 'answer' || u.kind === 'context' || this.localized.has(u.text)) {
+      return { text: u.text, lang: this.lang };
+    }
+    const local = u.phrase ? phraseText(u.phrase, this.lang) : translate(u.text, this.lang);
+    if (!local) return { text: u.text, lang: 'en-IN' };
+    if (this.localized.size > 200) this.localized.clear();
+    this.localized.add(local);
+    return { text: local, lang: this.lang };
   }
 
   /** Call synchronously from the Start tap: unlocks earcons and speech (mobile browsers need a gesture). */
@@ -86,9 +114,12 @@ export class AlertOutput {
 
   /** "Repeat": say the last spoken message again. */
   repeat(): boolean {
-    const ok = this.manager.repeat();
+    // The last words as actually said (localized), not the manager's English original.
+    if (!this.lastSaid) return false;
+    this.localized.add(this.lastSaid);
+    this.manager.system(this.lastSaid);
     this.pump();
-    return ok;
+    return true;
   }
 
   /** Latest frame's hazard candidates. */
@@ -119,9 +150,13 @@ export class AlertOutput {
       if (cut?.tier === 'SYS') this.manager.resumeSystem(cut.text, cut.chars);
       cancelSpeech();
     }
-    this.speaking = u.text ? { text: u.text, kind: u.kind, tier: u.tier, chars: 0 } : null;
+    const said = this.localize(u);
+    this.speaking = said.text ? { text: said.text, kind: u.kind, tier: u.tier, chars: 0 } : null;
     this.busy = true;
-    if (u.text) this.mirror.textContent = u.text; // cue-only repeats keep the last words on screen
+    if (said.text) {
+      this.mirror.textContent = said.text; // cue-only repeats keep the last words on screen
+      this.lastSaid = said.text;
+    }
     if (u.vibrate && 'vibrate' in navigator) navigator.vibrate(u.vibrate);
     const done = () => {
       if (token !== this.token) return; // superseded by a newer message
@@ -134,10 +169,12 @@ export class AlertOutput {
     const lead = playEarcon(u.earcon);
     this.startTimer = window.setTimeout(() => {
       if (token !== this.token) return;
-      if (!u.text) return done();
+      if (!said.text) return done();
       window.clearTimeout(this.silentTimer);
       this.silentTimer = window.setTimeout(() => this.reportSilentVoice(), START_TIMEOUT_MS);
-      speak(u.text, {
+      speak(said.text, {
+        lang: said.lang,
+        englishFallback: u.text,
         interrupt: false,
         naturalWaitMs: NATURAL_WAIT_MS[u.tier] ?? 0,
         onStart: () => {
@@ -150,7 +187,7 @@ export class AlertOutput {
         onDone: done,
       });
     }, lead);
-    this.watchdog = window.setTimeout(done, lead + (NATURAL_WAIT_MS[u.tier] ?? 0) + watchdogMs(u.text));
+    this.watchdog = window.setTimeout(done, lead + (NATURAL_WAIT_MS[u.tier] ?? 0) + watchdogMs(said.text));
   }
 
   /** The speech engine accepted text but never started: say so on screen, with a tone and vibration (SAF-05). */
