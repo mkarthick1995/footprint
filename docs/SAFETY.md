@@ -186,6 +186,8 @@ When anything happens that the code does not explicitly handle:
   pauses protection (it announces this). A native app would remove this limit (ADR-015).
 - The **route summary** only lists hazards other walkers have reported along the route; it does not give turn-by-turn
   directions (use your navigation app), and it may pick a different place with the same name — check the distance it says.
+  Saying "route to …" as the very first question of a walk may be missed (same first-turn transcript gap as the voice
+  commands); ask again or type the destination.
 - It is an **English-first hackathon prototype**, tested by the team on a limited set of streets.
 
 ## 5. Approved and forbidden wording
