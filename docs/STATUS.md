@@ -46,7 +46,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 
 ## Phase 3 — Stretch (only if Q1–Q14 are done by 10-15)
 - [ ] R3.1 Meta glasses integration
-- [~] R3.2 Languages — @mkarthick1995 2026-10-14 · en/hi/ta/te/ja: picker + "switch to Tamil", alerts from per-language parts, translated messages/page/route summary, Gemini answers in the language with a server-side Gemini safety check (fail closed), natural voice per language (ADR-042, SAF-35/36); **translations unreviewed** — teammates review hi/ta/te in docs/i18n-review.md; Japanese needs a reviewer · **live 2026-10-14** (owner release; backup branch backup/main-2026-10-14 = previous main fe63adc); review still pending
+- [~] R3.2 Languages — @mkarthick1995 2026-10-14 · en/hi/ta/te/ja: picker + "switch to Tamil", alerts from per-language parts, translated messages/page/route summary, Gemini answers in the language with a server-side Gemini safety check (fail closed), natural voice per language (ADR-042, SAF-35/36); **translations unreviewed** — teammates review hi/ta/te in docs/i18n-review.md; Japanese needs a reviewer · **live 2026-10-14** (owner release; backup branch backup/main-2026-10-14 = previous main fe63adc); review still pending · fix 10-14: voice no longer drops after a language switch (ADR-043)
 - [ ] R3.3 Custom pothole detector
 - [x] R3.4 Natural Google voice — @mkarthick1995 2026-10-14 · Chirp 3 HD Aoede for all speech via `POST /api/tts` (cache, caps), ~85 phrases fetched at walk start, device voice fallback within 250–2500 ms by tier (ADR-041, SAF-34); owner picked the voice from samples; languages next (R3.2)
 

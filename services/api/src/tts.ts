@@ -55,7 +55,9 @@ const SESSION_RE = /^[A-Za-z0-9-]{8,64}$/;
 export function registerTts(app: FastifyInstance, opts: TtsOptions = {}): void {
   const now = opts.now ?? Date.now;
   const dailyChars = opts.dailyChars ?? Number(process.env.TTS_DAILY_CHARS || 300_000);
-  const perSession = new MinuteLimiter(opts.perSessionPerMinute ?? 120);
+  // ~85 phrases are fetched per language at walk start; a user switching languages twice used to hit 120/min and lose
+  // the natural voice (owner test 2026-10-14). Cost stays bounded by the daily character cap and the shared cache.
+  const perSession = new MinuteLimiter(opts.perSessionPerMinute ?? 400);
   const maxEntries = opts.cacheEntries ?? 2000;
   // Fixed phrases repeat across every walk and user: an in-memory LRU makes most requests free and instant.
   const cache = new Map<string, Buffer>();
