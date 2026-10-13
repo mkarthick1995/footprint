@@ -502,6 +502,8 @@ Proposed · 2026-10-14 (owner asked: native Android app, or browser integration;
   microphones (browser uses the BT mic; Android switches to call-quality audio while asking), touchpad tap =
   play/pause = our earbud handler (ADR-035) → one tap = Ask. Double/triple taps unverified (touchpad swipes = volume,
   long press = Meta AI). No code change; judges can reproduce with any Bluetooth earbuds.
+  **Verified 2026-10-14 (owner, Ray-Ban Meta as Bluetooth headset): one tap on the glasses = Ask works; alerts and answers play
+  in the glasses.**
 - **Demo:** live = chest-mounted phone camera + glasses audio/tap; glasses-view shot = owner's Ray-Ban recording in clip
   mode, labelled as a recording.
 
