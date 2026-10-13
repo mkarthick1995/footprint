@@ -30,7 +30,8 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
   output transcription; the proxy forwards transcript text only and drops model audio). Plus hazard ingest + segment
   scores (Firestore), the web app, the public map, rate limits and session caps. `POST /api/route` (Q11, ADR-036):
   destination + current position → Google Routes API (WALK, service-account OAuth) → confirmed hazards within 25 m of
-  the polyline → spoken summary; nothing stored.
+  the polyline → spoken summary; nothing stored. `POST /api/tts` (R3.4, ADR-041): our own already-filtered words →
+  Cloud Text-to-Speech Chirp 3 HD (MP3, cached); the phone pre-fetches urgent phrases and falls back to the device voice.
 - **Frame source abstraction (ADR-016):** `camera | recorded clip`. Everything downstream is identical, so PC
   development and tests run on clips, phones run on the camera. `grabFrame(video, maxWidth)` gives later steps a
   downscaled canvas (detector, face blur, scan upload). Screen Wake Lock is held while running and re-acquired on

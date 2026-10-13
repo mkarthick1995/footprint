@@ -13,6 +13,11 @@ export function unlockAudio(): void {
   }
 }
 
+/** The unlocked audio context (shared with the natural voice, voice.ts), or null before Start / without Web Audio. */
+export function audioContext(): AudioContext | null {
+  return ctx;
+}
+
 /** [frequency Hz, duration ms, gap ms] per beep. */
 const PATTERNS: Record<Exclude<Earcon, null>, [number, number, number][]> = {
   imminent: [[1100, 70, 40], [1100, 70, 40], [1100, 70, 0]],

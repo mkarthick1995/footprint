@@ -1,5 +1,6 @@
-// On-device speech (ADR-033): free, instant, offline. Picks the most natural installed voice instead of the
-// browser default. Natural Google voice (pre-rendered + Gemini-TTS) replaces this before submission (R3.4).
+// Speech output (ADR-033, ADR-041): the natural Google voice (voice.ts) when its clip is ready in time, otherwise the
+// most natural installed on-device voice — free, instant and offline, so nothing is ever left unsaid.
+import { cachedClip, loadClip, naturalVoiceReady, playClip, stopClip } from './voice';
 
 export interface VoiceInfo {
   name: string;
@@ -59,7 +60,15 @@ export interface SpeakOptions {
   onStart?: () => void;
   /** Word-boundary progress (character index), so an interrupted answer can resume from the right sentence. */
   onBoundary?: (charIndex: number) => void;
+  /**
+   * How long to wait for the natural voice when its clip isn't cached yet, before the on-device voice speaks
+   * instead (urgent alerts: short; answers: longer). 0 = device voice unless cached.
+   */
+  naturalWaitMs?: number;
 }
+
+/** Bumped by every speak() / cancelSpeech(): a natural clip that arrives late for a superseded message is dropped. */
+let generation = 0;
 
 /**
  * Call synchronously inside the Start tap. Mobile Chrome only lets a page speak after it has spoken within a user
@@ -77,8 +86,35 @@ export function primeSpeech(text: string): void {
   window.speechSynthesis.speak(u);
 }
 
-/** Speak through the on-device voice. Only the alert output (alertOutput.ts) should call this. */
+/** Speak `text`. Only the alert output (alertOutput.ts) should call this. */
 export function speak(text: string, opts: SpeakOptions = {}): void {
+  const gen = ++generation;
+  if (opts.interrupt ?? true) cancelDevice();
+  stopClip();
+  if (!naturalVoiceReady()) return deviceSpeak(text, opts);
+  const cached = cachedClip(text);
+  if (cached) return playClip(cached, text, opts);
+  let settled = false;
+  const fallback = window.setTimeout(() => {
+    if (settled || gen !== generation) return;
+    settled = true;
+    deviceSpeak(text, opts); // late network: never leave an alert unsaid
+  }, opts.naturalWaitMs ?? 0);
+  void loadClip(text).then((buf) => {
+    if (settled || gen !== generation) return; // superseded, or the device voice already took it (clip is cached now)
+    settled = true;
+    window.clearTimeout(fallback);
+    if (buf) playClip(buf, text, opts);
+    else deviceSpeak(text, opts);
+  });
+}
+
+function cancelDevice(): void {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+/** The on-device voice. */
+function deviceSpeak(text: string, opts: SpeakOptions): void {
   const { interrupt = true, onDone, onStart, onBoundary } = opts;
   if (!('speechSynthesis' in window)) {
     onDone?.();
@@ -106,12 +142,15 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
   window.speechSynthesis.speak(u);
 }
 
-/** Stop any speech now. */
+/** Stop any speech now (natural clip and device voice). */
 export function cancelSpeech(): void {
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  generation++;
+  stopClip();
+  cancelDevice();
 }
 
 /** For the dev readout: which voice is in use. */
 export function currentVoiceName(): string {
+  if (naturalVoiceReady()) return 'Google Chirp 3 HD Aoede (natural)';
   return chosen ? `${chosen.name} (${chosen.lang})` : 'browser default';
 }

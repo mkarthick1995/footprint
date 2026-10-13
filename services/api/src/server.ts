@@ -6,6 +6,7 @@ import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { FirestoreStore, registerCommunity, type CommunityOptions, type HazardStore } from './community.js';
 import { registerRoute, type RouteOptions } from './route.js';
+import { registerTts, type TtsOptions } from './tts.js';
 import { registerLive, type LiveOptions } from './live.js';
 import { registerScan, type ScanOptions } from './scan.js';
 import { registerSecurity } from './security.js';
@@ -20,6 +21,7 @@ export interface ServerOptions {
   community?: CommunityOptions;
   live?: LiveOptions;
   route?: Omit<RouteOptions, 'store'>;
+  tts?: TtsOptions;
   /** Override per-client limits (tests). */
   limits?: ReadonlyArray<[string, number]>;
 }
@@ -51,6 +53,9 @@ export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInst
 
   // R2.1/R2.5 (Q11 lite): walking route → hazards along it → spoken summary (ADR-021/027).
   registerRoute(app, { ...opts.route, store: getStore });
+
+  // R3.4: natural voice for our own (already safety-filtered) words — ADR-041.
+  registerTts(app, opts.tts);
 
   // R2.4: the hazard map page needs the browser Maps key. It is public by design (sent to Google from the browser) and
   // referrer-locked to our URLs; it comes from Secret Manager at runtime so it is never in the repo or the build.

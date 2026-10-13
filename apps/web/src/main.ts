@@ -7,7 +7,17 @@ import { HealthMonitor } from './health';
 import { LiveAsk } from './liveAsk';
 import { MediaButtons } from './mediaButtons';
 import { loadPreset, PRESET_SPOKEN, savePreset, stepPreset } from './presets';
-import { parseModelCommand, parseRouteRequest, parseVoiceCommand, type AlertPreset, type PublicHazard } from '@footprint/shared';
+import {
+  commonAlertPhrases,
+  ladderMessage,
+  parseModelCommand,
+  parseRouteRequest,
+  parseVoiceCommand,
+  type AlertPreset,
+  type PublicHazard,
+} from '@footprint/shared';
+import { prefetchClips } from './voice';
+import { ASK_MESSAGES } from './liveAsk';
 import { playEarcon } from './earcon';
 import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
@@ -204,7 +214,32 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   announce(message);
 }
 
+/**
+ * Natural voice (ADR-041): fetch the phrases most likely needed, most urgent first, as soon as the walk starts — so
+ * "Stop!" and fail-loud warnings play without a network wait. Runs in the background; misses fall back to the
+ * device voice.
+ */
+function prefetchVoice(): void {
+  const ladder = (['covered', 'dark', 'ground', 'sky'] as const).map((r) => ladderMessage({ level: 'L2', reasons: [r] }, 'L0'));
+  ladder.push(
+    ladderMessage({ level: 'L3', reasons: ['detector'] }, 'L0'),
+    ladderMessage({ level: 'L1', reasons: ['scene'] }, 'L0'),
+    ladderMessage({ level: 'L0', reasons: [] }, 'L2'),
+  );
+  const strings = (o: Record<string, unknown>) => Object.values(o).filter((v): v is string => typeof v === 'string' && v.length <= 300);
+  void prefetchClips([
+    MESSAGES.started,
+    PRESET_SPOKEN[output.preset],
+    ...commonAlertPhrases().filter((p) => p.startsWith('Stop!')),
+    ...ladder,
+    ...strings(MESSAGES),
+    ...commonAlertPhrases(),
+    ...strings(ASK_MESSAGES),
+  ]);
+}
+
 async function start(): Promise<void> {
+  prefetchVoice();
   const kind = document.querySelector<HTMLInputElement>('input[name="source"]:checked')?.value;
   try {
     if (kind === 'clip') {
