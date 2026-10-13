@@ -28,7 +28,9 @@ and *static* hazards seen far enough ahead (potholes / missing footpath 5–10 m
   `POST /api/scan` (blurred low-res frame → `gemini-3.6-flash`, thinking off, global endpoint, JSON schema — ADR-034) and the **Live proxy** (`/api/live`, Q10)
   WebSocket `/api/live` (browser ↔ Cloud Run ↔ Vertex Live `gemini-live-2.5-flash-native-audio`, us-central1, AUDIO +
   output transcription; the proxy forwards transcript text only and drops model audio). Plus hazard ingest + segment
-  scores (Firestore), the web app, the public map, rate limits and session caps.
+  scores (Firestore), the web app, the public map, rate limits and session caps. `POST /api/route` (Q11, ADR-036):
+  destination + current position → Google Routes API (WALK, service-account OAuth) → confirmed hazards within 25 m of
+  the polyline → spoken summary; nothing stored.
 - **Frame source abstraction (ADR-016):** `camera | recorded clip`. Everything downstream is identical, so PC
   development and tests run on clips, phones run on the camera. `grabFrame(video, maxWidth)` gives later steps a
   downscaled canvas (detector, face blur, scan upload). Screen Wake Lock is held while running and re-acquired on

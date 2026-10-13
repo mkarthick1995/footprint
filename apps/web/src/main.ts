@@ -7,7 +7,7 @@ import { HealthMonitor } from './health';
 import { LiveAsk } from './liveAsk';
 import { MediaButtons } from './mediaButtons';
 import { loadPreset, PRESET_SPOKEN, savePreset, stepPreset } from './presets';
-import { parseVoiceCommand, type AlertPreset } from '@footprint/shared';
+import { parseRouteRequest, parseVoiceCommand, type AlertPreset, type PublicHazard } from '@footprint/shared';
 import { playEarcon } from './earcon';
 import { openCamera, openClip, type FrameSource } from './frameSource';
 import { drawOverlay } from './overlay';
@@ -48,6 +48,32 @@ let blurrer: FaceBlurrer | null = null;
 
 const output = new AlertOutput(statusEl, loadPreset());
 
+/** Q11 lite: walking route → hazards reported along it → spoken summary (no turn-by-turn, ADR-027). */
+let routeSession = '';
+async function checkRoute(destinationRaw: string): Promise<void> {
+  const destination = destinationRaw.trim();
+  if (destination.length < 2) return announce(MESSAGES.routeNeedsDestination);
+  const origin = community.currentFix();
+  if (!origin) return announce(MESSAGES.routeNeedsLocation);
+  routeSession ||= crypto.randomUUID();
+  try {
+    const res = await fetch('/api/route', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-session-id': routeSession },
+      body: JSON.stringify({ destination, origin }),
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (res.status === 422) return announce(MESSAGES.routeTooFar);
+    if (res.status === 404) return announce(MESSAGES.routeNotFound);
+    if (!res.ok) return announce(MESSAGES.routeUnavailable);
+    const body = (await res.json()) as { summary: string; hazards: PublicHazard[] };
+    community.addHazards(body.hazards); // announced as "reported ahead" when the walker gets near
+    announce(body.summary); // fixed server template; the destination echo is cleaned server-side
+  } catch {
+    announce(MESSAGES.routeUnavailable);
+  }
+}
+
 /** Q14: alert level — chosen on screen or by voice ("fewer alerts" / "more alerts"), remembered on this phone. */
 function applyPreset(p: AlertPreset, speakIt: boolean): void {
   output.setPreset(p);
@@ -72,6 +98,8 @@ const ask = new LiveAsk({
   frame: async () => (blurrer && source ? (await blurrer.getUploadJpeg(source.video))?.blob ?? null : null),
   onAnswer: (text, question) => {
     // "Fewer alerts" / "more alerts" / "what level?" are commands to the app, not questions for Gemini.
+    const destination = parseRouteRequest(question); // "route to …" (Q11)
+    if (destination) return void checkRoute(destination);
     const cmd = parseVoiceCommand(question);
     if (cmd === 'level') return announce(PRESET_SPOKEN[output.preset]);
     if (cmd) return applyPreset(stepPreset(output.preset, cmd), true);
@@ -87,6 +115,10 @@ const ask = new LiveAsk({
 });
 askBtn.addEventListener('click', () => void ask.toggle());
 describeBtn.addEventListener('click', () => void ask.describe());
+document.querySelector<HTMLFormElement>('#route-form')!.addEventListener('submit', (e) => {
+  e.preventDefault();
+  void checkRoute(document.querySelector<HTMLInputElement>('#destination')!.value);
+});
 repeatBtn.addEventListener('click', () => {
   if (!output.repeat()) announce(MESSAGES.nothingToRepeat);
 });
@@ -146,6 +178,7 @@ async function stop(message: string = MESSAGES.stopped): Promise<void> {
   loop = null;
   scanner.stop();
   community.stop();
+  routeSession = '';
   health.stop();
   ask.stop();
   mediaButtons.disarm();

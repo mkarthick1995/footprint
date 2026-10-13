@@ -4,7 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { registerCommunity, type CommunityOptions } from './community.js';
+import { FirestoreStore, registerCommunity, type CommunityOptions, type HazardStore } from './community.js';
+import { registerRoute, type RouteOptions } from './route.js';
 import { registerLive, type LiveOptions } from './live.js';
 import { registerScan, type ScanOptions } from './scan.js';
 import { registerSecurity } from './security.js';
@@ -18,6 +19,7 @@ export interface ServerOptions {
   scan?: ScanOptions;
   community?: CommunityOptions;
   live?: LiveOptions;
+  route?: Omit<RouteOptions, 'store'>;
   /** Override per-client limits (tests). */
   limits?: ReadonlyArray<[string, number]>;
 }
@@ -43,7 +45,12 @@ export async function buildServer(opts: ServerOptions = {}): Promise<FastifyInst
   await registerScan(app, opts.scan);
 
   // R2.3: community hazards — observations in, confirmed hazards out (ADR-020/025).
-  await registerCommunity(app, opts.community);
+  let lazyStore: HazardStore | undefined;
+  const getStore = (): HazardStore => opts.community?.store ?? (lazyStore ??= new FirestoreStore());
+  await registerCommunity(app, { ...opts.community, getStore });
+
+  // R2.1/R2.5 (Q11 lite): walking route → hazards along it → spoken summary (ADR-021/027).
+  registerRoute(app, { ...opts.route, store: getStore });
 
   // R2.4: the hazard map page needs the browser Maps key. It is public by design (sent to Google from the browser) and
   // referrer-locked to our URLs; it comes from Secret Manager at runtime so it is never in the repo or the build.
