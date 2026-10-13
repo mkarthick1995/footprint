@@ -40,6 +40,39 @@ describe('Live bridge (push-to-talk, transcript only)', () => {
     expect(sent).toEqual([{ type: 'answer', text: 'There is a kerb on your left.', ms: 1200, question: 'What is ahead?' }]);
   });
 
+  it('first question of a walk: audio and "end" sent while the session opens are kept, in order (test round 1)', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    let open: () => void = () => {};
+    const connector: LiveConnector = ({ onEvent }) =>
+      new Promise((resolve) => {
+        void onEvent;
+        open = () => resolve({ sendRealtimeInput: (i) => inputs.push(i), sendClientContent: () => {}, close: () => {} });
+      });
+    const bridge = new LiveBridge(() => {}, connector, () => null, () => 0, () => {});
+    const asking = bridge.onMessage(JSON.stringify({ type: 'ask', frame: Buffer.from([0xff, 0xd8]).toString('base64') }));
+    await bridge.onMessage(JSON.stringify({ type: 'audio', data: AUDIO }));
+    await bridge.onMessage(JSON.stringify({ type: 'audio', data: AUDIO }));
+    await bridge.onMessage(JSON.stringify({ type: 'end' }));
+    expect(inputs).toEqual([]); // nothing can be sent yet
+    open();
+    await asking;
+    expect(inputs.map((i) => Object.keys(i)[0])).toEqual(['activityStart', 'video', 'audio', 'audio', 'activityEnd']);
+  });
+
+  it('cancel while the session opens: no turn is started afterwards', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    let open: () => void = () => {};
+    const connector: LiveConnector = () =>
+      new Promise((resolve) => (open = () => resolve({ sendRealtimeInput: (i) => inputs.push(i), sendClientContent: () => {}, close: () => {} })));
+    const bridge = new LiveBridge(() => {}, connector, () => null, () => 0, () => {});
+    const asking = bridge.onMessage(JSON.stringify({ type: 'ask' }));
+    await bridge.onMessage(JSON.stringify({ type: 'audio', data: AUDIO }));
+    await bridge.onMessage(JSON.stringify({ type: 'cancel' }));
+    open();
+    await asking;
+    expect(inputs).toEqual([]);
+  });
+
   it('the user\'s own words travel with the answer (for voice commands)', async () => {
     const { sent, emit, msg } = setup();
     await msg({ type: 'ask' });

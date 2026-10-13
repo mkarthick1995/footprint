@@ -74,3 +74,38 @@ describe('POST /api/route (Q11 lite)', () => {
     await app.close();
   });
 });
+
+describe('place label (spoken destination)', () => {
+  it('adds the street, or what kind of stop it is', async () => {
+    const { placeLabel } = await import('./route.js');
+    expect(placeLabel('Bus stop', 'Raj Bhavan Rd, Somajiguda, Hyderabad')).toBe('Bus stop, Raj Bhavan Rd');
+    expect(placeLabel('Joyalukkas', 'Building address, 1239/2, Amar House')).toBe('Joyalukkas');
+    expect(placeLabel('Charminar', 'Charminar Rd, Char Kaman')).toBe('Charminar');
+    expect(placeLabel(undefined, 'MG Road, Bengaluru')).toBe('MG Road');
+    expect(placeLabel('Satyam Theatre', 'Ameerpet', 'bus_stop')).toBe('Satyam Theatre bus stop');
+    expect(placeLabel('Ameerpet', 'Ameerpet', 'subway_station')).toBe('Ameerpet metro station');
+    expect(placeLabel('Ameerpet Metro Station', 'x', 'subway_station')).toBe('Ameerpet Metro Station');
+  });
+});
+
+describe('resolved place name is spoken', () => {
+  it('uses the place the destination resolved to', async () => {
+    const { app, post } = await setup(async () => ({ distanceMeters: 1200, durationS: 900, encodedPolyline: encode(LINE), placeName: 'Bus stop, Raj Bhavan Rd' }));
+    expect((await post({ destination: 'bus stop', origin: A })).json().summary).toMatch(/^Walking route to Bus stop, Raj Bhavan Rd: about 1\.2 kilometres/);
+    await app.close();
+  });
+});
+
+describe('choosing among place results', () => {
+  it('picks the nearest place of the best match kind', async () => {
+    const { nearestOfBestKind } = await import('./route.js');
+    const at = (m: number) => ({ latitude: A.lat + m / 110_540, longitude: A.lng });
+    const places = [
+      { id: 'far-stop', primaryType: 'bus_stop', location: at(850) },
+      { id: 'cafe', primaryType: 'cafe', location: at(10) },
+      { id: 'near-stop', primaryType: 'bus_stop', location: at(50) },
+    ];
+    expect(nearestOfBestKind(places, A)?.id).toBe('near-stop');
+    expect(nearestOfBestKind([], A)).toBeUndefined();
+  });
+});

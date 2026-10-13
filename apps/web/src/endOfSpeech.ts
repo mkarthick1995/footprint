@@ -13,8 +13,8 @@ export const EOS = {
   floor: 0.015,
   /** Loud audio must last this long to count as speech (ignores clicks, a passing horn blip). */
   minSpeechMs: 200,
-  /** Quiet this long after speech → the question is over. */
-  endSilenceMs: 1100,
+  /** Quiet this long after speech → the question is over. 1.1 s cut people off at natural 1–2 s pauses (test round 1); tapping Ask again still sends at once. */
+  endSilenceMs: 2000,
   /** No speech within this long → give up ("I didn't hear a question"). */
   noSpeechMs: 6000,
 } as const;

@@ -12,7 +12,8 @@ export interface LiveAskOptions {
   /** Blurred JPEG of the current view (FaceBlurrer.getUploadJpeg), or null (then the question is sent without a frame). */
   frame: () => Promise<Blob | null>;
   /** Model answer text — route to sayModelText. `question` = the user's own words (for voice commands). */
-  onAnswer: (text: string, question?: string) => void;
+  /** `spoken`: the answer is to a spoken question (Ask), not "What's around me" — only then can it be a command. */
+  onAnswer: (text: string, question: string | undefined, spoken: boolean) => void;
   /** Fixed-wording problems (fail loud). */
   onProblem: (text: string) => void;
   onState: (s: AskState) => void;
@@ -54,6 +55,8 @@ export class LiveAsk {
   private ctx: AudioContext | null = null;
   private pending: Uint8Array[] = [];
   private stopTimer: number | undefined;
+  /** The question in flight was spoken (Ask), not "What's around me". */
+  private spoken = false;
 
   constructor(private readonly opts: LiveAskOptions) {}
 
@@ -79,8 +82,14 @@ export class LiveAsk {
     } catch {
       return this.opts.onProblem(ASK_MESSAGES.unavailable);
     }
+    this.spoken = false;
     ws.send(JSON.stringify({ type: 'describe', frame: toBase64(new Uint8Array(await blob.arrayBuffer())) }));
     this.setState('thinking');
+  }
+
+  /** Walk started: connect now, so the server opens the Gemini session before the first question (≈ 2 s faster). */
+  warm(): void {
+    this.connect().catch(() => undefined); // a failure is reported when the user actually asks
   }
 
   /** Walk stopped. */
@@ -118,6 +127,7 @@ export class LiveAsk {
 
   private async startListening(): Promise<void> {
     let ws: WebSocket;
+    this.spoken = true;
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
     } catch {
@@ -188,7 +198,7 @@ export class LiveAsk {
   private onServer(m: LiveServerMessage): void {
     if (m.type === 'answer') {
       this.setState('idle');
-      this.opts.onAnswer(m.text, m.question);
+      this.opts.onAnswer(m.text, m.question, this.spoken);
     } else if (m.type === 'error') {
       if (this.state === 'listening') this.releaseMic();
       this.setState('idle');

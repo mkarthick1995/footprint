@@ -465,3 +465,27 @@ Accepted · 2026-10-13 (owner: "complete Q11") — implements ADR-021 (summary) 
 - **Rejected:** turn-by-turn (ADR-027); a "safer route" suggestion (R2.5 stretch — needs data we don't have yet);
   speaking Google's resolved address (Routes API doesn't return it without an extra Geocoding call; the spoken distance
   is the sanity check instead — SAF-32).
+
+## ADR-037 Test round 1 fixes: commands from Gemini's reply, early-audio buffer, place search near the user
+Accepted · 2026-10-14 (owner: team phone test results) — amends ADR-026 (voice commands), ADR-035, ADR-036
+- **Root cause of failed voice commands / "route to …" (5.2–5.4, 6.2):** the server dropped all audio and the
+  "done" signal that arrived while the Vertex Live session was still opening (1–2 s) — so the first question of every
+  walk was lost (Gemini described the photo or the question timed out). Fixed: buffered and flushed in order once the
+  session is open (regression tests fail on the old code). The session is also opened when the walk starts, so the
+  first question is ~2 s faster.
+- **Commands are read from Gemini's reply, not the user's transcript:** the system instruction asks for a fixed reply
+  ("Command: fewer alerts." / "more alerts" / "alert level" / "route to <place>"); the transcript of the user's words
+  stays as a fallback. Only for spoken questions — "What's around me" can never trigger a command. A reply starting
+  "Command" that can't be read is never spoken; the user hears "Sorry, I didn't catch that." Verified against the
+  real model with synthesized speech: 7/7, including commands as the first question of a fresh session.
+- **Route destinations are resolved near the user** (Places API (New) text search, 3 km location bias, relevance
+  ranking, nearest result of the best match's kind) and the resolved name is spoken ("SR Nagar bus stop", type words
+  added for stops/stations). Before: "bus stop" in Hyderabad geocoded to a far place → always "more than 5 km".
+  Distance ranking was rejected: it loosened matching ("metro station" → a bus stop). Places API (New) enabled on the
+  project; capped by the existing 500 route requests/day.
+- **Smaller fixes:** end-of-speech pause 1.1 → 2.0 s (natural pauses cut questions off; tap Ask to send at once);
+  earbud presses: silent media clip 1 s → 10 s (Chrome on Android gives media controls only to media ≥ 5 s) and
+  restarted after our own speech pauses it; fail-loud warnings repeat every 20 s while alerts are off (L2/L3);
+  orientation warns at 50° off level (was 60°) and wins over "blurred".
+- **Not changed:** screen lock / app switch stopping alerts (web-app limit, ST-04, announced on return); battery
+  warnings need the Battery API (absent on iPhone Safari, Firefox, Brave) — disclosed.
