@@ -489,3 +489,18 @@ Accepted · 2026-10-14 (owner: team phone test results) — amends ADR-026 (voic
   orientation warns at 50° off level (was 60°) and wins over "blurred".
 - **Not changed:** screen lock / app switch stopping alerts (web-app limit, ST-04, announced on return); battery
   warnings need the Battery API (absent on iPhone Safari, Firefox, Brave) — disclosed.
+
+## ADR-038 Ray-Ban Meta in the hackathon: Bluetooth audio + tap-to-ask from the browser; glasses camera only via native toolkit (later)
+Proposed · 2026-10-14 (owner asked: native Android app, or browser integration; owner's glasses: Ray-Ban Meta Wayfarer 003Y, bought in Ireland, used in India)
+- **Glasses camera from the browser is not possible** on Ray-Ban Meta (no display): Meta's Web Apps (developer preview,
+  May 2026) exist only for Ray-Ban *Display* glasses and expose motion/orientation, phone GPS, Neural Band input and
+  storage — not the camera. The camera is reachable only from native iOS/Android apps via the Device Access Toolkit
+  (1.0 rollout from 2026-09-30).
+- **Native Android shell rejected for the hackathon:** judges can't sideload an app *and* own the glasses, and it
+  competes with test round 2, map walks, privacy re-audit, video and deck (freeze 10-16). Kept as the pitch's next step.
+- **Use the glasses as the Bluetooth headset:** alerts/answers in the open-ear speakers, "Ask" via the glasses'
+  microphones (browser uses the BT mic; Android switches to call-quality audio while asking), touchpad tap =
+  play/pause = our earbud handler (ADR-035) → one tap = Ask. Double/triple taps unverified (touchpad swipes = volume,
+  long press = Meta AI). No code change; judges can reproduce with any Bluetooth earbuds.
+- **Demo:** live = chest-mounted phone camera + glasses audio/tap; glasses-view shot = owner's Ray-Ban recording in clip
+  mode, labelled as a recording.
