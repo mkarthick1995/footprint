@@ -51,6 +51,38 @@ button {
   margin-top: 0.75rem;
 }
 
+.route-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.route-row label {
+  width: 100%;
+  padding: 0;
+}
+
+.route-row input {
+  flex: 1;
+  min-width: 10rem;
+  min-height: 3rem;
+  font-size: 1.1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #6b7280;
+  background: #1f2937;
+  color: #f5f5f5;
+  padding: 0 0.75rem;
+}
+
+.route-row button {
+  width: auto;
+  min-height: 3rem;
+  font-size: 1.1rem;
+  padding: 0 1rem;
+}
+
 .ask-row button {
   flex: 1;
   font-size: 1.15rem;

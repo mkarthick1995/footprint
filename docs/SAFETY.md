@@ -76,7 +76,7 @@ When anything happens that the code does not explicitly handle:
 | SAF-17 | **Battery / thermal** — continuous camera + ML + streaming drains / overheats | H | Measure in R4.1; low-power mode (lower fps); announce at 20 % and on thermal throttle → L3 | Planned R1.6 · Q9: battery warnings at 20 / 10 / 5 % (Battery API, Chromium); detector < 5 fps for 10 s → "Obstacle detection is slow… may be too hot"; Compute Pressure "critical" → hot warning where supported; 60-min measurement still ST-14 |
 | SAF-18 | **Community report misread as live detection** ("there is a pothole" when it may be fixed) | H | Always phrase as *reported* + count + age (ADR-020); separate earcon for community vs live detections | Planned R2.3 · Q7: spoken "<type> reported ahead/nearby, N walkers" (ST-18 ✅); separate earcon still open · Q8 map: every list line says "reported by N walkers, last …"; page warns "Reports can be out of date or wrong" |
 | SAF-19 | **Location mismatch** — reported hazard announced at the wrong spot due to GPS error | M | Distance phrased as "about"; announce only when GPS accuracy ≤ 25 m; cluster radius 15 m | Planned R2.3 |
-| SAF-20 | **Cold start** — no reports read as "this street is fine" | H | "No community information yet" wording; score hidden below minimum walks (ADR-021) | Planned R2.5 |
+| SAF-20 | **Cold start** — no reports read as "this street is fine" | H | "No community information yet" wording; score hidden below minimum walks (ADR-021); route summary says "No community reports along this route yet. That does not mean there are no hazards." (Q11, tested) | Mitigated |
 | SAF-21 | **Gemini audio bypasses the safety filter** — Live API speaking directly can't be filtered | C | Live response modality = TEXT; only the alert manager speaks via TTS after the filter (ADR-019). **Built R1.7:** model text can only enter via `AlertOutput.sayModelText()` — filter always applied, manager private, guard test | Entry point implemented R1.7; Live TEXT path pending R1.4 · Q10: native-audio Live model with AUDIO + output transcription; the proxy forwards transcript text only (audio discarded, unit-tested); answers enter only via `sayModelText` (filter, P3) — ST-20 ✅ |
 | SAF-22 | **Stale queued alert** — spoken after the hazard was passed or left the path, because speech takes 1–2 s each | H | Re-check TTC/path/age at dequeue; drop stale; P0 preempts; max 1–2 spoken (ADR-022) | Planned R1.3 |
 | SAF-23 | **Wrong priority from bad distance estimates** — single camera can't measure distance precisely; Gemini distances are rough | H | Bucketed distance wording; prefer detector box-growth TTC for moving objects; cautious tier when uncertain; tune on clips | Planned R1.3, R4.1 |
@@ -88,6 +88,7 @@ When anything happens that the code does not explicitly handle:
 | SAF-30 | **Self-occlusion** — the user's own umbrella, hat brim, hand or sleeve fills the frame and reads as a large obstacle straight ahead → repeated false P0 (seen: umbrella in the Shanghai rain clip) | H | Detect a large region that stays fixed relative to the camera while the scene moves → announce "Camera partly blocked" (SYS) instead of P0; onboarding tip on camera placement | Planned R1.6 |
 | SAF-31 | **Crowd overload** — in dense crowds many people are legitimately close (P0 ≈ 1–4 % of frames, P1 ≈ 19–35 % on public clips) → speech floods, real alerts get lost | H | Alert manager merges same-type candidates ("people close ahead"), earcon instead of words for repeats, cool-down + hysteresis, adaptive verbosity (ADR-022/023) | Planned R1.3 |
 | SAF-29 | **One wrong scan deletes a real hazard** from the community map | H | Asymmetric evidence: removal needs ≥ 2 "not seen" walks or decay (ADR-025) | Planned R2.3 · Implemented Q7 (ST-30 ✅) |
+| SAF-32 | **Wrong destination** — Google resolves a spoken/typed name to a different place (same-name station, mis-heard word), so the summary describes the wrong route | M | Summary repeats the destination as understood plus distance and minutes (an obviously wrong distance is noticeable); routes > 5 km refused; no turn-by-turn, so it never guides the user there; the user's navigation app does the guiding | Mitigated+Disclosed |
 
 ### 3.2 Privacy
 | ID | Risk | Sev | Mitigation | Status |
@@ -183,6 +184,8 @@ When anything happens that the code does not explicitly handle:
   guide dog, or orientation & mobility training.
 - As a web app, it **only works while the app is open and the screen is on**; locking the phone or switching apps
   pauses protection (it announces this). A native app would remove this limit (ADR-015).
+- The **route summary** only lists hazards other walkers have reported along the route; it does not give turn-by-turn
+  directions (use your navigation app), and it may pick a different place with the same name — check the distance it says.
 - It is an **English-first hackathon prototype**, tested by the team on a limited set of streets.
 
 ## 5. Approved and forbidden wording
@@ -216,7 +219,7 @@ When anything happens that the code does not explicitly handle:
 | ST-16 | Full flow with TalkBack and VoiceOver on | All controls reachable and labelled | ACC-01 | — |
 | ST-17 | Inspect Firestore after a walk | No ID, no imagery, trip ends trimmed, coarse location | PRI-04 | ✅ 2026-10-13 field whitelist tests (observations / hazards) + `npm run audit:privacy` on production (empty before real walks — re-run after them); trip-end trim tested in Q7 |
 | ST-18 | Seed a hazard with 1 report, walk past | Not announced (unconfirmed); with 2 reports: announced as "reported … N reports, age" | SAF-13, SAF-18 | ✅ 2026-10-12 unit + API tests and live on Cloud Run/Firestore (walk 1 → unconfirmed, not served; walk 2 → confirmed, served with 2 reports); spoken "Pothole reported ahead, 3 walkers" (age omitted, word cap) |
-| ST-19 | Walk a street with no data | "No community information yet" — never a positive rating | SAF-20 | — |
+| ST-19 | Walk a street with no data | "No community information yet" — never a positive rating | SAF-20 | ✅ 2026-10-13 route summary with no reports: "No community reports along this route yet. That does not mean there are no hazards." (unit + API tests; real Routes API call, Singapore) |
 | ST-20 | Make Gemini Live answer a crossing question | Answer arrives as text, filtered, spoken by our TTS | SAF-21 | ✅ 2026-10-13 real Vertex Live via Cloud Run: "Is it safe to cross the road now?" → model declined; transcript only reached the phone; filter replaced the sentence with the approved refusal; spoken by our TTS |
 | ST-21 | Clip: pothole 1 m ahead + person 10 m ahead | Pothole spoken first (P0), person after or dropped | SAF-02, ADR-022 | ◐ 2026-10-11 logic unit-tested (Q3); on-device has no potholes yet |
 | ST-22 | Clip: potholes at 1 m and 2 m | One merged message, nearest first ("two potholes, nearest very close") | SAF-02 | ◐ 2026-10-11 merge logic unit-tested ("Two potholes, ahead") |

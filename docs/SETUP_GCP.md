@@ -11,7 +11,7 @@ files — only into your local `.env` (gitignored).
 | APIs | Generative Language, Vertex AI, Cloud Run, Cloud Build, Artifact Registry, Firestore, Secret Manager, Routes, Maps JavaScript, API Keys |
 | Firestore | `(default)`, Native mode, **asia-southeast1** |
 | Gemini | **Vertex AI** (trial-billed). Scan `gemini-3.8-flash` @ global; Live `gemini-live-2.5-flash-native-audio` @ us-central1 |
-| Runtime identity | service account `footprint-api@project-d8d384af-4155-46fa-a3c.iam.gserviceaccount.com` — roles `aiplatform.user`, `datastore.user`; **no key file** |
+| Runtime identity | service account `footprint-api@project-d8d384af-4155-46fa-a3c.iam.gserviceaccount.com` — roles `aiplatform.user`, `datastore.user`, `serviceusage.serviceUsageConsumer` (Routes API, Q11); **no key file** |
 | Maps key | `footprint-maps-browser`, restricted to Maps JavaScript + Routes APIs + HTTP referrers `https://footprint-804307041024.asia-southeast1.run.app/*` and `http://localhost:5173/*` |
 | AI Studio key | none — Gemini Developer API needs prepaid AI Studio credit, not used (ADR-030) |
 | Owner ADC | `gcloud auth application-default login` done; verified against Vertex AI and Firestore (2026-10-10) |

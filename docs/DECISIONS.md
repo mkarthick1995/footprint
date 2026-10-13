@@ -446,3 +446,22 @@ use draft / `no-automerge` for anything non-trivial; deviations never auto-merge
 ## ADR-007 Privacy: no images or video stored
 Accepted · 2026-10-10
 Only hazard type + GPS + time + confidence are persisted. Raw recordings stay local in `data/` (gitignored).
+
+## ADR-036 Route summary (Q11 lite): server-side Routes API, 25 m corridor, 5 km cap, destination typed or spoken
+Accepted · 2026-10-13 (owner: "complete Q11") — implements ADR-021 (summary) + ADR-027 (no turn-by-turn)
+- **Flow:** destination + fresh GPS fix (≤ 25 m, ≤ 30 s old) → `POST /api/route` → Google Routes API `computeRoutes`
+  (WALK) → polyline → confirmed hazards within **25 m** of the line, ordered by distance along it → one spoken summary
+  from a fixed template. Route hazards are also added to the walk's "reported ahead" alerts.
+- **Routes API is called from Cloud Run with the service account (OAuth)**, not the browser Maps key: the key is
+  referrer-locked to the map page, and keeping the call server-side means the phone holds no Google credentials
+  (ADR-030). The runtime service account needed `roles/serviceusage.serviceUsageConsumer`.
+- **Input:** a "Destination" box + "Check route" button, and by voice through Ask ("route to …", "directions to …",
+  "take me to …", "how do I get to …"), parsed on the phone from the question transcript — no new mic path.
+- **Wording:** distance, minutes, hazards by type, how far the first one is, and the largest walker count. No data →
+  "No community reports along this route yet. That does not mean there are no hazards." (SAF-20, ST-19). Always ends
+  "Use your navigation app for turns."
+- **Limits:** routes over 5 km are refused (spoken); 6 requests/min per walk, 12/min per client, 500/day
+  (`ROUTE_DAILY_CAP`). Position and destination are used for that request only — never stored or logged (PRI-04).
+- **Rejected:** turn-by-turn (ADR-027); a "safer route" suggestion (R2.5 stretch — needs data we don't have yet);
+  speaking Google's resolved address (Routes API doesn't return it without an extra Geocoding call; the spoken distance
+  is the sanity check instead — SAF-32).

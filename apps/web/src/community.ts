@@ -134,6 +134,19 @@ export class CommunityClient {
     this.trackPasses(null);
   }
 
+  /** Current position if GPS is good enough (≤ 25 m) and fresh, for the route summary (Q11). */
+  currentFix(): LatLng | null {
+    const f = this.fix;
+    const age = this.gpsAge();
+    return f && f.accuracy <= MAX_ACCURACY_M && age !== null && age < 30_000 ? { lat: f.lat, lng: f.lng } : null; // fresh (≤ 30 s) only
+  }
+
+  /** Hazards found along a planned route (corridor prefetch, ADR-020): announced as the walker gets near them. */
+  addHazards(list: readonly PublicHazard[]): void {
+    const known = new Set(this.hazards.map((h) => h.id));
+    this.hazards = [...this.hazards, ...list.filter((h) => h.status === 'confirmed' && !known.has(h.id))];
+  }
+
   /** ms since the last usable GPS fix (for the "location lost" warning); null when location isn't in use. */
   gpsAge(): number | null {
     if (!this.active) return null;

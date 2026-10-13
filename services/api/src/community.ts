@@ -159,6 +159,8 @@ export function parseBbox(raw: unknown): { minLat: number; minLng: number; maxLa
 
 export interface CommunityOptions {
   store?: HazardStore;
+  /** Shared lazy store (server.ts) — lets other routes (e.g. /api/route) read the same hazards. */
+  getStore?: () => HazardStore;
   now?: () => number;
   perSessionPerMinute?: number;
   perClientPerMinute?: number;
@@ -167,7 +169,7 @@ export interface CommunityOptions {
 export async function registerCommunity(app: FastifyInstance, opts: CommunityOptions = {}): Promise<void> {
   const now = opts.now ?? Date.now;
   let store = opts.store;
-  const getStore = () => (store ??= new FirestoreStore());
+  const getStore = opts.getStore ?? (() => (store ??= new FirestoreStore()));
   const perSession = new MinuteLimiter(opts.perSessionPerMinute ?? 20);
   const perClient = new MinuteLimiter(opts.perClientPerMinute ?? 60);
 

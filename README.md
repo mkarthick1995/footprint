@@ -27,6 +27,10 @@ every walk improves a shared street-accessibility map.
 4. **Hazards are logged with GPS (no images)** to Firestore → a shared accessibility map, so every walk warns the
    next person: "Pothole reported ahead, 3 walkers". A hazard needs two separate walks to be confirmed; nothing is
    shared within 200 m of where a walk starts or ends.
+5. **Route summary** — type a destination or ask "route to Chinatown MRT": Footprint gets the walking route from the
+   Google Routes API and tells you what other walkers reported along it — "about 800 metres, 11 minutes, two potholes,
+   the first about 100 metres from the start" — or that there are no reports yet (which never means it is safe).
+   Turn-by-turn stays with your navigation app.
 
 One alert manager decides what is said and when (most urgent first, merged, rate-limited, quieter on busy streets); a
 safety filter blocks any "all clear", crossing instruction or description of people. Choose how much it says
