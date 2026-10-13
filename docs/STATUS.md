@@ -51,7 +51,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [ ] R3.4 Natural Google voice before submission: pre-rendered alert phrases (Chirp 3 HD / Gemini-TTS) + Gemini-TTS for dynamic P3 text, device voice fallback (ADR-033) — do near the end to save credits
 
 ## Phase 4 — Submission (10-16 → 10-17)
-- [~] R4.1 Field test + metrics — @mkarthick1995 2026-10-14 · team phone test round 1 (42-item checklist, 3 testers): fixes in ADR-037 (first-question audio lost → commands and "route to …" failed; route names resolved near the user; earbud clip ≥ 5 s; 2 s end-of-speech pause; fail-loud reminders every 20 s; orientation 50°); sections 2, 8 and 9 not yet reported; round 2 after deploy
+- [~] R4.1 Field test + metrics — @mkarthick1995 2026-10-14 · team phone test round 1 (42-item checklist, 3 testers): fixes in ADR-037 (first-question audio lost → commands and "route to …" failed; route names resolved near the user; earbud clip ≥ 5 s; 2 s end-of-speech pause; fail-loud reminders every 20 s; orientation 50°); sections 2, 8 and 9 not yet reported; round 2 after deploy · owner glasses test (Ray-Ban Meta as Bluetooth headset): repeats of one object / disclaimer restarts / chatty Essential / unresponsive Ask → ADR-039 (situation memory, cue repeats, one-time resume, Essential P1 tone-only, instant Ask feedback)
 - [ ] R4.2 Demo video < 3:00
 - [ ] R4.3 Deck PDF
 - [ ] R4.4 README for judges

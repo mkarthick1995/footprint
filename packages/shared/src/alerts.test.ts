@@ -84,7 +84,9 @@ describe('AlertManager queue rules (ADR-022)', () => {
     m.update([cand({ tier: 'P1', type: 'person' }, 2600)]);
     expect(m.next(2600)).toBeNull();
     m.update([cand({ tier: 'P1', type: 'person' }, 5100)]);
-    expect(m.next(5100)).not.toBeNull();
+    expect(m.next(5100)).toBeNull(); // same situation, already worded: only a cue, and not within 10 s
+    m.update([cand({ tier: 'P1', type: 'person' }, 11_100)]);
+    expect(m.next(11_100)).toMatchObject({ text: '', earcon: 'near' });
   });
 
   it('P0 interrupts a lower message; P2 waits for silence and for its rate gap', () => {
@@ -135,29 +137,61 @@ describe('AlertManager queue rules (ADR-022)', () => {
     expect(m.next(1100)!.tier).toBe('SYS');
   });
 
-  it('a recurring situation is worded once, then cued (P1) or skipped (P2); P0 always speaks (ADR-023)', () => {
+  it('a recurring situation is worded once, then cued (P1, P0) or skipped (P2) (ADR-023, owner glasses test 10-14)', () => {
     const m = new AlertManager();
     m.update([cand({ tier: 'P1', type: 'person', bearingDeg: 20 }, 1000)]);
     expect(m.next(1000)!.text).toBe('Person close, right');
     m.finished();
     m.update([cand({ tier: 'P1', type: 'person', bearingDeg: 20 }, 6000)]); // new track, same situation
-    const cue = m.next(6000)!;
-    expect(cue.text).toBe('');
-    expect(cue.earcon).toBe('near');
+    expect(m.next(6000)).toBeNull(); // cue at most every 10 s
+    m.update([cand({ tier: 'P1', type: 'person', bearingDeg: 20 }, 11_000)]);
+    expect(m.next(11_000)).toMatchObject({ text: '', earcon: 'near' });
     m.finished();
-    m.update([cand({ tier: 'P2', type: 'vehicle', ttcSeconds: 7 }, 10000)]);
-    expect(m.next(10000)!.text).toBe('Vehicle, ahead');
+    m.update([cand({ tier: 'P2', type: 'vehicle', ttcSeconds: 7 }, 14_000)]);
+    expect(m.next(14_000)!.text).toBe('Vehicle, ahead');
     m.finished();
-    m.update([cand({ tier: 'P2', type: 'vehicle', ttcSeconds: 7 }, 15000)]);
-    expect(m.next(15000)).toBeNull();
-    m.update([cand({ tier: 'P0', type: 'person' }, 15100)]);
-    expect(m.next(15100)!.text).toBe('Stop! Person');
+    m.update([cand({ tier: 'P2', type: 'vehicle', ttcSeconds: 7 }, 19_000)]);
+    expect(m.next(19_000)).toBeNull(); // P2 has no cue: nothing new to say
+    m.update([cand({ tier: 'P0', type: 'person' }, 19_100)]);
+    expect(m.next(19_100)!.text).toBe('Stop! Person');
     m.finished();
-    m.update([cand({ tier: 'P0', type: 'person' }, 17200)]);
-    expect(m.next(17200)!.text).toBe('Stop! Person');
+    m.update([cand({ tier: 'P0', type: 'person' }, 21_200)]); // same imminent situation again: no words
+    expect(m.next(21_200)).toBeNull();
+    m.update([cand({ tier: 'P0', type: 'person' }, 24_200)]);
+    expect(m.next(24_200)).toMatchObject({ text: '', earcon: 'imminent', tier: 'P0' });
+  });
+
+  it('staring at one object for 20 s: "Stop!" once, then a cue every 5 s — never the words again', () => {
+    const m = new AlertManager();
+    const said: string[] = [];
+    for (let t = 1000; t <= 21_000; t += 100) {
+      m.update([cand({ tier: 'P0', type: 'unknown', ttcSeconds: Number.NaN, confidence: 0.4 }, t)]); // new ID each frame (worst case)
+      const u = m.next(t);
+      if (u) (said.push(u.text || '(cue)'), m.finished());
+    }
+    expect(said[0]).toBe('Stop! Obstacle');
+    expect(said.filter((s) => s !== '(cue)')).toHaveLength(1);
+    expect(said.length).toBeLessThanOrEqual(5);
+  });
+
+  it('out of view for 15 s, then back: worded again (a new encounter)', () => {
+    const m = new AlertManager();
+    m.update([cand({ tier: 'P0', type: 'cyclist' }, 1000)]);
+    expect(m.next(1000)!.text).toBe('Stop! Bike');
     m.finished();
-    m.update([cand({ tier: 'P1', type: 'person', bearingDeg: 20 }, 22000)]); // > 15 s since worded → words again
-    expect(m.next(22000)!.text).toBe('Person close, right');
+    m.update([]);
+    m.next(9000);
+    m.update([cand({ tier: 'P0', type: 'cyclist' }, 16_500)]);
+    expect(m.next(16_500)!.text).toBe('Stop! Bike');
+  });
+
+  it('Essential level: "near" warnings are a tone only; imminent ones keep their words', () => {
+    const m = new AlertManager({ preset: 'essential' });
+    m.update([cand({ tier: 'P1', type: 'person' }, 1000)]);
+    expect(m.next(1000)).toMatchObject({ text: '', earcon: 'near' });
+    m.finished();
+    m.update([cand({ tier: 'P0', type: 'vehicle' }, 1200)]);
+    expect(m.next(1200)!.text).toBe('Stop! Vehicle');
   });
 
   it('nothing to report → silence, never an all-clear', () => {
@@ -189,5 +223,20 @@ describe('wording', () => {
         }
       }
     }
+  });
+});
+
+describe('cues never cut speech (owner glasses test 2026-10-14)', () => {
+  it('a repeat of an imminent situation waits for silence instead of interrupting', () => {
+    const m = new AlertManager();
+    m.update([cand({ tier: 'P0', type: 'vehicle' }, 1000)]);
+    expect(m.next(1000)!.text).toBe('Stop! Vehicle');
+    m.finished();
+    m.system('Footprint started. Keep using your cane.');
+    expect(m.next(1500)!.tier).toBe('SYS');
+    m.update([cand({ tier: 'P0', type: 'vehicle' }, 7000)]);
+    expect(m.next(7000, true)).toBeNull(); // speaking: the cue doesn't cut the message
+    m.finished();
+    expect(m.next(7100)).toMatchObject({ text: '', earcon: 'imminent' });
   });
 });

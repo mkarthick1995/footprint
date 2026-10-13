@@ -504,3 +504,20 @@ Proposed · 2026-10-14 (owner asked: native Android app, or browser integration;
   long press = Meta AI). No code change; judges can reproduce with any Bluetooth earbuds.
 - **Demo:** live = chest-mounted phone camera + glasses audio/tap; glasses-view shot = owner's Ray-Ban recording in clip
   mode, labelled as a recording.
+
+## ADR-039 Each situation is worded once; repeats are cues; cut system messages resume once; Essential "near" = tone
+Accepted · 2026-10-14 (owner glasses test: "Stop – object ahead" again and again for one object; start disclaimer
+restarting; Essential still too many alerts) — amends ADR-022/023 ("P0 always speaks") and ADR-026 (Essential)
+- **Situation = tier + type + side** (people: any side). Put into words once. While it stays in view — or comes back
+  within 15 s, e.g. under a new tracker ID after a glance away (the cause: P0 only waited 2 s per group and always
+  spoke) — it repeats as a cue only: imminent earcon + vibration at most every 5 s (P0), near earcon every 10 s (P1);
+  P2/P3 not at all. Out of view ≥ 15 s → a new encounter → words again. Escalation (P1 → P0) is a new situation → words.
+- **Cues never cut speech** (a cue repeats something already said).
+- **A system message cut by "Stop!" resumes from the sentence it was in, once**; a resumed part cut again is dropped
+  (was: replayed from the start every time).
+- **Essential: "near" (P1) warnings are a tone + vibration only**; imminent (P0) keep their words (ADR-026 floor).
+- **Ask button:** instant "Starting microphone…" + 30 ms vibration on tap; second tap while starting is ignored (it
+  used to start a second question); mic, connection, photo and audio engine prepared in parallel; audio engine reused.
+- **Not changed — wake word ("Hey Footprint"):** owner expected it; ADR-035 rejected it (always-on mic, PRI-05; no
+  browser wake-word API; battery). Hands-free = one tap on the glasses touchpad / earbud button. Revisit only natively.
+- Evidence: 252 shared tests incl. "staring at one object for 20 s → words once, ≤ 4 cues"; clip simulation below.

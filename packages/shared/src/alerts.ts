@@ -45,7 +45,10 @@ export interface AlertManagerOptions {
   groupCooldownMs?: number;
   /** Below this confidence: far items are dropped, close items are worded "possible" (ADR-022 rule 6). */
   lowConfidence?: number;
-  /** A group already put into words within this window repeats as an earcon only (P1) or not at all (P2/P3). */
+  /**
+   * A situation (tier + type + side) already put into words is not worded again until it has been out of view this
+   * long; while it stays in view (or returns sooner, e.g. under a new tracker ID) it repeats as a cue only.
+   */
   repeatAsCueMs?: number;
 }
 
@@ -67,6 +70,13 @@ export const DEMAND = {
   /** P1 gap while demanding (ST-26: ≤ 1 spoken message per 3 s). */
   p1GapMs: 3000,
 } as const;
+
+/**
+ * Repeats of the same situation (owner glasses test 2026-10-14: "Stop! Obstacle" again and again for one object — the
+ * tracker re-identified it under a new ID after a glance away, and P0 used to always speak). Words once; then, while
+ * it stays in view or comes back within `repeatAsCueMs`, only a short cue (earcon + vibration) at most this often.
+ */
+export const SITUATION_CUE_EVERY_MS: Partial<Record<Tier, number>> = { P0: 5000, P1: 10_000 };
 
 export const DEMAND_HEADS_UP = 'Busy street. Only close warnings for now.';
 
@@ -147,6 +157,8 @@ interface Group {
   lowConfidence: boolean;
   /** From the community map: worded as "reported", never "there is" (SAF-18). */
   community?: boolean;
+  /** Put into words, or only a cue (the situation was worded already). */
+  action: 'words' | 'cue';
 }
 
 /** Wording for a merged group. Short, direction-first, bucketed distance — never metres (SAF-23). */
@@ -194,8 +206,10 @@ export class AlertManager {
   private contextQueue: { text: string; kind: ModelTextKind; expiresAt: number }[] = [];
   private spokenObject = new Map<string, { tier: Tier; at: number }>();
   private spokenGroup = new Map<string, number>();
-  /** Last time each group was put into words (not just cued). */
-  private wordedGroup = new Map<string, number>();
+  /** Per situation key: when it was last worded / cued / seen (see SITUATION_CUE_EVERY_MS). */
+  private situations = new Map<string, { wordedAt?: number; cuedAt: number; lastSeen: number }>();
+  /** Resumed parts of system messages (a message is resumed once after an imminent alert cuts it, never again). */
+  private resumedSys = new Set<string>();
   private lastSpokenAt = -Infinity;
   private current: Tier | null = null;
   /** The answer being spoken now (for "only P0 interrupts an answer" and resume). */
@@ -268,7 +282,8 @@ export class AlertManager {
     this.candidates = [];
     this.spokenObject.clear();
     this.spokenGroup.clear();
-    this.wordedGroup.clear();
+    this.situations.clear();
+    this.resumedSys.clear();
     this.contextQueue = [];
     this.current = null;
     this.currentAnswer = null;
@@ -294,14 +309,14 @@ export class AlertManager {
     // Interrupt rules: P0 cuts anything below P0; P1 cuts P2/P3 — except an answer the user asked for, which only P0
     // cuts (a "near" alert waits; if it becomes imminent it is P0 and does cut). Owner phone test 2026-10-13: a P1
     // repeating what the answer was saying cut it off mid-sentence.
+    // A cue repeats something already said: it never cuts speech (owner glasses test: "Stop" restarting mid-sentence).
+    if (speaking && group.action === 'cue') return null;
     if (speaking && this.current !== null) {
       const canCut =
         (group.tier === 'P0' && (RANK[this.current] > RANK.P0 || this.current === 'SYS')) ||
         (group.tier === 'P1' && RANK[this.current] > RANK.P1 && this.currentAnswer === null);
       if (!canCut) return null;
     }
-    // An imminent alert cutting a system message: say the message again right after (it is never lost).
-    if (speaking && this.current === 'SYS' && group.tier === 'P0' && this.currentSys) this.systemQueue.unshift(this.currentSys);
     const demanding = this.demand === 'demanding';
     // Demanding street: words only for close hazards, and fewer of them (ADR-023, ST-26).
     if (demanding && (group.tier === 'P2' || group.tier === 'P3')) return null;
@@ -311,11 +326,12 @@ export class AlertManager {
     const key = group.key;
     for (const c of group.items) this.spokenObject.set(c.id, { tier: group.tier, at: now });
     this.spokenGroup.set(key, now);
-    // Recurring situation (people streaming past): words once, then a short cue. P0 always speaks.
-    const worded = this.wordedGroup.get(key);
-    const repeat = group.tier !== 'P0' && worded !== undefined && now - worded < this.opts.repeatAsCueMs;
-    if (repeat && EARCON[group.tier] === null) return null; // P2/P3 repeat: nothing new to say
-    if (!repeat) this.wordedGroup.set(key, now);
+    // Words once per situation; afterwards a short cue (decided in pick() → actionFor()).
+    const sit = this.situations.get(key) ?? { cuedAt: -Infinity, lastSeen: now };
+    const repeat = group.action === 'cue';
+    if (!repeat) sit.wordedAt = now;
+    sit.cuedAt = now;
+    this.situations.set(key, sit);
     return this.emit(
       {
         text: repeat ? '' : phraseFor(group),
@@ -350,6 +366,19 @@ export class AlertManager {
     const rest = remainingAfter(text, spokenChars);
     if (!rest || !answer || answer.expiresAt <= now) return;
     this.contextQueue.unshift({ text: rest, kind: 'answer', expiresAt: answer.expiresAt });
+  }
+
+  /**
+   * A system message was cut by an imminent alert after `spokenChars` characters: say the rest (from the sentence it
+   * was in) right after — once. A resumed part that is cut again is dropped, never replayed again and again (owner
+   * glasses test 2026-10-14: the start disclaimer restarted from the beginning every time something came into view).
+   */
+  resumeSystem(text: string, spokenChars: number): void {
+    if (this.resumedSys.has(text)) return;
+    const rest = remainingAfter(text, spokenChars);
+    if (!rest) return;
+    this.resumedSys.add(rest);
+    this.systemQueue.unshift(rest);
   }
 
   /** Say the last spoken words again ("Repeat"). False when there is nothing to repeat. */
@@ -391,12 +420,22 @@ export class AlertManager {
 
   /** Highest-priority group still worth saying. */
   private pick(now: number): Group | null {
-    const { preset, maxAgeMs, scanMaxAgeMs, objectCooldownMs, groupCooldownMs, lowConfidence } = this.opts;
-    const live = this.candidates.filter((c) => {
+    const { preset, maxAgeMs, scanMaxAgeMs, objectCooldownMs, groupCooldownMs, lowConfidence, repeatAsCueMs } = this.opts;
+    const fresh = this.candidates.filter((c) => {
       if (c.tier === 'SYS' || c.type === 'system') return false;
       if (now - c.observedAt > (c.source === 'scan' ? scanMaxAgeMs : maxAgeMs)) return false; // stale (SAF-22)
       if (!tierAllowed(c.tier, preset)) return false; // P0 floor inside tierAllowed (ADR-026)
       if (c.confidence < lowConfidence && (c.tier === 'P2' || c.tier === 'P3')) return false; // low + far → drop
+      return true;
+    });
+    // Situation memory: everything in view refreshes its situation; one out of view long enough may be worded again.
+    for (const key of new Set(fresh.map(situationKey))) {
+      const sit = this.situations.get(key);
+      if (!sit) continue;
+      if (now - sit.lastSeen >= repeatAsCueMs) sit.wordedAt = undefined;
+      sit.lastSeen = now;
+    }
+    const live = fresh.filter((c) => {
       const said = this.spokenObject.get(c.id);
       // Hysteresis: re-alert the same object only when it escalates, or after the cool-down.
       if (said && RANK[c.tier] >= RANK[said.tier] && now - said.at < objectCooldownMs) return false;
@@ -411,8 +450,8 @@ export class AlertManager {
       const side: GroupSide = Number.isNaN(c.bearingDeg) ? 'around' : sideOf(c.bearingDeg);
       const low = c.confidence < lowConfidence;
       const community = c.source === 'community';
-      const key = `${c.tier}|${type}|${type === 'person' ? '*' : side}${community ? '|community' : ''}`;
-      const g = groups.get(key) ?? { key, tier: c.tier, type, side, items: [], ttc: Infinity, lowConfidence: true, community };
+      const key = situationKey(c);
+      const g: Group = groups.get(key) ?? { key, tier: c.tier, type, side, items: [], ttc: Infinity, lowConfidence: true, community, action: 'words' };
       if (g.items.length > 0 && g.side !== side) g.side = 'around';
       g.items.push(c);
       g.ttc = Math.min(g.ttc, c.ttcSeconds);
@@ -423,9 +462,31 @@ export class AlertManager {
       .filter((g) => {
         const at = this.spokenGroup.get(g.key);
         // Tracker ID churn: same thing under a new ID. P0 never waits on a group cool-down shorter than its own.
-        return at === undefined || now - at >= (g.tier === 'P0' ? groupCooldownMs / 2 : groupCooldownMs);
+        if (!(at === undefined || now - at >= (g.tier === 'P0' ? groupCooldownMs / 2 : groupCooldownMs))) return false;
+        const action = this.actionFor(g, now);
+        if (!action) return false;
+        g.action = action;
+        return true;
       })
       .sort((a, b) => RANK[a.tier] - RANK[b.tier] || a.ttc - b.ttc || severity(a.type) - severity(b.type));
     return ranked[0] ?? null;
   }
+
+  /** Words for a new situation; then only a cue (earcon tiers), at most every SITUATION_CUE_EVERY_MS; else nothing. */
+  private actionFor(g: Group, now: number): 'words' | 'cue' | null {
+    const sit = this.situations.get(g.key);
+    const cueEvery = SITUATION_CUE_EVERY_MS[g.tier];
+    // Essential level: "near" warnings are a tone and vibration only; imminent ones keep their words (ADR-026 floor).
+    const cueOnly = this.opts.preset === 'essential' && g.tier === 'P1';
+    if (!cueOnly && sit?.wordedAt === undefined) return 'words';
+    if (cueEvery === undefined || EARCON[g.tier] === null) return null;
+    return !sit || now - sit.cuedAt >= cueEvery ? 'cue' : null;
+  }
+}
+
+/** Situation = tier + type + side (people: any side — a crowd is one situation); community reports kept apart. */
+function situationKey(c: AlertCandidate): string {
+  const type = c.type as HazardType;
+  const side: GroupSide = Number.isNaN(c.bearingDeg) ? 'around' : sideOf(c.bearingDeg);
+  return `${c.tier}|${type}|${type === 'person' ? '*' : side}${c.source === 'community' ? '|community' : ''}`;
 }
