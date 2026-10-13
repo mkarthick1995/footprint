@@ -46,9 +46,9 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 
 ## Phase 3 — Stretch (only if Q1–Q14 are done by 10-15)
 - [ ] R3.1 Meta glasses integration
-- [~] R3.2 Languages — @mkarthick1995 2026-10-14 · en/hi/ta/te/ja: picker + "switch to Tamil", alerts from per-language parts, translated messages/page/route summary, Gemini answers in the language with a server-side Gemini safety check (fail closed), natural voice per language (ADR-042, SAF-35/36); **translations unreviewed** — teammates review hi/ta/te in docs/i18n-review.md; Japanese needs a reviewer
+- [~] R3.2 Languages — @mkarthick1995 2026-10-14 · en/hi/ta/te/ja: picker + "switch to Tamil", alerts from per-language parts, translated messages/page/route summary, Gemini answers in the language with a server-side Gemini safety check (fail closed), natural voice per language (ADR-042, SAF-35/36); **translations unreviewed** — teammates review hi/ta/te in docs/i18n-review.md; Japanese needs a reviewer · **live 2026-10-14** (owner release; backup branch backup/main-2026-10-14 = previous main fe63adc); review still pending
 - [ ] R3.3 Custom pothole detector
-- [~] R3.4 Natural Google voice — @mkarthick1995 2026-10-14 · Chirp 3 HD Aoede for all speech via `POST /api/tts` (cache, caps), ~85 phrases fetched at walk start, device voice fallback within 250–2500 ms by tier (ADR-041, SAF-34); owner picked the voice from samples; languages next (R3.2)
+- [x] R3.4 Natural Google voice — @mkarthick1995 2026-10-14 · Chirp 3 HD Aoede for all speech via `POST /api/tts` (cache, caps), ~85 phrases fetched at walk start, device voice fallback within 250–2500 ms by tier (ADR-041, SAF-34); owner picked the voice from samples; languages next (R3.2)
 
 ## Phase 4 — Submission (10-16 → 10-17)
 - [~] R4.1 Field test + metrics — @mkarthick1995 2026-10-14 · team phone test round 1 (42-item checklist, 3 testers): fixes in ADR-037 (first-question audio lost → commands and "route to …" failed; route names resolved near the user; earbud clip ≥ 5 s; 2 s end-of-speech pause; fail-loud reminders every 20 s; orientation 50°); sections 2, 8 and 9 not yet reported; round 2 after deploy · owner glasses test (Ray-Ban Meta as Bluetooth headset): repeats of one object / disclaimer restarts / chatty Essential / unresponsive Ask → ADR-039 (situation memory, cue repeats, one-time resume, Essential P1 tone-only, instant Ask feedback; clip simulation 10.8 → 6.4 and 8.1 → 4.5 spoken/min; owner re-test on glasses ✅ incl. one tap = Ask)
@@ -57,7 +57,7 @@ Claiming a step: see "How to pick up work" below (ADR-031). Edit only the lines 
 - [ ] R4.4 README for judges
 - [ ] R4.5 Final deploy + link check + cost alerts + min instances 1
 - [ ] R4.6 Submit on Hack2skill
-- [~] R4.8 UX redesign (ADR-040, deviation confirmed) — @mkarthick1995 2026-10-14 · camera view on top while walking, big stateful Ask, segmented level, collapsible route/dev panels; preview `uxr` approved by owner · fix: location permission asked inside the Start tap (owner: no prompt during a walk, only on the map page) + "No location yet…" said once if no fix within 20 s
+- [x] R4.8 UX redesign (ADR-040, deviation confirmed) — @mkarthick1995 2026-10-14 · camera view on top while walking, big stateful Ask, segmented level, collapsible route/dev panels; preview `uxr` approved by owner · fix: location permission asked inside the Start tap (owner: no prompt during a walk, only on the map page) + "No location yet…" said once if no fix within 20 s
 - [ ] R4.7 Safety & limitations disclosure + full ST matrix run
 
 ## Open questions
