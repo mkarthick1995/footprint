@@ -1,9 +1,10 @@
 # Handoff — @mkarthick1995
-Updated: 2026-10-14 · Tool: Claude Code · Branch: hotfix-test-round-1
+Updated: 2026-10-14 · Tool: Claude Code · Branch: main (released)
 
 ## Now
-- Build queue Q1–Q14 complete. Team test round 1 done → fixes in ADR-037 (branch hotfix-test-round-1, preview `r1fix`); owner merges, then `npm run deploy`, then test round 2.
-- Owner to test earbud presses (1 ask / 2 describe / 3 repeat), presets and voice commands on the phone on 10-14.
+- Live: redesign (ADR-040), fewer repeats (ADR-039), natural voice Aoede (ADR-041), languages en/hi/ta/te/ja (ADR-042).
+- Rollback: branch `backup/main-2026-10-14` (= previous live main fe63adc) → `git checkout` it and `npm run deploy`.
+- Translations unreviewed: teammates review docs/i18n-review.md (hi/ta/te); Japanese has no reviewer → hide before submission if none.
 
 ## Next
 1. 10-14: owner phone test (earbuds 1/2/3, presets, voice commands, "route to …"); two real walks on one street (map data for the demo), then check a route summary along that street lists them.
